@@ -7,6 +7,7 @@ import { child, get, getDatabase, ref, update } from 'firebase/database';
 import styles from './liga-mx-hrlv-styles.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
+import './matches-page.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyC5d4WwcPNe8kHoYurl5qBm9HBF3hRTPMU',
@@ -21,11 +22,11 @@ const firebaseConfig = {
 
 class LigaMxHrlv extends LitElement {
   static properties = {
-    header: { type: String },
     app: { type: Object },
     analytics: { type: Object },
     database: { type: Object },
     matches: { type: Array },
+    teams: { type: Array }
   };
 
   static get styles() {
@@ -34,88 +35,32 @@ class LigaMxHrlv extends LitElement {
 
   constructor() {
     super();
-    this.header = 'My app';
     this.app = initializeApp(firebaseConfig);
     this.analytics = getAnalytics(this.app);
     this.database = getDatabase();
     this.matches = [];
+    this.teams = [];
   }
 
   render() {
     return html`
       <main>
-        <table class="greyGridTable">
-          <head>
-            <tr>
-              <th>Local</th>
-              <th>Gol Local</th>
-              <th>Visitante</th>
-              <th>Gol Visitante</th>
-              <th>Jornada</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Estadio</th>
-              <th></th>
-            </tr>
-          </head>
-          <body>
-            ${this.matches.map(
-              (match, index) => html`
-                <tr id="match${index}">
-                  <td>${match.local}</td>
-                  ${match.editMatch
-                    ? html`
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            .value="${match.golLocal}"
-                            id="golLocal${index}"
-                          />
-                        </td>
-                      `
-                    : html` <td>${match.golLocal}</td> `}
-                  <td>${match.visitante}</td>
-                  ${match.editMatch
-                    ? html`
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            .value="${match.golVisitante}"
-                            id="golVisitante${index}" 
-                          />
-                        </td>
-                      `
-                    : html` <td>${match.golVisitante}</td> `}
-                  <td>${match.jornada}</td>
-                  <td>${match.fecha}</td>
-                  <td>${match.hora}</td>
-                  <td>${match.estadio}</td>
-                  <td>
-                    <iron-icon
-                      id="icon${index}"
-                      index="${index}"
-                      icon="${match.editMatch ? 'check' : 'create'}"
-                      @click="${this._editMatch}"
-                    ></iron-icon>
-                  </td>
-                </tr>
-              `
-            )}
-          </body>
-        </table>
+        <matches-page
+          .matches="${this.matches}"
+          .teams="${this.teams}"
+          @edit-match="${this._editMatch}"
+        ></matches-page>
       </main>
-
       <p class="app-footer">Made with love by HRLV.</p>
     `;
   }
 
   firstUpdated() {
-    this._getDatabase();
+    this._getMatches();
+    this._getTeams();
   }
 
-  _getDatabase() {
+  _getMatches() {
     const dbRef = ref(getDatabase());
     get(child(dbRef, '/matches'))
       .then(snapshot => {
@@ -123,9 +68,8 @@ class LigaMxHrlv extends LitElement {
           const response = snapshot.val();
           response.forEach((match, i) => {
             match.editMatch = false;
-            match.idMatch = i
-          }
-            );
+            match.idMatch = i;
+          });
           response.sort((a, b) => {
             if (a.jornada === b.jornada) {
               const date1 = new Date(a.fecha);
@@ -147,27 +91,32 @@ class LigaMxHrlv extends LitElement {
       });
   }
 
+  _getTeams() {
+    const dbRef = ref(getDatabase());
+    get(child(dbRef, '/teams'))
+      .then(snapshot => {
+        if (snapshot.exists()) {
+          this.teams = snapshot.val();
+          console.log("teams", this.teams);
+        } else {
+          this.teams = [];
+        }
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  }
+
   _editMatch(e) {
-    const index = e.target.getAttribute('index');
-    if (!this.matches[index].editMatch){
-      // Edit
-      this.matches[index].editMatch = true;
-      this.requestUpdate();
-    } else {
-      // Update
-      const golLocal = this.shadowRoot.querySelector(`#golLocal${index}`).value;
-      const golVisitante = this.shadowRoot.querySelector(`#golVisitante${index}`).value;
-      const db = getDatabase();
-      const updates = {};
-      updates[`/matches/${  this.matches[index].idMatch  }/golLocal`] = golLocal;
-      updates[`/matches/${  this.matches[index].idMatch  }/golVisitante`] =
-        golVisitante;
-        update(ref(db), updates).then(response => {
-          this._getDatabase();
-        }).catch(error => {
-          console.error(error)
-        });
-    }
+    const db = getDatabase();
+    const updates = e.detail;
+    update(ref(db), updates)
+      .then(() => {
+        this._getMatches();
+      })
+      .catch(error => {
+        console.error(error);
+      });
   }
 }
 
