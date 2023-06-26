@@ -8,6 +8,9 @@ import styles from './liga-mx-hrlv-styles.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import './matches-page.js';
+import './table-page.js';
+import '@material/web/tabs/tabs.js';
+import '@material/web/tabs/tab.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyC5d4WwcPNe8kHoYurl5qBm9HBF3hRTPMU',
@@ -26,7 +29,8 @@ class LigaMxHrlv extends LitElement {
     analytics: { type: Object },
     database: { type: Object },
     matches: { type: Array },
-    teams: { type: Array }
+    teams: { type: Array },
+    selectedTab: { type: Number },
   };
 
   static get styles() {
@@ -40,16 +44,30 @@ class LigaMxHrlv extends LitElement {
     this.database = getDatabase();
     this.matches = [];
     this.teams = [];
+    this.selectedTab = 0;
   }
 
   render() {
     return html`
       <main>
-        <matches-page
-          .matches="${this.matches}"
-          .teams="${this.teams}"
-          @edit-match="${this._editMatch}"
-        ></matches-page>
+        <md-tabs @change="${this._tabChanged}">
+          <md-tab>Calendario</md-tab>
+          <md-tab>Tabla General</md-tab>
+        </md-tabs>
+        ${this.selectedTab === 0
+          ? html`
+              <matches-page
+                .matches="${this.matches}"
+                .teams="${this.teams}"
+                @edit-match="${this._editMatch}"
+              ></matches-page>
+            `
+          : html`
+              <table-page
+                .matches="${this.matches}"
+                .teams="${this.teams}"
+              ></table-page>
+            `}
       </main>
       <p class="app-footer">Made with love by HRLV.</p>
     `;
@@ -67,7 +85,9 @@ class LigaMxHrlv extends LitElement {
         if (snapshot.exists()) {
           const response = snapshot.val();
           response.forEach((match, i) => {
+            // eslint-disable-next-line no-param-reassign
             match.editMatch = false;
+            // eslint-disable-next-line no-param-reassign
             match.idMatch = i;
           });
           response.sort((a, b) => {
@@ -97,7 +117,6 @@ class LigaMxHrlv extends LitElement {
       .then(snapshot => {
         if (snapshot.exists()) {
           this.teams = snapshot.val();
-          console.log("teams", this.teams);
         } else {
           this.teams = [];
         }
@@ -117,6 +136,10 @@ class LigaMxHrlv extends LitElement {
       .catch(error => {
         console.error(error);
       });
+  }
+
+  _tabChanged(e) {
+    this.selectedTab = e.target.selected;
   }
 }
 

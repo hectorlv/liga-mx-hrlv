@@ -11,6 +11,7 @@ class MatchesPage extends LitElement {
   static properties = {
     matches: { type: Array },
     teams: { type: Array },
+    matchesRender: { type: Array },
   };
 
   static get styles() {
@@ -21,14 +22,24 @@ class MatchesPage extends LitElement {
     super();
     this.matches = [];
     this.teams = [];
-    this.teamsRes = [];
+    this.matchesRender = [];
+  }
+
+  updated(changed) {
+    if (changed.has('matches')) {
+      this.matchesRender = [...this.matches];
+    }
   }
 
   render() {
     return html`
       <main>
         <div style="max-height:350px">
-        <md-filled-select label="Equipos" @change="${this._teamsChanged}">
+          <md-filled-select
+            id="teamsSelect"
+            label="Equipos"
+            @change="${this._filtersChanged}"
+          >
             <md-select-option selected></md-select-option>
             ${this.teams.map(
               (team, i) => html`
@@ -38,8 +49,26 @@ class MatchesPage extends LitElement {
                 ></md-select-option>
               `
             )}
-        </md-filled-select>
-      </div>
+          </md-filled-select>
+          <md-filled-select
+            id="matchdaySelect"
+            label="Jornada"
+            @change="${this._filtersChanged}"
+          >
+            <md-select-option selected></md-select-option>
+            ${Array.from(
+              { length: this.teams.length - 1 },
+              (_, i) => i + 1
+            ).map(
+              i => html`
+                <md-select-option
+                  value="${i}"
+                  headline="${i}"
+                ></md-select-option>
+              `
+            )}
+          </md-filled-select>
+        </div>
         <table class="greyGridTable">
           <head>
             <tr>
@@ -55,7 +84,7 @@ class MatchesPage extends LitElement {
             </tr>
           </head>
           <body>
-            ${this.matches.map(
+            ${this.matchesRender.map(
               (match, index) => html`
                 <tr id="match${index}">
                   <td>${match.local}</td>
@@ -131,11 +160,18 @@ class MatchesPage extends LitElement {
     }
   }
 
-  _teamsChanged(e) {
-    console.log("teamsChanged", this.teams[e.target.value]);
-    this.teamsRes = [...this.teams];
-    let tempTeams = this.team.filter()
-
+  _filtersChanged() {
+    const team =
+      this.shadowRoot.querySelector('#teamsSelect').value === ''
+        ? ''
+        : this.teams[this.shadowRoot.querySelector('#teamsSelect').value];
+    const matchday = this.shadowRoot.querySelector('#matchdaySelect').value;
+    this.matchesRender = this.matches.filter(match => {
+      const findTeam =
+        team === '' ? true : match.local === team || match.visitante === team;
+      const findMatchDay = matchday === '' ? true : match.jornada === matchday;
+      return findTeam && findMatchDay;
+    });
   }
 }
 
