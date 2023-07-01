@@ -147,9 +147,9 @@ class MatchesPage extends LitElement {
         `#golVisitante${index}`
       ).value;
       const updates = {};
-      updates[`/matches/${this.matches[index].idMatch}/golLocal`] = golLocal;
+      updates[`/matches/${this.matches[index].idMatch}/golLocal`] = Number(golLocal);
       updates[`/matches/${this.matches[index].idMatch}/golVisitante`] =
-        golVisitante;
+        Number(golVisitante);
       this.dispatchEvent(
         new CustomEvent('edit-match', {
           bubbles: true,
