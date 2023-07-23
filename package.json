@@ -40,7 +40,7 @@
     "rimraf": "^5.0.1",
     "rollup": "^2.60.0",
     "rollup-plugin-esbuild": "^5.0.0",
-    "rollup-plugin-workbox": "^6.2.0"
+    "rollup-plugin-workbox": "^8.0.1"
   },
   "eslintConfig": {
     "extends": [
