@@ -32,7 +32,7 @@
     "@web/rollup-plugin-import-meta-assets": "^2.0.0",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "deepmerge": "^4.2.2",
-    "eslint": "^8.31.0",
+    "eslint": "^8.45.0",
     "eslint-config-prettier": "^8.3.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",
