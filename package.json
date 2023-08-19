@@ -17,7 +17,7 @@
     "@material/web": "^1.0.0-pre.13",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
-    "firebase": "^10.0.0",
+    "firebase": "^10.1.0",
     "lit": "^2.7.6"
   },
   "devDependencies": {
