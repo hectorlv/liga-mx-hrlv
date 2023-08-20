@@ -4,6 +4,7 @@ import { LitElement, html } from 'lit';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { child, get, getDatabase, ref, update } from 'firebase/database';
+import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
 import styles from './liga-mx-hrlv-styles.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
@@ -45,6 +46,8 @@ class LigaMxHrlv extends LitElement {
     this.matches = [];
     this.teams = [];
     this.selectedTab = 0;
+    this.provider = new GoogleAuthProvider();
+    this.auth = getAuth();
   }
 
   render() {
@@ -74,8 +77,17 @@ class LigaMxHrlv extends LitElement {
   }
 
   firstUpdated() {
-    this._getMatches();
-    this._getTeams();
+    signInWithPopup(this.auth, this.provider).then(result => {
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const token = credential.accessToken;
+      const {user} = result;
+      console.log("token", token, "user", user);
+      this._getMatches();
+      this._getTeams();
+    }).catch(error => {
+      const credential = GoogleAuthProvider.credentialFromError(error);
+      console.error(error, credential)
+    })
   }
 
   _getMatches() {
@@ -89,15 +101,11 @@ class LigaMxHrlv extends LitElement {
             match.editMatch = false;
             // eslint-disable-next-line no-param-reassign
             match.idMatch = i;
+            match.fecha = this._formatDate(match.fecha, match.hora);
           });
           response.sort((a, b) => {
             if (a.jornada === b.jornada) {
-              const date1 = new Date(a.fecha);
-              const date2 = new Date(b.fecha);
-              if (date1 === date2) {
-                return a.hora - b.hora;
-              }
-              return date1 - date2;
+              return a.fecha - b.fecha;
             }
             return a.jornada - b.jornada;
           });
@@ -141,6 +149,17 @@ class LigaMxHrlv extends LitElement {
   _tabChanged(e) {
     this.selectedTab = e.target.selected;
   }
+
+  _formatDate(fechaString, hora) {
+    // Dividir la cadena en día, mes y año
+    const partesFecha = fechaString.split('/');
+    const day = parseInt(partesFecha[0], 10);
+    const month = parseInt(partesFecha[1], 10);
+    const year = parseInt(partesFecha[2], 10);
+    const fecha = new Date(year, month - 1, day);
+    return new Date(fecha.toISOString().substring(0, 11) + hora);
+  }
+
 }
 
 customElements.define('liga-mx-hrlv', LigaMxHrlv);
