@@ -54,7 +54,6 @@ class LigaMxHrlv extends LitElement {
     this.selectedTab = 0;
     this.provider = new GoogleAuthProvider();
     this.auth = getAuth();
-    signInWithRedirect(this.auth, this.provider);
   }
 
   render() {
@@ -84,15 +83,22 @@ class LigaMxHrlv extends LitElement {
   }
 
   firstUpdated() {
-    console.log("auth", this.auth);
+    console.log('auth', this.auth);
     getRedirectResult(this.auth)
       .then(result => {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential.accessToken;
-        const { user } = result;
-        console.log('token', token, 'user', user);
-        this._getMatches();
-        this._getTeams();
+        console.log('result', result);
+        if (result) {
+          console.log(1);
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential.accessToken;
+          const { user } = result;
+          console.log('token', token, 'user', user);
+          this._getMatches();
+          this._getTeams();
+        } else {
+          console.log(2, this.auth, this.provider);
+          signInWithRedirect(this.auth, this.provider);
+        }
       })
       .catch(error => {
         const credential = GoogleAuthProvider.credentialFromError(error);
