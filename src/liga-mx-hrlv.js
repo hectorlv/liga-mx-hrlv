@@ -4,7 +4,13 @@ import { LitElement, html } from 'lit';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { child, get, getDatabase, ref, update } from 'firebase/database';
-import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  getRedirectResult,
+  signInWithPopup,
+  signInWithRedirect,
+} from 'firebase/auth';
 import styles from './liga-mx-hrlv-styles.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
@@ -48,6 +54,7 @@ class LigaMxHrlv extends LitElement {
     this.selectedTab = 0;
     this.provider = new GoogleAuthProvider();
     this.auth = getAuth();
+    signInWithRedirect(this.auth, this.provider);
   }
 
   render() {
@@ -77,7 +84,21 @@ class LigaMxHrlv extends LitElement {
   }
 
   firstUpdated() {
-    signInWithPopup(this.auth, this.provider).then(result => {
+    console.log("auth", this.auth);
+    getRedirectResult(this.auth)
+      .then(result => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential.accessToken;
+        const { user } = result;
+        console.log('token', token, 'user', user);
+        this._getMatches();
+        this._getTeams();
+      })
+      .catch(error => {
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        console.error(error, credential);
+      });
+    /* signInWithPopup(this.auth, this.provider).then(result => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential.accessToken;
       const {user} = result;
@@ -87,7 +108,7 @@ class LigaMxHrlv extends LitElement {
     }).catch(error => {
       const credential = GoogleAuthProvider.credentialFromError(error);
       console.error(error, credential)
-    })
+    }) */
   }
 
   _getMatches() {
@@ -159,7 +180,6 @@ class LigaMxHrlv extends LitElement {
     const fecha = new Date(year, month - 1, day);
     return new Date(fecha.toISOString().substring(0, 11) + hora);
   }
-
 }
 
 customElements.define('liga-mx-hrlv', LigaMxHrlv);
