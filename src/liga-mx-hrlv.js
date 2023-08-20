@@ -30,6 +30,23 @@ const firebaseConfig = {
   measurementId: 'G-VKRRB5SGHD',
 };
 
+initializeApp(firebaseConfig);
+const provider = new GoogleAuthProvider();
+const auth = getAuth();
+await signInWithRedirect(auth, provider);
+// This will trigger a full page redirect away from your app
+
+// After returning from the redirect when your app initializes you can obtain the result
+const result = await getRedirectResult(auth);
+if (result) {
+  // This is the signed-in user
+  const { user } = result;
+  // This gives you a Facebook Access Token.
+  const credential = provider.credentialFromResult(auth, result);
+  const token = credential.accessToken;
+  console.log(user, token);
+}
+
 class LigaMxHrlv extends LitElement {
   static properties = {
     app: { type: Object },
@@ -46,14 +63,9 @@ class LigaMxHrlv extends LitElement {
 
   constructor() {
     super();
-    this.app = initializeApp(firebaseConfig);
-    this.analytics = getAnalytics(this.app);
-    this.database = getDatabase();
     this.matches = [];
     this.teams = [];
     this.selectedTab = 0;
-    this.provider = new GoogleAuthProvider();
-    this.auth = getAuth();
   }
 
   render() {
@@ -83,8 +95,8 @@ class LigaMxHrlv extends LitElement {
   }
 
   firstUpdated() {
-    console.log('auth', this.auth);
-    getRedirectResult(this.auth)
+    console.log('first');
+    /* getRedirectResult(this.auth)
       .then(result => {
         console.log('result', result);
         if (result) {
