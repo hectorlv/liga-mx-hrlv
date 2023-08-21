@@ -4,7 +4,13 @@ import { LitElement, html } from 'lit';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { child, get, getDatabase, ref, update } from 'firebase/database';
-import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  getRedirectResult,
+  signInWithPopup,
+  signInWithRedirect,
+} from 'firebase/auth';
 import styles from './liga-mx-hrlv-styles.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
@@ -24,6 +30,23 @@ const firebaseConfig = {
   measurementId: 'G-VKRRB5SGHD',
 };
 
+initializeApp(firebaseConfig);
+const provider = new GoogleAuthProvider();
+const auth = getAuth();
+await signInWithRedirect(auth, provider);
+// This will trigger a full page redirect away from your app
+
+// After returning from the redirect when your app initializes you can obtain the result
+const result = await getRedirectResult(auth);
+if (result) {
+  // This is the signed-in user
+  const { user } = result;
+  // This gives you a Facebook Access Token.
+  const credential = provider.credentialFromResult(auth, result);
+  const token = credential.accessToken;
+  console.log(user, token);
+}
+
 class LigaMxHrlv extends LitElement {
   static properties = {
     app: { type: Object },
@@ -40,14 +63,9 @@ class LigaMxHrlv extends LitElement {
 
   constructor() {
     super();
-    this.app = initializeApp(firebaseConfig);
-    this.analytics = getAnalytics(this.app);
-    this.database = getDatabase();
     this.matches = [];
     this.teams = [];
     this.selectedTab = 0;
-    this.provider = new GoogleAuthProvider();
-    this.auth = getAuth();
   }
 
   render() {
@@ -77,7 +95,28 @@ class LigaMxHrlv extends LitElement {
   }
 
   firstUpdated() {
-    signInWithPopup(this.auth, this.provider).then(result => {
+    console.log('first');
+    /* getRedirectResult(this.auth)
+      .then(result => {
+        console.log('result', result);
+        if (result) {
+          console.log(1);
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const token = credential.accessToken;
+          const { user } = result;
+          console.log('token', token, 'user', user);
+          this._getMatches();
+          this._getTeams();
+        } else {
+          console.log(2, this.auth, this.provider);
+          signInWithRedirect(this.auth, this.provider);
+        }
+      })
+      .catch(error => {
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        console.error(error, credential);
+      });
+    /* signInWithPopup(this.auth, this.provider).then(result => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential.accessToken;
       const {user} = result;
@@ -87,7 +126,7 @@ class LigaMxHrlv extends LitElement {
     }).catch(error => {
       const credential = GoogleAuthProvider.credentialFromError(error);
       console.error(error, credential)
-    })
+    }) */
   }
 
   _getMatches() {
@@ -159,7 +198,6 @@ class LigaMxHrlv extends LitElement {
     const fecha = new Date(year, month - 1, day);
     return new Date(fecha.toISOString().substring(0, 11) + hora);
   }
-
 }
 
 customElements.define('liga-mx-hrlv', LigaMxHrlv);
