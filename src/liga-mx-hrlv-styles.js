@@ -59,7 +59,7 @@ export default css`
   }
   
   .todayMatch {
-    background: green;
+    background: green !important;
     color: white;
   }
 `;
