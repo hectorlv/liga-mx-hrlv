@@ -114,7 +114,7 @@ class MatchesPage extends LitElement {
                       `
                     : html` <td>${match.golVisitante}</td> `}
                   <td>${match.jornada}</td>
-                  <td>${match.fecha}</td>
+                  <td>${this._formatDateddmmyyy(match.fecha)}</td>
                   <td>${match.hora}</td>
                   <td>${match.estadio}</td>
                   <td>
@@ -172,6 +172,14 @@ class MatchesPage extends LitElement {
       const findMatchDay = matchday === '' ? true : match.jornada === matchday;
       return findTeam && findMatchDay;
     });
+  }
+
+  _formatDateddmmyyy(fecha) {
+    const dia = fecha.getDate();
+    const mes = fecha.getMonth() + 1;
+    const anio = fecha.getFullYear();
+    const fechaFormateada = `${(dia < 10 ? '0' : '') + dia  }/${  mes < 10 ? '0' : ''  }${mes  }/${  anio}`;
+    return fechaFormateada;
   }
 }
 
