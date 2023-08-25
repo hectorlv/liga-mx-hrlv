@@ -51,7 +51,7 @@ class MatchesPage extends LitElement {
             )}
           </md-filled-select>
           <md-filled-select
-            id="matchdaySelect"
+            id="matchDaySelect"
             label="Jornada"
             @change="${this._filtersChanged}"
           >
@@ -165,20 +165,20 @@ class MatchesPage extends LitElement {
       this.shadowRoot.querySelector('#teamsSelect').value === ''
         ? ''
         : this.teams[this.shadowRoot.querySelector('#teamsSelect').value];
-    const matchday = this.shadowRoot.querySelector('#matchdaySelect').value;
+    const matchDay = this.shadowRoot.querySelector('#matchDaySelect').value;
     this.matchesRender = this.matches.filter(match => {
       const findTeam =
         team === '' ? true : match.local === team || match.visitante === team;
-      const findMatchDay = matchday === '' ? true : match.jornada === matchday;
+      const findMatchDay = matchDay === '' ? true : match.jornada === matchDay;
       return findTeam && findMatchDay;
     });
   }
 
   _formatDateddmmyyy(fecha) {
-    const dia = fecha.getDate();
-    const mes = fecha.getMonth() + 1;
-    const anio = fecha.getFullYear();
-    const fechaFormateada = `${(dia < 10 ? '0' : '') + dia  }/${  mes < 10 ? '0' : ''  }${mes  }/${  anio}`;
+    const day = fecha.getDate();
+    const month = fecha.getMonth() + 1;
+    const year = fecha.getFullYear();
+    const fechaFormateada = `${(day < 10 ? '0' : '') + day  }/${  month < 10 ? '0' : ''  }${month  }/${  year}`;
     return fechaFormateada;
   }
 }
