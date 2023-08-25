@@ -12,6 +12,7 @@ class MatchesPage extends LitElement {
     matches: { type: Array },
     teams: { type: Array },
     matchesRender: { type: Array },
+    todayDate: { type: Object}
   };
 
   static get styles() {
@@ -23,6 +24,7 @@ class MatchesPage extends LitElement {
     this.matches = [];
     this.teams = [];
     this.matchesRender = [];
+    this.todayDate = new Date();
   }
 
   updated(changed) {
@@ -86,7 +88,7 @@ class MatchesPage extends LitElement {
           <body>
             ${this.matchesRender.map(
               (match, index) => html`
-                <tr id="match${index}">
+                <tr id="match${index}" class="${this._getClass(match.fecha)}">
                   <td>${match.local}</td>
                   ${match.editMatch
                     ? html`
@@ -180,6 +182,10 @@ class MatchesPage extends LitElement {
     const year = fecha.getFullYear();
     const fechaFormateada = `${(day < 10 ? '0' : '') + day  }/${  month < 10 ? '0' : ''  }${month  }/${  year}`;
     return fechaFormateada;
+  }
+
+  _getClass(fecha) {
+    return fecha.getFullYear() === this.todayDate.getFullYear() && fecha.getMonth() === this.todayDate.getMonth() && fecha.getDate() === this.todayDate.getDate() ? "todayMatch" : ""; 
   }
 }
 

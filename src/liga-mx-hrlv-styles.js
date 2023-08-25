@@ -57,4 +57,9 @@ export default css`
   table.greyGridTable tfoot td {
     font-size: 14px;
   }
+  
+  .todayMatch {
+    background: green;
+    color: white;
+  }
 `;
