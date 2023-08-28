@@ -29,7 +29,7 @@
     "@rollup/plugin-node-resolve": "^15.2.1",
     "@web/dev-server": "^0.3.0",
     "@web/rollup-plugin-html": "^2.0.0",
-    "@web/rollup-plugin-import-meta-assets": "^2.0.0",
+    "@web/rollup-plugin-import-meta-assets": "^2.0.2",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "deepmerge": "^4.2.2",
     "eslint": "^8.47.0",
