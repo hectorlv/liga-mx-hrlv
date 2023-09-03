@@ -7,12 +7,15 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
 
+/**
+ * Page for show the fixture
+ */
 class MatchesPage extends LitElement {
   static properties = {
     matches: { type: Array },
     teams: { type: Array },
     matchesRender: { type: Array },
-    todayDate: { type: Object}
+    todayDate: { type: Object },
   };
 
   static get styles() {
@@ -27,6 +30,10 @@ class MatchesPage extends LitElement {
     this.todayDate = new Date();
   }
 
+  /**
+   *
+   * @param {Map} changed
+   */
   updated(changed) {
     if (changed.has('matches')) {
       this.matchesRender = [...this.matches];
@@ -49,7 +56,7 @@ class MatchesPage extends LitElement {
                   value="${i}"
                   headline="${team}"
                 ></md-select-option>
-              `
+              `,
             )}
           </md-filled-select>
           <md-filled-select
@@ -60,14 +67,14 @@ class MatchesPage extends LitElement {
             <md-select-option selected></md-select-option>
             ${Array.from(
               { length: this.teams.length - 1 },
-              (_, i) => i + 1
+              (_, i) => i + 1,
             ).map(
               i => html`
                 <md-select-option
                   value="${i}"
                   headline="${i}"
                 ></md-select-option>
-              `
+              `,
             )}
           </md-filled-select>
         </div>
@@ -87,8 +94,11 @@ class MatchesPage extends LitElement {
           </head>
           <body>
             ${this.matchesRender.map(
-              (match, index) => html`
-                <tr id="match${index}" class="${this._getClass(match.fecha)}">
+              match => html`
+                <tr
+                  id="match${match.idMatch}"
+                  class="${this._getClass(match.fecha)}"
+                >
                   <td>${match.local}</td>
                   ${match.editMatch
                     ? html`
@@ -97,7 +107,7 @@ class MatchesPage extends LitElement {
                             type="number"
                             min="0"
                             .value="${match.golLocal}"
-                            id="golLocal${index}"
+                            id="golLocal${match.idMatch}"
                           />
                         </td>
                       `
@@ -110,25 +120,45 @@ class MatchesPage extends LitElement {
                             type="number"
                             min="0"
                             .value="${match.golVisitante}"
-                            id="golVisitante${index}"
+                            id="golVisitante${match.idMatch}"
                           />
                         </td>
                       `
                     : html` <td>${match.golVisitante}</td> `}
                   <td>${match.jornada}</td>
-                  <td>${this._formatDateddmmyyy(match.fecha)}</td>
-                  <td>${match.hora}</td>
+                  ${match.editMatch
+                    ? html`
+                        <td>
+                          <input
+                            type="text"
+                            .value="${this._formatDateddmmyyy(match.fecha)}"
+                            id="fecha${match.idMatch}"
+                          />
+                        </td>
+                      `
+                    : html`<td>${this._formatDateddmmyyy(match.fecha)}</td> `}
+                  ${match.editMatch
+                    ? html`
+                        <td>
+                          <input
+                            type="text"
+                            .value="${match.hora}"
+                            id="hora${match.idMatch}"
+                          />
+                        </td>
+                      `
+                    : html` <td>${match.hora}</td> `}
                   <td>${match.estadio}</td>
                   <td>
                     <iron-icon
-                      id="icon${index}"
-                      index="${index}"
+                      id="icon${match.idMatch}"
+                      index="${match.idMatch}"
                       icon="${match.editMatch ? 'check' : 'create'}"
                       @click="${this._editMatch}"
                     ></iron-icon>
                   </td>
                 </tr>
-              `
+              `,
             )}
           </body>
         </table>
@@ -136,32 +166,51 @@ class MatchesPage extends LitElement {
     `;
   }
 
+  /**
+   * Fires event edit-match when a match is changed
+   * @param {Event} e
+   */
   _editMatch(e) {
     const index = e.target.getAttribute('index');
-    if (!this.matches[index].editMatch) {
+    const match = this.matches.find(m => m.idMatch === Number(index));
+    if (!match.editMatch) {
       // Edit
-      this.matches[index].editMatch = true;
+      match.editMatch = true;
       this.requestUpdate();
     } else {
       // Update
       const golLocal = this.shadowRoot.querySelector(`#golLocal${index}`).value;
       const golVisitante = this.shadowRoot.querySelector(
-        `#golVisitante${index}`
+        `#golVisitante${index}`,
       ).value;
+      const fecha = this.shadowRoot.querySelector(`#fecha${index}`).value;
+      const hora = this.shadowRoot.querySelector(`#hora${index}`).value;
       const updates = {};
-      updates[`/matches/${this.matches[index].idMatch}/golLocal`] = Number(golLocal);
-      updates[`/matches/${this.matches[index].idMatch}/golVisitante`] =
-        Number(golVisitante);
+      updates[`/matches/${match.idMatch}/golLocal`] =
+        golLocal !== '' ? Number(golLocal) : '';
+      updates[`/matches/${match.idMatch}/golVisitante`] =
+        golVisitante !== '' ? Number(golVisitante) : '';
+      updates[`/matches/${match.idMatch}/fecha`] = fecha;
+      updates[`/matches/${match.idMatch}/hora`] = hora;
+      /**
+       * Fired when a match is edited
+       * @event edit-match
+       * @type: {Object}
+       * @property: {Object} detail Contains the new values
+       */
       this.dispatchEvent(
         new CustomEvent('edit-match', {
           bubbles: true,
           composed: true,
           detail: updates,
-        })
+        }),
       );
     }
   }
 
+  /**
+   * Filter the matches when selected options change
+   */
   _filtersChanged() {
     const team =
       this.shadowRoot.querySelector('#teamsSelect').value === ''
@@ -176,16 +225,36 @@ class MatchesPage extends LitElement {
     });
   }
 
+  /**
+   * Format a date to dd/MM/yyyy
+   * @param {Date} fecha 
+   * @returns String
+   */
   _formatDateddmmyyy(fecha) {
+    if (fecha === '') {
+      return '';
+    }
     const day = fecha.getDate();
     const month = fecha.getMonth() + 1;
     const year = fecha.getFullYear();
-    const fechaFormateada = `${(day < 10 ? '0' : '') + day  }/${  month < 10 ? '0' : ''  }${month  }/${  year}`;
+    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${
+      month < 10 ? '0' : ''
+    }${month}/${year}`;
     return fechaFormateada;
   }
 
+  /**
+   * Method to style matches for today
+   * @param {Date} fecha 
+   * @returns String
+   */
   _getClass(fecha) {
-    return fecha.getFullYear() === this.todayDate.getFullYear() && fecha.getMonth() === this.todayDate.getMonth() && fecha.getDate() === this.todayDate.getDate() ? "todayMatch" : ""; 
+    return fecha !== '' &&
+      fecha.getFullYear() === this.todayDate.getFullYear() &&
+      fecha.getMonth() === this.todayDate.getMonth() &&
+      fecha.getDate() === this.todayDate.getDate()
+      ? 'todayMatch'
+      : '';
   }
 }
 

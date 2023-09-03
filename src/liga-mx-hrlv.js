@@ -10,6 +10,7 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import './matches-page.js';
 import './table-page.js';
+import './playoff-page.js';
 import '@material/web/tabs/tabs.js';
 import '@material/web/tabs/tab.js';
 
@@ -24,6 +25,9 @@ const firebaseConfig = {
   measurementId: 'G-VKRRB5SGHD',
 };
 
+/**
+ * Main class for LigaMX
+ */
 class LigaMxHrlv extends LitElement {
   static properties = {
     app: { type: Object },
@@ -32,6 +36,7 @@ class LigaMxHrlv extends LitElement {
     matches: { type: Array },
     teams: { type: Array },
     selectedTab: { type: Number },
+    table: { type: Array },
   };
 
   static get styles() {
@@ -46,6 +51,7 @@ class LigaMxHrlv extends LitElement {
     this.matches = [];
     this.teams = [];
     this.selectedTab = 0;
+    this.table = [];
   }
 
   render() {
@@ -54,21 +60,9 @@ class LigaMxHrlv extends LitElement {
         <md-tabs @change="${this._tabChanged}">
           <md-tab>Calendario</md-tab>
           <md-tab>Tabla General</md-tab>
+          <md-tab>Liguilla</md-tab>
         </md-tabs>
-        ${this.selectedTab === 0
-          ? html`
-              <matches-page
-                .matches="${this.matches}"
-                .teams="${this.teams}"
-                @edit-match="${this._editMatch}"
-              ></matches-page>
-            `
-          : html`
-              <table-page
-                .matches="${this.matches}"
-                .teams="${this.teams}"
-              ></table-page>
-            `}
+        ${this._getTab()}
       </main>
       <p class="app-footer">Made with love by HRLV.</p>
     `;
@@ -79,6 +73,34 @@ class LigaMxHrlv extends LitElement {
     this._getTeams();
   }
 
+  _getTab() {
+    switch (this.selectedTab) {
+      case 0:
+        return html`
+          <matches-page
+            .matches="${this.matches}"
+            .teams="${this.teams}"
+            @edit-match="${this._editMatch}"
+          ></matches-page>
+        `;
+      case 1:
+        return html`
+          <table-page
+            .matches="${this.matches}"
+            .teams="${this.teams}"
+            @table-changed="${this.tableChanged}"
+          ></table-page>
+        `;
+      case 2:
+        return html` <playoff-page .table="${this.table}"></playoff-page> `;
+      default:
+        return html``;
+    }
+  }
+
+  /**
+   * Get matches list
+   */
   _getMatches() {
     const dbRef = ref(getDatabase());
     get(child(dbRef, '/matches'))
@@ -106,6 +128,9 @@ class LigaMxHrlv extends LitElement {
       });
   }
 
+  /**
+   * Get teams list
+   */
   _getTeams() {
     const dbRef = ref(getDatabase());
     get(child(dbRef, '/teams'))
@@ -121,6 +146,10 @@ class LigaMxHrlv extends LitElement {
       });
   }
 
+  /**
+   * Updates the selected match
+   * @param {Event} e
+   */
   _editMatch(e) {
     const db = getDatabase();
     const updates = e.detail;
@@ -133,11 +162,24 @@ class LigaMxHrlv extends LitElement {
       });
   }
 
+  /**
+   * Changes the content when a tab is selected
+   * @param {Event} e
+   */
   _tabChanged(e) {
     this.selectedTab = e.target.selected;
   }
 
+  /**
+   * Formats the date from a String
+   * @param {String} fechaString
+   * @param {String} hora
+   * @returns
+   */
   _formatDate(fechaString, hora) {
+    if (fechaString === '') {
+      return '';
+    }
     // Dividir la cadena en día, mes y año
     const partesFecha = fechaString.split('/');
     const day = parseInt(partesFecha[0], 10);
@@ -145,6 +187,14 @@ class LigaMxHrlv extends LitElement {
     const year = parseInt(partesFecha[2], 10);
     const fecha = new Date(year, month - 1, day);
     return new Date(fecha.toISOString().substring(0, 11) + hora);
+  }
+
+  /**
+   * Change table property
+   * @param {Event} e 
+   */
+  tableChanged(e) {
+    this.table = e.detail;
   }
 }
 

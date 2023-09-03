@@ -52,7 +52,7 @@ export default {
           },
         ],
       ],
-      babelHelpers: 'bundled'
+      babelHelpers: 'bundled',
     }),
     /** Create and inject a service worker */
     generateSW({
