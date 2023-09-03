@@ -3,6 +3,9 @@
 import { LitElement, html } from 'lit';
 import styles from './liga-mx-hrlv-styles.js';
 
+/**
+ * Page for the table of positions
+ */
 class TablePage extends LitElement {
   static properties = {
     matches: { type: Array },
@@ -64,7 +67,7 @@ class TablePage extends LitElement {
                   <td>${team.dg}</td>
                   <td>${team.pts}</td>
                 </tr>
-              `
+              `,
             )}
           </body>
         </table>
@@ -72,6 +75,9 @@ class TablePage extends LitElement {
     `;
   }
 
+  /**
+   * Calculate the positions
+   */
   calculateTable() {
     const table = this.teams.map(team => {
       let jg = 0;
@@ -129,6 +135,19 @@ class TablePage extends LitElement {
       return b.gf - a.gf;
     });
     this.table = table;
+    /**
+     * Fired when a the table is changed
+     * @event table-changed
+     * @type: {Object}
+     * @property: {Object} detail Contains the table
+     */
+    this.dispatchEvent(
+      new CustomEvent('table-changed', {
+        bubbles: true,
+        composed: true,
+        detail: table,
+      }),
+    );
   }
 }
 
