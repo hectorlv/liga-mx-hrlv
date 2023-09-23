@@ -10,11 +10,15 @@ const FIREBASE_CONFIG = {
 };
 
 const LIGUILLA = {
-  playOff1: {
+  playIn1: {
     id: 153,
+    local: 6,
+    visitante: 7,
   },
-  playOff2: {
+  playIn2: {
     id: 154,
+    local: 8,
+    visitante: 9,
   },
   playOff3: {
     id: 155,

@@ -12,8 +12,8 @@ import './matches-page.js';
 import './table-page.js';
 import './playoff-page.js';
 import '@material/web/tabs/tabs.js';
-import '@material/web/tabs/tab.js';
-import { FIREBASE_CONFIG } from './constants.js';
+import '@material/web/tabs/primary-tab.js';
+import { FIREBASE_CONFIG, LIGUILLA } from './constants.js';
 
 /**
  * Main class for LigaMX
@@ -48,9 +48,9 @@ class LigaMxHrlv extends LitElement {
     return html`
       <main>
         <md-tabs @change="${this._tabChanged}">
-          <md-tab>Calendario</md-tab>
-          <md-tab>Tabla General</md-tab>
-          <md-tab>Liguilla</md-tab>
+          <md-primary-tab>Calendario</md-primary-tab>
+          <md-primary-tab>Tabla General</md-primary-tab>
+          <md-primary-tab>Liguilla</md-primary-tab>
         </md-tabs>
         ${this._getTab()}
       </main>
@@ -180,22 +180,19 @@ class LigaMxHrlv extends LitElement {
   }
 
   /**
-   * Change table property
-   * @param {Event} e
-   */
-  tableChanged(e) {
-    this.table = e.detail;
-  }
-
-  /**
    * Calculate the positions
    */
   _calculateTable() {
     const table = this.teams.map(team => {
-      const localMatches = this.matches.filter(match => match.local === team);
-      const visitanteMatches = this.matches.filter(match => match.visitante === team);
-      const teamStats = this.calculateTeamStats(team, localMatches.concat(visitanteMatches));
-      return teamStats; 
+      const teamMatches = this.matches.filter(
+        match =>
+          (match.local === team || match.visitante === team) &&
+          match.golLocal !== '' &&
+          match.golVisitante !== '' &&
+          match.jornada <= 17,
+      );
+      const teamStats = this.calculateTeamStats(team, teamMatches);
+      return teamStats;
     });
     table.sort((a, b) => {
       if (a.pts !== b.pts) {
@@ -207,6 +204,7 @@ class LigaMxHrlv extends LitElement {
       return b.gf - a.gf;
     });
     this.table = table;
+    this._calculatePlayOff();
   }
 
   calculateTeamStats(team, matches) {
@@ -217,28 +215,26 @@ class LigaMxHrlv extends LitElement {
     let gc = 0;
     for (const match of matches) {
       const { golLocal, golVisitante, local, visitante } = match;
-      if (golLocal !== '' && golVisitante !== '') {
-        if (local === team) {
-          if (golLocal > golVisitante) {
-            jg += 1;
-          } else if (golLocal < golVisitante) {
-            jp += 1;
-          } else {
-            je += 1;
-          }
-          gf += Number(golLocal);
-          gc += Number(golVisitante);
-        } else if (visitante === team) {
-          if (golLocal < golVisitante) {
-            jg += 1;
-          } else if (golLocal > golVisitante) {
-            jp += 1;
-          } else {
-            je += 1;
-          }
-          gf += Number(match.golVisitante);
-          gc += Number(match.golLocal);
+      if (local === team) {
+        if (golLocal > golVisitante) {
+          jg += 1;
+        } else if (golLocal < golVisitante) {
+          jp += 1;
+        } else {
+          je += 1;
         }
+        gf += Number(golLocal);
+        gc += Number(golVisitante);
+      } else if (visitante === team) {
+        if (golLocal < golVisitante) {
+          jg += 1;
+        } else if (golLocal > golVisitante) {
+          jp += 1;
+        } else {
+          je += 1;
+        }
+        gf += Number(match.golVisitante);
+        gc += Number(match.golLocal);
       }
     }
     return {
@@ -252,6 +248,33 @@ class LigaMxHrlv extends LitElement {
       dg: gf - gc,
       pts: 3 * jg + je,
     };
+  }
+
+  _calculatePlayOff() {
+    this._calculatePlayIn();
+  }
+
+  _calculatePlayIn() {
+    const playIn1 = {};
+    playIn1[`/matches/${LIGUILLA.playIn1.id}/local`] =
+      this.table[LIGUILLA.playIn1.local].equipo;
+    playIn1[`/matches/${LIGUILLA.playIn1.id}/visitante`] =
+      this.table[LIGUILLA.playIn1.visitante].equipo;
+    const playIn2 = {};
+    playIn2[`/matches/${LIGUILLA.playIn2.id}/local`] =
+      this.table[LIGUILLA.playIn2.local].equipo;
+    playIn2[`/matches/${LIGUILLA.playIn2.id}/visitante`] =
+      this.table[LIGUILLA.playIn2.visitante].equipo;
+    const db = getDatabase();
+    const updates = {...playIn1, ...playIn2};
+    console.log("updates", updates);
+    update(ref(db), updates)
+      .then(() => {
+        this._getMatches();
+      })
+      .catch(error => {
+        console.error(error);
+      });
   }
 }
 
