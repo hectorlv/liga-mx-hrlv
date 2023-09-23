@@ -27,7 +27,7 @@ class TablePage extends LitElement {
           <head>
             <tr>
               <th>Pos</th>
-              <th>Equipo</th>
+              <th colspan="2">Equipo</th>
               <th>JJ</th>
               <th>JG</th>
               <th>JE</th>
@@ -43,6 +43,7 @@ class TablePage extends LitElement {
               (team, i) => html`
                 <tr>
                   <td>${i + 1}</td>
+                  <td><img src="${`src/images/${team.equipo}.png`}" alt="logo${team.equipo}" class="logo"/></td>
                   <td>${team.equipo}</td>
                   <td>${team.jj}</td>
                   <td>${team.jg}</td>

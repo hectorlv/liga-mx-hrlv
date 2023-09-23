@@ -62,4 +62,8 @@ export default css`
     background: green !important;
     color: white;
   }
+
+  .logo {
+    height: 3em
+  }
 `;

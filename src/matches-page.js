@@ -81,9 +81,9 @@ class MatchesPage extends LitElement {
         <table class="greyGridTable">
           <head>
             <tr>
-              <th>Local</th>
+              <th colspan="2">Local</th>
               <th>Gol Local</th>
-              <th>Visitante</th>
+              <th colspan="2">Visitante</th>
               <th>Gol Visitante</th>
               <th>Jornada</th>
               <th>Fecha</th>
@@ -99,6 +99,13 @@ class MatchesPage extends LitElement {
                   id="match${match.idMatch}"
                   class="${this._getClass(match.fecha)}"
                 >
+                  <td>
+                    <img
+                      src="${`src/images/${match.local}.png`}"
+                      alt="logo${match.local}"
+                      class="logo"
+                    />
+                  </td>
                   <td>${match.local}</td>
                   ${match.editMatch
                     ? html`
@@ -112,6 +119,13 @@ class MatchesPage extends LitElement {
                         </td>
                       `
                     : html` <td>${match.golLocal}</td> `}
+                  <td>
+                    <img
+                      src="${`src/images/${match.visitante}.png`}"
+                      alt="logo${match.visitante}"
+                      class="logo"
+                    />
+                  </td>
                   <td>${match.visitante}</td>
                   ${match.editMatch
                     ? html`
