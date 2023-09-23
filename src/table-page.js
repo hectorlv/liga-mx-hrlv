@@ -8,8 +8,6 @@ import styles from './liga-mx-hrlv-styles.js';
  */
 class TablePage extends LitElement {
   static properties = {
-    matches: { type: Array },
-    teams: { type: Array },
     table: { type: Array },
   };
 
@@ -19,19 +17,7 @@ class TablePage extends LitElement {
 
   constructor() {
     super();
-    this.matches = [];
-    this.teams = [];
     this.table = [];
-  }
-
-  firstUpdated() {
-    this.calculateTable();
-  }
-
-  updated(changed) {
-    if (changed.has('matches')) {
-      this.calculateTable();
-    }
   }
 
   render() {
@@ -75,80 +61,7 @@ class TablePage extends LitElement {
     `;
   }
 
-  /**
-   * Calculate the positions
-   */
-  calculateTable() {
-    const table = this.teams.map(team => {
-      let jg = 0;
-      let je = 0;
-      let jp = 0;
-      let gf = 0;
-      let gc = 0;
-      const local = this.matches.filter(match => match.local === team);
-      const visitante = this.matches.filter(match => match.visitante === team);
-      local.forEach(match => {
-        if (match.golLocal !== '' && match.golVisitante !== '') {
-          if (match.golLocal > match.golVisitante) {
-            jg += 1;
-          } else if (match.golLocal < match.golVisitante) {
-            jp += 1;
-          } else {
-            je += 1;
-          }
-          gf += Number(match.golLocal);
-          gc += Number(match.golVisitante);
-        }
-      });
-      visitante.forEach(match => {
-        if (match.golLocal !== '' && match.golVisitante !== '') {
-          if (match.golLocal < match.golVisitante) {
-            jg += 1;
-          } else if (match.golLocal > match.golVisitante) {
-            jp += 1;
-          } else {
-            je += 1;
-          }
-          gf += Number(match.golVisitante);
-          gc += Number(match.golLocal);
-        }
-      });
-      return {
-        equipo: team,
-        jj: jg + je + jp,
-        jg,
-        je,
-        jp,
-        gf,
-        gc,
-        dg: gf - gc,
-        pts: 3 * jg + je,
-      };
-    });
-    table.sort((a, b) => {
-      if (a.pts !== b.pts) {
-        return b.pts - a.pts;
-      }
-      if (a.dg !== b.dg) {
-        return b.dg - a.dg;
-      }
-      return b.gf - a.gf;
-    });
-    this.table = table;
-    /**
-     * Fired when a the table is changed
-     * @event table-changed
-     * @type: {Object}
-     * @property: {Object} detail Contains the table
-     */
-    this.dispatchEvent(
-      new CustomEvent('table-changed', {
-        bubbles: true,
-        composed: true,
-        detail: table,
-      }),
-    );
-  }
+  
 }
 
 customElements.define('table-page', TablePage);

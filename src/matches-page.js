@@ -36,7 +36,7 @@ class MatchesPage extends LitElement {
    */
   updated(changed) {
     if (changed.has('matches')) {
-      this.matchesRender = [...this.matches];
+      this._filtersChanged();
     }
   }
 
@@ -227,7 +227,7 @@ class MatchesPage extends LitElement {
 
   /**
    * Format a date to dd/MM/yyyy
-   * @param {Date} fecha 
+   * @param {Date} fecha
    * @returns String
    */
   _formatDateddmmyyy(fecha) {
@@ -245,7 +245,7 @@ class MatchesPage extends LitElement {
 
   /**
    * Method to style matches for today
-   * @param {Date} fecha 
+   * @param {Date} fecha
    * @returns String
    */
   _getClass(fecha) {

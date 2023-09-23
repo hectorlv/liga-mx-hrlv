@@ -13,17 +13,7 @@ import './table-page.js';
 import './playoff-page.js';
 import '@material/web/tabs/tabs.js';
 import '@material/web/tabs/tab.js';
-
-const firebaseConfig = {
-  apiKey: 'AIzaSyC5d4WwcPNe8kHoYurl5qBm9HBF3hRTPMU',
-  authDomain: 'ligamx-b16f7.firebaseapp.com',
-  databaseURL: 'https://ligamx-b16f7-default-rtdb.firebaseio.com',
-  projectId: 'ligamx-b16f7',
-  storageBucket: 'ligamx-b16f7.appspot.com',
-  messagingSenderId: '363875455177',
-  appId: '1:363875455177:web:f96a1cd9f9863cac967d18',
-  measurementId: 'G-VKRRB5SGHD',
-};
+import { FIREBASE_CONFIG } from './constants.js';
 
 /**
  * Main class for LigaMX
@@ -45,7 +35,7 @@ class LigaMxHrlv extends LitElement {
 
   constructor() {
     super();
-    this.app = initializeApp(firebaseConfig);
+    this.app = initializeApp(FIREBASE_CONFIG);
     this.analytics = getAnalytics(this.app);
     this.database = getDatabase();
     this.matches = [];
@@ -68,9 +58,10 @@ class LigaMxHrlv extends LitElement {
     `;
   }
 
-  firstUpdated() {
-    this._getMatches();
-    this._getTeams();
+  async firstUpdated() {
+    await this._getMatches();
+    await this._getTeams();
+    this._calculateTable();
   }
 
   _getTab() {
@@ -87,8 +78,7 @@ class LigaMxHrlv extends LitElement {
         return html`
           <table-page
             .matches="${this.matches}"
-            .teams="${this.teams}"
-            @table-changed="${this.tableChanged}"
+            .table="${this.table}"
           ></table-page>
         `;
       case 2:
@@ -101,9 +91,9 @@ class LigaMxHrlv extends LitElement {
   /**
    * Get matches list
    */
-  _getMatches() {
+  async _getMatches() {
     const dbRef = ref(getDatabase());
-    get(child(dbRef, '/matches'))
+    await get(child(dbRef, '/matches'))
       .then(snapshot => {
         if (snapshot.exists()) {
           const response = snapshot.val();
@@ -131,9 +121,9 @@ class LigaMxHrlv extends LitElement {
   /**
    * Get teams list
    */
-  _getTeams() {
+  async _getTeams() {
     const dbRef = ref(getDatabase());
-    get(child(dbRef, '/teams'))
+    await get(child(dbRef, '/teams'))
       .then(snapshot => {
         if (snapshot.exists()) {
           this.teams = snapshot.val();
@@ -155,7 +145,7 @@ class LigaMxHrlv extends LitElement {
     const updates = e.detail;
     update(ref(db), updates)
       .then(() => {
-        this._getMatches();
+        this._getMatches().then(() => this._calculateTable());
       })
       .catch(error => {
         console.error(error);
@@ -191,10 +181,77 @@ class LigaMxHrlv extends LitElement {
 
   /**
    * Change table property
-   * @param {Event} e 
+   * @param {Event} e
    */
   tableChanged(e) {
     this.table = e.detail;
+  }
+
+  /**
+   * Calculate the positions
+   */
+  _calculateTable() {
+    const table = this.teams.map(team => {
+      const localMatches = this.matches.filter(match => match.local === team);
+      const visitanteMatches = this.matches.filter(match => match.visitante === team);
+      const teamStats = this.calculateTeamStats(team, localMatches.concat(visitanteMatches));
+      return teamStats; 
+    });
+    table.sort((a, b) => {
+      if (a.pts !== b.pts) {
+        return b.pts - a.pts;
+      }
+      if (a.dg !== b.dg) {
+        return b.dg - a.dg;
+      }
+      return b.gf - a.gf;
+    });
+    this.table = table;
+  }
+
+  calculateTeamStats(team, matches) {
+    let jg = 0;
+    let je = 0;
+    let jp = 0;
+    let gf = 0;
+    let gc = 0;
+    for (const match of matches) {
+      const { golLocal, golVisitante, local, visitante } = match;
+      if (golLocal !== '' && golVisitante !== '') {
+        if (local === team) {
+          if (golLocal > golVisitante) {
+            jg += 1;
+          } else if (golLocal < golVisitante) {
+            jp += 1;
+          } else {
+            je += 1;
+          }
+          gf += Number(golLocal);
+          gc += Number(golVisitante);
+        } else if (visitante === team) {
+          if (golLocal < golVisitante) {
+            jg += 1;
+          } else if (golLocal > golVisitante) {
+            jp += 1;
+          } else {
+            je += 1;
+          }
+          gf += Number(match.golVisitante);
+          gc += Number(match.golLocal);
+        }
+      }
+    }
+    return {
+      equipo: team,
+      jj: jg + je + jp,
+      jg,
+      je,
+      jp,
+      gf,
+      gc,
+      dg: gf - gc,
+      pts: 3 * jg + je,
+    };
   }
 }
 
