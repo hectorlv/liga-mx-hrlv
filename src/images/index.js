@@ -11,11 +11,11 @@ import monterrey from './Monterrey.png';
 import necaxa from './Necaxa.png';
 import pachuca from './Pachuca.png';
 import pueblaFc from './Puebla F.C..png';
-import universidadNacional from './Santos Laguna.png';
-import santosLaguna from './Tigres de la U.A.N.L..png';
+import santosLaguna from './Santos Laguna.png';
+import tigresDeLaUanl from './Tigres de la U.A.N.L..png';
 import tijuana from './Tijuana.png';
 import toluca from './Toluca.png';
-import tigresDeLaUanl from './Universidad Nacional.png';
+import universidadNacional from './Universidad Nacional.png';
 
 export {
   america,

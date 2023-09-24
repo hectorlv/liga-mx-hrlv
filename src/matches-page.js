@@ -17,6 +17,7 @@ class MatchesPage extends LitElement {
     teams: { type: Array },
     matchesRender: { type: Array },
     todayDate: { type: Object },
+    images: { type: Object },
   };
 
   static get styles() {
@@ -29,6 +30,13 @@ class MatchesPage extends LitElement {
     this.teams = [];
     this.matchesRender = [];
     this.todayDate = new Date();
+    const keys = Object.keys(images);
+    keys.forEach(key => {
+      // eslint-disable-next-line no-param-reassign
+      images[key].className = 'logo';
+    });
+    this.images = { ...images };
+    console.log('imagenes', this.images);
   }
 
   /**
@@ -102,7 +110,7 @@ class MatchesPage extends LitElement {
                 >
                   <td>
                     ${match.local.trim() !== ''
-                      ? html` ${images[LOGOS.find(t => t.equipo === match.local).img]} `
+                      ? html`${this._getImage(match.local)}`
                       : html``}
                   </td>
                   <td>${match.local}</td>
@@ -120,9 +128,7 @@ class MatchesPage extends LitElement {
                     : html` <td>${match.golLocal}</td> `}
                   <td>
                     ${match.visitante.trim() !== ''
-                      ? html`
-                          ${images[LOGOS.find(t => t.equipo === match.visitante).img]}
-                        `
+                      ? html` ${this._getImage(match.visitante)} `
                       : html``}
                   </td>
                   <td>${match.visitante}</td>
@@ -268,6 +274,11 @@ class MatchesPage extends LitElement {
       fecha.getDate() === this.todayDate.getDate()
       ? 'todayMatch'
       : '';
+  }
+
+  _getImage(equipo) {
+    const img = this.images[LOGOS.find(t => t.equipo === equipo).img];
+    return html`<img src="${img.src}" class="${img.className}"/>`;
   }
 }
 
