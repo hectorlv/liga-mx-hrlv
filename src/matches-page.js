@@ -6,7 +6,8 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
-
+import * as images from './images/index.js';
+import { LOGOS } from './constants.js';
 /**
  * Page for show the fixture
  */
@@ -16,6 +17,7 @@ class MatchesPage extends LitElement {
     teams: { type: Array },
     matchesRender: { type: Array },
     todayDate: { type: Object },
+    images: { type: Object },
   };
 
   static get styles() {
@@ -28,6 +30,13 @@ class MatchesPage extends LitElement {
     this.teams = [];
     this.matchesRender = [];
     this.todayDate = new Date();
+    const keys = Object.keys(images);
+    keys.forEach(key => {
+      // eslint-disable-next-line no-param-reassign
+      images[key].className = 'logo';
+    });
+    this.images = { ...images };
+    console.log('imagenes', this.images);
   }
 
   /**
@@ -81,9 +90,9 @@ class MatchesPage extends LitElement {
         <table class="greyGridTable">
           <head>
             <tr>
-              <th>Local</th>
+              <th colspan="2">Local</th>
               <th>Gol Local</th>
-              <th>Visitante</th>
+              <th colspan="2">Visitante</th>
               <th>Gol Visitante</th>
               <th>Jornada</th>
               <th>Fecha</th>
@@ -99,6 +108,11 @@ class MatchesPage extends LitElement {
                   id="match${match.idMatch}"
                   class="${this._getClass(match.fecha)}"
                 >
+                  <td>
+                    ${match.local.trim() !== ''
+                      ? html`${this._getImage(match.local)}`
+                      : html``}
+                  </td>
                   <td>${match.local}</td>
                   ${match.editMatch
                     ? html`
@@ -112,6 +126,11 @@ class MatchesPage extends LitElement {
                         </td>
                       `
                     : html` <td>${match.golLocal}</td> `}
+                  <td>
+                    ${match.visitante.trim() !== ''
+                      ? html` ${this._getImage(match.visitante)} `
+                      : html``}
+                  </td>
                   <td>${match.visitante}</td>
                   ${match.editMatch
                     ? html`
@@ -255,6 +274,11 @@ class MatchesPage extends LitElement {
       fecha.getDate() === this.todayDate.getDate()
       ? 'todayMatch'
       : '';
+  }
+
+  _getImage(equipo) {
+    const img = this.images[LOGOS.find(t => t.equipo === equipo).img];
+    return html`<img src="${img.src}" class="${img.className}"/>`;
   }
 }
 

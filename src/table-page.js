@@ -2,6 +2,8 @@
 /* eslint-disable no-console */
 import { LitElement, html } from 'lit';
 import styles from './liga-mx-hrlv-styles.js';
+import * as images from './images/index.js';
+import { LOGOS } from './constants.js';
 
 /**
  * Page for the table of positions
@@ -27,7 +29,7 @@ class TablePage extends LitElement {
           <head>
             <tr>
               <th>Pos</th>
-              <th>Equipo</th>
+              <th colspan="2">Equipo</th>
               <th>JJ</th>
               <th>JG</th>
               <th>JE</th>
@@ -43,6 +45,9 @@ class TablePage extends LitElement {
               (team, i) => html`
                 <tr>
                   <td>${i + 1}</td>
+                  <td>
+                    ${images[LOGOS.find(t => t.equipo === team.equipo).img]}
+                  </td>
                   <td>${team.equipo}</td>
                   <td>${team.jj}</td>
                   <td>${team.jg}</td>
