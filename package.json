@@ -18,7 +18,8 @@
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "firebase": "^10.4.0",
-    "lit": "^2.8.0"
+    "lit": "^2.8.0",
+    "rollup-plugin-image": "^1.0.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.22.20",
@@ -40,6 +41,7 @@
     "rimraf": "^5.0.1",
     "rollup": "^2.60.0",
     "rollup-plugin-esbuild": "^5.0.0",
+    "rollup-plugin-image": "^1.0.2",
     "rollup-plugin-workbox": "^8.0.1"
   },
   "eslintConfig": {

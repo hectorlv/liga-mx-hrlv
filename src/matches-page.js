@@ -6,7 +6,8 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
-
+import * as images from './images/index.js';
+import { LOGOS } from './constants.js';
 /**
  * Page for show the fixture
  */
@@ -100,11 +101,9 @@ class MatchesPage extends LitElement {
                   class="${this._getClass(match.fecha)}"
                 >
                   <td>
-                    <img
-                      src="${`src/images/${match.local}.png`}"
-                      alt="logo${match.local}"
-                      class="logo"
-                    />
+                    ${match.local.trim() !== ''
+                      ? html` ${images[LOGOS.find(t => t.equipo === match.local).img]} `
+                      : html``}
                   </td>
                   <td>${match.local}</td>
                   ${match.editMatch
@@ -120,11 +119,11 @@ class MatchesPage extends LitElement {
                       `
                     : html` <td>${match.golLocal}</td> `}
                   <td>
-                    <img
-                      src="${`src/images/${match.visitante}.png`}"
-                      alt="logo${match.visitante}"
-                      class="logo"
-                    />
+                    ${match.visitante.trim() !== ''
+                      ? html`
+                          ${images[LOGOS.find(t => t.equipo === match.visitante).img]}
+                        `
+                      : html``}
                   </td>
                   <td>${match.visitante}</td>
                   ${match.editMatch

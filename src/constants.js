@@ -81,4 +81,25 @@ const LIGUILLA = {
   },
 };
 
-export { FIREBASE_CONFIG, LIGUILLA };
+const LOGOS = [
+  { equipo: 'América', img: 'america' },
+  { equipo: 'Atlas', img: 'atlas' },
+  { equipo: 'Club Atlético de San Luis', img: 'clubAtleticoDeSanLuis' },
+  { equipo: 'Cruz Azul', img: 'cruzAzul' },
+  { equipo: 'FC Juárez', img: 'fcJuarez' },
+  { equipo: 'Gallos Blancos de Querétaro', img: 'gallosBlancosDeQueretaro' },
+  { equipo: 'Guadalajara', img: 'guadalajara' },
+  { equipo: 'León', img: 'leon' },
+  { equipo: 'Mazatlán FC', img: 'mazatlanFc' },
+  { equipo: 'Monterrey', img: 'monterrey' },
+  { equipo: 'Necaxa', img: 'necaxa' },
+  { equipo: 'Pachuca', img: 'pachuca' },
+  { equipo: 'Puebla F.C.', img: 'pueblaFc' },
+  { equipo: 'Universidad Nacional', img: 'universidadNacional' },
+  { equipo: 'Santos Laguna', img: 'santosLaguna' },
+  { equipo: 'Tijuana', img: 'tijuana' },
+  { equipo: 'Toluca', img: 'toluca' },
+  { equipo: 'Tigres de la U.A.N.L.', img: 'tigresDeLaUanl' },
+];
+
+export { FIREBASE_CONFIG, LIGUILLA, LOGOS };
