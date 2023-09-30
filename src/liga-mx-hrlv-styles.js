@@ -31,6 +31,8 @@ export default css`
     width: 100%;
     text-align: center;
     border-collapse: collapse;
+    overflow-x: auto;
+}
   }
   table.greyGridTable td,
   table.greyGridTable th {
