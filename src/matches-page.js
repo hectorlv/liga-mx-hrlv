@@ -77,7 +77,7 @@ class MatchesPage extends LitElement {
               { length: this.teams.length - 1 },
               (_, i) => i + 1,
             ).map(
-              i => html`F
+              i => html`
                 <md-select-option value="${i}"
                   ><div slot="headline">${i}</div></md-select-option
                 >
