@@ -20,7 +20,7 @@ export default css`
     --md-menu-item-label-text-color: #1d1b20;
     --md-sys-color-surface: #e0e0e0;
     --md-menu-container-color: #e0e0e0;
-    --md-filled-field-content-color: #1d1b20;
+    --md-filled-select-text-field-input-text-color: #1d1b20;
      background-color:      var(--liga-mx-hrlv-background-color);
   }
 
