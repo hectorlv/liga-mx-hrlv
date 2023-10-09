@@ -7,7 +7,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
 import * as images from './images/index.js';
-import { LOGOS } from './constants.js';
+import { LOGOS, JORNADA_LIGUILLA } from './constants.js';
 /**
  * Page for show the fixture
  */
@@ -80,6 +80,12 @@ class MatchesPage extends LitElement {
               i => html`
                 <md-select-option value="${i}"
                   ><div slot="headline">${i}</div></md-select-option
+                >
+              `,
+            )}
+            ${JORNADA_LIGUILLA.map(i => html`
+                <md-select-option value="${i.id}"
+                  ><div slot="headline">${i.descripcion}</div></md-select-option
                 >
               `,
             )}
