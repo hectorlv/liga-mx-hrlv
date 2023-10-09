@@ -157,7 +157,7 @@ class LigaMxHrlv extends LitElement {
    * @param {Event} e
    */
   _tabChanged(e) {
-    this.selectedTab = e.target.selected;
+    this.selectedTab = e.target.activeTabIndex;
   }
 
   /**

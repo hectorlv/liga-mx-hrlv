@@ -61,10 +61,9 @@ class MatchesPage extends LitElement {
             <md-select-option selected></md-select-option>
             ${this.teams.map(
               (team, i) => html`
-                <md-select-option
-                  value="${i}"
-                  headline="${team}"
-                ></md-select-option>
+                <md-select-option value="${i}"
+                  ><div slot="headline">${team}</div></md-select-option
+                >
               `,
             )}
           </md-filled-select>
@@ -78,11 +77,10 @@ class MatchesPage extends LitElement {
               { length: this.teams.length - 1 },
               (_, i) => i + 1,
             ).map(
-              i => html`
-                <md-select-option
-                  value="${i}"
-                  headline="${i}"
-                ></md-select-option>
+              i => html`F
+                <md-select-option value="${i}"
+                  ><div slot="headline">${i}</div></md-select-option
+                >
               `,
             )}
           </md-filled-select>
@@ -278,7 +276,7 @@ class MatchesPage extends LitElement {
 
   _getImage(equipo) {
     const img = this.images[LOGOS.find(t => t.equipo === equipo).img];
-    return html`<img src="${img.src}" class="${img.className}"/>`;
+    return html`<img src="${img.src}" class="${img.className}" />`;
   }
 }
 
