@@ -102,4 +102,12 @@ const LOGOS = [
   { equipo: 'Tigres de la U.A.N.L.', img: 'tigresDeLaUanl' },
 ];
 
+const JORNADA_LIGUILLA = [
+  {id: 18, descripcion: "Playin 1"},
+  {id: 19, descripcion: "Playin 2"},
+  {id: 20, descripcion: "Cuartos de final"},
+  {id: 21, descripcion: "Semifinal"},
+  {id: 22, descripcion: "Final"},
+]
+
 export { FIREBASE_CONFIG, LIGUILLA, LOGOS };
