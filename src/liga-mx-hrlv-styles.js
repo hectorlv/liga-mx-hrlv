@@ -18,6 +18,9 @@ export default css`
     --md-sys-color-on-surface: #4caf50;
     --md-sys-color-secondary-container: #4caf50;
     --md-menu-item-label-text-color: #1d1b20;
+    --md-sys-color-surface: #e0e0e0;
+    --md-menu-container-color: #e0e0e0;
+    --md-filled-field-content-color: #1d1b20;
      background-color:      var(--liga-mx-hrlv-background-color);
   }
 
