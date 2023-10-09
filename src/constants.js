@@ -110,4 +110,4 @@ const JORNADA_LIGUILLA = [
   {id: 22, descripcion: "Final"},
 ]
 
-export { FIREBASE_CONFIG, LIGUILLA, LOGOS };
+export { FIREBASE_CONFIG, LIGUILLA, LOGOS, JORNADA_LIGUILLA };
