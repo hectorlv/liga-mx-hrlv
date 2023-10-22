@@ -162,7 +162,7 @@ class LigaMxHrlv extends LitElement {
    * @param {Event} e
    */
   _tabChanged(e) {
-    this.evento = JSON.stringify(e.target);
+    this.evento = "entro," + JSON.stringify(e);
     this.selectedTab = e.target.activeTabIndex;
   }
 
