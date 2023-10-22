@@ -54,6 +54,7 @@ class LigaMxHrlv extends LitElement {
         </md-tabs>
         ${this._getTab()}
       </main>
+      <p> this.selectedTab: ${this.selectedTab} </p>
       <p class="app-footer">Made with love by HRLV.</p>
     `;
   }
