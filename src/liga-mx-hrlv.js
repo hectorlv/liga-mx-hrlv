@@ -27,6 +27,7 @@ class LigaMxHrlv extends LitElement {
     teams: { type: Array },
     selectedTab: { type: Number },
     table: { type: Array },
+    evento: { type: String}
   };
 
   static get styles() {
@@ -42,6 +43,8 @@ class LigaMxHrlv extends LitElement {
     this.teams = [];
     this.selectedTab = 0;
     this.table = [];
+    this.evento = "";
+    
   }
 
   render() {
@@ -55,6 +58,7 @@ class LigaMxHrlv extends LitElement {
         ${this._getTab()}
       </main>
       <p> this.selectedTab: ${this.selectedTab} </p>
+      <p> this.evento: ${this.evento} </p>
       <p class="app-footer">Made with love by HRLV.</p>
     `;
   }
@@ -158,6 +162,7 @@ class LigaMxHrlv extends LitElement {
    * @param {Event} e
    */
   _tabChanged(e) {
+    this.evento = JSON.stringify(e.target);
     this.selectedTab = e.target.activeTabIndex;
   }
 
