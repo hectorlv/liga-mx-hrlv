@@ -11,7 +11,17 @@ export default css`
     color: #1a2b42;
     margin: 0 auto;
     text-align: center;
-    background-color: var(--liga-mx-hrlv-background-color);
+    --md-sys-color-primary: #4caf50;
+    --liga-mx-hrlv-background-color: #f7f7f7;
+    --md-sys-color-surface-container-highest: #e0e0e0;
+    --md-filled-select-text-field-container-color: #e0e0e0;
+    --md-sys-color-on-surface: #4caf50;
+    --md-sys-color-secondary-container: #4caf50;
+    --md-menu-item-label-text-color: #1d1b20;
+    --md-sys-color-surface: #e0e0e0;
+    --md-menu-container-color: #e0e0e0;
+    --md-filled-select-text-field-input-text-color: #1d1b20;
+     background-color:      var(--liga-mx-hrlv-background-color);
   }
 
   main {
@@ -31,6 +41,7 @@ export default css`
     width: 100%;
     text-align: center;
     border-collapse: collapse;
+    overflow-x: auto;
   }
   table.greyGridTable td,
   table.greyGridTable th {
@@ -59,11 +70,11 @@ export default css`
   }
 
   .todayMatch {
-    background: green !important;
+    background: #4caf50 !important;
     color: white;
   }
 
   .logo {
-    height: 3em
+    height: 3em;
   }
 `;

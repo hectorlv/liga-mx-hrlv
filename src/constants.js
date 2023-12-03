@@ -30,6 +30,8 @@ const LIGUILLA = {
     vuelta: {
       id: 160,
     },
+    local: 0,
+    visitante: 7,
   },
   quarter2: {
     ida: {
@@ -38,6 +40,8 @@ const LIGUILLA = {
     vuelta: {
       id: 161,
     },
+    local: 1,
+    visitante: 6,
   },
   quarter3: {
     ida: {
@@ -46,6 +50,8 @@ const LIGUILLA = {
     vuelta: {
       id: 162,
     },
+    local: 2,
+    visitante: 5,
   },
   quarter4: {
     ida: {
@@ -54,29 +60,35 @@ const LIGUILLA = {
     vuelta: {
       id: 163,
     },
-    semi1: {
-      ida: {
-        id: 164,
-      },
-      vuelta: {
-        id: 166,
-      },
+    local: 3,
+    visitante: 4,
+  },
+  semi1: {
+    ida: {
+      id: 164,
     },
-    semi2: {
-      ida: {
-        id: 165,
-      },
-      vuelta: {
-        id: 167,
-      },
+    vuelta: {
+      id: 166,
     },
-    final: {
-      ida: {
-        id: 168,
-      },
-      vuelta: {
-        id: 169,
-      },
+    local: 0,
+    visitante: 3,
+  },
+  semi2: {
+    ida: {
+      id: 165,
+    },
+    vuelta: {
+      id: 167,
+    },
+    local: 1,
+    visitante: 2,
+  },
+  final: {
+    ida: {
+      id: 168,
+    },
+    vuelta: {
+      id: 169,
     },
   },
 };
@@ -102,4 +114,12 @@ const LOGOS = [
   { equipo: 'Tigres de la U.A.N.L.', img: 'tigresDeLaUanl' },
 ];
 
-export { FIREBASE_CONFIG, LIGUILLA, LOGOS };
+const JORNADA_LIGUILLA = [
+  { id: 18, descripcion: "Playin 1" },
+  { id: 19, descripcion: "Playin 2" },
+  { id: 20, descripcion: "Cuartos de final" },
+  { id: 21, descripcion: "Semifinal" },
+  { id: 22, descripcion: "Final" },
+]
+
+export { FIREBASE_CONFIG, LIGUILLA, LOGOS, JORNADA_LIGUILLA };
