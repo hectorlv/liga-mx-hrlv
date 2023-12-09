@@ -398,6 +398,16 @@ class LigaMxHrlv extends LitElement {
     const db = getDatabase();
     const updates = { ...semis1, ...semis2 };
     update(ref(db), updates);
+    this.calculateFinal();
+  }
+  
+  calculateFinal() {
+    const final = {
+      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).local,
+      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.quarter1.vuelta.id).golLocal,
+      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.quarter1.vuelta.id).golVisitante
+    }
   }
 
 }
