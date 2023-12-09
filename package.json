@@ -18,7 +18,7 @@
     "@material/web": "^1.0.1",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
-    "firebase": "^10.6.0",
+    "firebase": "^10.7.0",
     "lit": "^3.1.0",
     "rollup-plugin-image": "^1.0.2"
   },
