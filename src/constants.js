@@ -90,6 +90,8 @@ const LIGUILLA = {
     vuelta: {
       id: 169,
     },
+    local: 1,
+    visitante: 2
   },
 };
 
