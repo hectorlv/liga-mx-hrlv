@@ -1,3 +1,5 @@
+/* eslint-disable class-methods-use-this */
+/* eslint-disable no-param-reassign */
 import { LitElement, html } from 'lit';
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
@@ -356,7 +358,7 @@ class LigaMxHrlv extends LitElement {
       golLocal: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.quarter4.vuelta.id).golLocal,
       golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.quarter4.vuelta.id).golVisitante
     }
-    if(quarter1.golLocal >= quarter1.golVisitante ) {
+    if (quarter1.golLocal >= quarter1.golVisitante) {
       this.table.find(team => team.equipo === quarter1.visitante).eliminado = true;
     } else {
       this.table.find(team => team.equipo === quarter1.local).eliminado = true;
@@ -398,6 +400,49 @@ class LigaMxHrlv extends LitElement {
     const db = getDatabase();
     const updates = { ...semis1, ...semis2 };
     update(ref(db), updates);
+    this.calculateFinal();
+  }
+
+  calculateFinal() {
+    const semis1 = {
+      local: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).local,
+      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.semi1.vuelta.id).golLocal,
+      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.semi1.vuelta.id).golVisitante
+    }
+    const semis2 = {
+      local: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).local,
+      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.semi2.vuelta.id).golLocal,
+      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.semi2.vuelta.id).golVisitante
+    }
+    
+    if (semis1.golLocal >= semis1.golVisitante) {
+      this.table.find(team => team.equipo === semis1.visitante).eliminado = true;
+    } else {
+      this.table.find(team => team.equipo === semis1.local).eliminado = true;
+    }
+    if (semis2.golLocal >= semis2.golVisitante) {
+      this.table.find(team => team.equipo === semis2.visitante).eliminado = true;
+    } else {
+      this.table.find(team => team.equipo === semis2.local).eliminado = true;
+    }
+    
+    const teams = this.table.filter(team => !team.eliminado);
+    const final = {};
+    final[`/matches/${LIGUILLA.final.ida.id}/local`] =
+      teams[LIGUILLA.final.visitante].equipo;
+    final[`/matches/${LIGUILLA.final.ida.id}/visitante`] =
+      teams[LIGUILLA.final.local].equipo;
+    final[`/matches/${LIGUILLA.final.vuelta.id}/local`] =
+      teams[LIGUILLA.final.local].equipo;
+    final[`/matches/${LIGUILLA.final.vuelta.id}/visitante`] =
+      teams[LIGUILLA.final.visitante].equipo;
+    
+    const db = getDatabase();
+    const updates = { ...final};
+    update(ref(db), updates);
+    
   }
 
 }

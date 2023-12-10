@@ -1,3 +1,4 @@
+/* eslint-disable lit-a11y/click-events-have-key-events */
 import { LitElement, html, css } from 'lit';
 
 class MyNavbar extends LitElement {
