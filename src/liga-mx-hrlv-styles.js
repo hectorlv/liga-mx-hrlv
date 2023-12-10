@@ -77,4 +77,14 @@ export default css`
   .logo {
     height: 3em;
   }
+
+  .checkboxToday {
+    margin: auto 0;
+  }
+
+  .matches-filter {
+    max-height: 350px;
+    display: flex;
+    justify-content: space-evenly
+  }
 `;

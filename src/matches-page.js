@@ -6,6 +6,7 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
+import '@material/web/checkbox/checkbox.js';
 import * as images from './images/index.js';
 import { LOGOS, JORNADA_LIGUILLA } from './constants.js';
 /**
@@ -52,7 +53,7 @@ class MatchesPage extends LitElement {
   render() {
     return html`
       <main>
-        <div style="max-height:350px">
+        <div class="matches-filter">
           <md-filled-select
             id="teamsSelect"
             label="Equipos"
@@ -60,12 +61,12 @@ class MatchesPage extends LitElement {
           >
             <md-select-option selected></md-select-option>
             ${this.teams.map(
-              (team, i) => html`
+      (team, i) => html`
                 <md-select-option value="${i}"
                   ><div slot="headline">${team}</div></md-select-option
                 >
               `,
-            )}
+    )}
           </md-filled-select>
           <md-filled-select
             id="matchDaySelect"
@@ -74,22 +75,26 @@ class MatchesPage extends LitElement {
           >
             <md-select-option selected></md-select-option>
             ${Array.from(
-              { length: this.teams.length - 1 },
-              (_, i) => i + 1,
-            ).map(
-              i => html`
+      { length: this.teams.length - 1 },
+      (_, i) => i + 1,
+    ).map(
+      i => html`
                 <md-select-option value="${i}"
                   ><div slot="headline">${i}</div></md-select-option
                 >
               `,
-            )}
+    )}
             ${JORNADA_LIGUILLA.map(i => html`
                 <md-select-option value="${i.id}"
                   ><div slot="headline">${i.descripcion}</div></md-select-option
                 >
               `,
-            )}
+    )}
           </md-filled-select>
+          <label class="checkboxToday">
+            <md-checkbox @change="${this.checkboxChanged}"></md-checkbox>
+            Partidos de hoy
+          </label>
         </div>
         <table class="greyGridTable">
           <head>
@@ -107,19 +112,19 @@ class MatchesPage extends LitElement {
           </head>
           <body>
             ${this.matchesRender.map(
-              match => html`
+      match => html`
                 <tr
                   id="match${match.idMatch}"
                   class="${this._getClass(match.fecha)}"
                 >
                   <td>
                     ${match.local.trim() !== ''
-                      ? html`${this._getImage(match.local)}`
-                      : html``}
+          ? html`${this._getImage(match.local)}`
+          : html``}
                   </td>
                   <td>${match.local}</td>
                   ${match.editMatch
-                    ? html`
+          ? html`
                         <td>
                           <input
                             type="number"
@@ -129,15 +134,15 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-                    : html` <td>${match.golLocal}</td> `}
+          : html` <td>${match.golLocal}</td> `}
                   <td>
                     ${match.visitante.trim() !== ''
-                      ? html` ${this._getImage(match.visitante)} `
-                      : html``}
+          ? html` ${this._getImage(match.visitante)} `
+          : html``}
                   </td>
                   <td>${match.visitante}</td>
                   ${match.editMatch
-                    ? html`
+          ? html`
                         <td>
                           <input
                             type="number"
@@ -147,10 +152,10 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-                    : html` <td>${match.golVisitante}</td> `}
+          : html` <td>${match.golVisitante}</td> `}
                   <td>${match.jornada}</td>
                   ${match.editMatch
-                    ? html`
+          ? html`
                         <td>
                           <input
                             type="text"
@@ -159,9 +164,9 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-                    : html`<td>${this._formatDateddmmyyy(match.fecha)}</td> `}
+          : html`<td>${this._formatDateddmmyyy(match.fecha)}</td> `}
                   ${match.editMatch
-                    ? html`
+          ? html`
                         <td>
                           <input
                             type="text"
@@ -170,7 +175,7 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-                    : html` <td>${match.hora}</td> `}
+          : html` <td>${match.hora}</td> `}
                   <td>${match.estadio}</td>
                   <td>
                     <iron-icon
@@ -182,7 +187,7 @@ class MatchesPage extends LitElement {
                   </td>
                 </tr>
               `,
-            )}
+    )}
           </body>
         </table>
       </main>
@@ -260,9 +265,8 @@ class MatchesPage extends LitElement {
     const day = fecha.getDate();
     const month = fecha.getMonth() + 1;
     const year = fecha.getFullYear();
-    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${
-      month < 10 ? '0' : ''
-    }${month}/${year}`;
+    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${month < 10 ? '0' : ''
+      }${month}/${year}`;
     return fechaFormateada;
   }
 
@@ -282,7 +286,28 @@ class MatchesPage extends LitElement {
 
   _getImage(equipo) {
     const img = this.images[LOGOS.find(t => t.equipo === equipo).img];
-    return html`<img src="${img.src}" class="${img.className}" />`;
+    return html`<img src="${img.src}" class="${img.className}" alt="equipo"/>`;
+  }
+
+  /**
+   * Fired when the checkbox change
+   * @param {Event} e
+   */
+  checkboxChanged(e) {
+    if (e.target.checked) {
+      const todayMatches = this.matches.filter(
+        match =>
+          match.fecha !== '' &&
+          match.fecha.getFullYear() === this.todayDate.getFullYear() &&
+          match.fecha.getMonth() === this.todayDate.getMonth() &&
+          match.fecha.getDate() === this.todayDate.getDate(),
+      );
+      this.matchesRender = todayMatches;
+      this.shadowRoot.querySelector('#teamsSelect').value = '';
+      this.shadowRoot.querySelector('#matchDaySelect').value = '';
+    } else {
+      this.matchesRender = this.matches;
+    }
   }
 }
 
