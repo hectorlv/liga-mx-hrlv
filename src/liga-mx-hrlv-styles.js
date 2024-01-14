@@ -26,6 +26,7 @@ export default css`
 
   main {
     flex-grow: 1;
+    margin-top: 35px;
   }
 
   .app-footer {

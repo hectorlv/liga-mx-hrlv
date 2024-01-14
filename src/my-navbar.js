@@ -8,6 +8,9 @@ class MyNavbar extends LitElement {
       background-color: #333;
       color: white;
       padding: 10px 0;
+      position: fixed;
+      z-index: 100;
+      width: 100%;
     }
     nav {
       display: flex;

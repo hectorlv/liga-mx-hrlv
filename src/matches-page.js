@@ -19,6 +19,7 @@ class MatchesPage extends LitElement {
     matchesRender: { type: Array },
     todayDate: { type: Object },
     images: { type: Object },
+    todayDateSelected: { type: Boolean },
   };
 
   static get styles() {
@@ -37,7 +38,7 @@ class MatchesPage extends LitElement {
       images[key].className = 'logo';
     });
     this.images = { ...images };
-    console.log('imagenes', this.images);
+    this.todayDateSelected = false;
   }
 
   /**
@@ -61,12 +62,12 @@ class MatchesPage extends LitElement {
           >
             <md-select-option selected></md-select-option>
             ${this.teams.map(
-      (team, i) => html`
+              (team, i) => html`
                 <md-select-option value="${i}"
                   ><div slot="headline">${team}</div></md-select-option
                 >
               `,
-    )}
+            )}
           </md-filled-select>
           <md-filled-select
             id="matchDaySelect"
@@ -75,21 +76,22 @@ class MatchesPage extends LitElement {
           >
             <md-select-option selected></md-select-option>
             ${Array.from(
-      { length: this.teams.length - 1 },
-      (_, i) => i + 1,
-    ).map(
-      i => html`
+              { length: this.teams.length - 1 },
+              (_, i) => i + 1,
+            ).map(
+              i => html`
                 <md-select-option value="${i}"
                   ><div slot="headline">${i}</div></md-select-option
                 >
               `,
-    )}
-            ${JORNADA_LIGUILLA.map(i => html`
+            )}
+            ${JORNADA_LIGUILLA.map(
+              i => html`
                 <md-select-option value="${i.id}"
                   ><div slot="headline">${i.descripcion}</div></md-select-option
                 >
               `,
-    )}
+            )}
           </md-filled-select>
           <label class="checkboxToday">
             <md-checkbox @change="${this.checkboxChanged}"></md-checkbox>
@@ -112,19 +114,19 @@ class MatchesPage extends LitElement {
           </head>
           <body>
             ${this.matchesRender.map(
-      match => html`
+              match => html`
                 <tr
                   id="match${match.idMatch}"
                   class="${this._getClass(match.fecha)}"
                 >
                   <td>
                     ${match.local.trim() !== ''
-          ? html`${this._getImage(match.local)}`
-          : html``}
+                      ? html`${this._getImage(match.local)}`
+                      : html``}
                   </td>
                   <td>${match.local}</td>
                   ${match.editMatch
-          ? html`
+                    ? html`
                         <td>
                           <input
                             type="number"
@@ -134,15 +136,15 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-          : html` <td>${match.golLocal}</td> `}
+                    : html` <td>${match.golLocal}</td> `}
                   <td>
                     ${match.visitante.trim() !== ''
-          ? html` ${this._getImage(match.visitante)} `
-          : html``}
+                      ? html` ${this._getImage(match.visitante)} `
+                      : html``}
                   </td>
                   <td>${match.visitante}</td>
                   ${match.editMatch
-          ? html`
+                    ? html`
                         <td>
                           <input
                             type="number"
@@ -152,10 +154,10 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-          : html` <td>${match.golVisitante}</td> `}
+                    : html` <td>${match.golVisitante}</td> `}
                   <td>${match.jornada}</td>
                   ${match.editMatch
-          ? html`
+                    ? html`
                         <td>
                           <input
                             type="text"
@@ -164,9 +166,9 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-          : html`<td>${this._formatDateddmmyyy(match.fecha)}</td> `}
+                    : html`<td>${this._formatDateddmmyyy(match.fecha)}</td> `}
                   ${match.editMatch
-          ? html`
+                    ? html`
                         <td>
                           <input
                             type="text"
@@ -175,7 +177,7 @@ class MatchesPage extends LitElement {
                           />
                         </td>
                       `
-          : html` <td>${match.hora}</td> `}
+                    : html` <td>${match.hora}</td> `}
                   <td>${match.estadio}</td>
                   <td>
                     <iron-icon
@@ -187,7 +189,7 @@ class MatchesPage extends LitElement {
                   </td>
                 </tr>
               `,
-    )}
+            )}
           </body>
         </table>
       </main>
@@ -240,16 +242,26 @@ class MatchesPage extends LitElement {
    * Filter the matches when selected options change
    */
   _filtersChanged() {
+    if (this.todayDateSelected) {
+      this.shadowRoot.querySelector('#teamsSelect').value = '';
+      this.shadowRoot.querySelector('#matchDaySelect').value = '';
+    }
     const team =
       this.shadowRoot.querySelector('#teamsSelect').value === ''
         ? ''
         : this.teams[this.shadowRoot.querySelector('#teamsSelect').value];
+
     const matchDay = this.shadowRoot.querySelector('#matchDaySelect').value;
+
     this.matchesRender = this.matches.filter(match => {
       const findTeam =
         team === '' ? true : match.local === team || match.visitante === team;
       const findMatchDay = matchDay === '' ? true : match.jornada === matchDay;
-      return findTeam && findMatchDay;
+      const todayDate = !this.todayDateSelected || this.todayDateSelected  && match.fecha !== '' &&
+        match.fecha.getFullYear() === this.todayDate.getFullYear() &&
+        match.fecha.getMonth() === this.todayDate.getMonth() &&
+        match.fecha.getDate() === this.todayDate.getDate();
+      return findTeam && findMatchDay && todayDate;
     });
   }
 
@@ -265,8 +277,9 @@ class MatchesPage extends LitElement {
     const day = fecha.getDate();
     const month = fecha.getMonth() + 1;
     const year = fecha.getFullYear();
-    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${month < 10 ? '0' : ''
-      }${month}/${year}`;
+    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${
+      month < 10 ? '0' : ''
+    }${month}/${year}`;
     return fechaFormateada;
   }
 
@@ -286,7 +299,7 @@ class MatchesPage extends LitElement {
 
   _getImage(equipo) {
     const img = this.images[LOGOS.find(t => t.equipo === equipo).img];
-    return html`<img src="${img.src}" class="${img.className}" alt="equipo"/>`;
+    return html`<img src="${img.src}" class="${img.className}" alt="equipo" />`;
   }
 
   /**
@@ -294,20 +307,8 @@ class MatchesPage extends LitElement {
    * @param {Event} e
    */
   checkboxChanged(e) {
-    if (e.target.checked) {
-      const todayMatches = this.matches.filter(
-        match =>
-          match.fecha !== '' &&
-          match.fecha.getFullYear() === this.todayDate.getFullYear() &&
-          match.fecha.getMonth() === this.todayDate.getMonth() &&
-          match.fecha.getDate() === this.todayDate.getDate(),
-      );
-      this.matchesRender = todayMatches;
-      this.shadowRoot.querySelector('#teamsSelect').value = '';
-      this.shadowRoot.querySelector('#matchDaySelect').value = '';
-    } else {
-      this.matchesRender = this.matches;
-    }
+    this.todayDateSelected = e.target.checked;
+    this._filtersChanged();
   }
 }
 

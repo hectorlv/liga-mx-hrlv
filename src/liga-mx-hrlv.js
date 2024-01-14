@@ -49,8 +49,8 @@ class LigaMxHrlv extends LitElement {
 
   render() {
     return html`
+      <my-navbar  @nav-clicked="${this._tabChanged}"></my-navbar>
       <main>
-        <my-navbar  @nav-clicked="${this._tabChanged}"></my-navbar>
         ${this._getTab()}
       </main>
       <p class="app-footer">Made with love by HRLV.</p>
@@ -149,6 +149,12 @@ class LigaMxHrlv extends LitElement {
    * @param {Event} e
    */
   _tabChanged(e) {
+    // Hacer scroll hacia el inicio de la página
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    
     this.selectedTab = e.detail;
   }
 
