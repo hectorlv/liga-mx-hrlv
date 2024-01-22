@@ -19,14 +19,14 @@
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "firebase": "^10.7.1",
-    "lit": "^3.1.0",
+    "lit": "^3.1.1",
     "rollup-plugin-image": "^1.0.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.23.8",
     "@custom-elements-manifest/analyzer": "^0.9.0",
     "@open-wc/building-rollup": "^2.0.2",
-    "@open-wc/eslint-config": "^12.0.2",
+    "@open-wc/eslint-config": "^12.0.3",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@web/dev-server": "^0.4.1",
