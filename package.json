@@ -15,7 +15,7 @@
     "start": "web-dev-server"
   },
   "dependencies": {
-    "@material/web": "^1.1.1",
+    "@material/web": "^1.2.0",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "firebase": "^10.7.2",
@@ -42,7 +42,7 @@
     "prettier": "^3.2.4",
     "rimraf": "^5.0.5",
     "rollup": "^2.60.0",
-    "rollup-plugin-esbuild": "^6.1.0",
+    "rollup-plugin-esbuild": "^6.1.1",
     "rollup-plugin-image": "^1.0.2",
     "rollup-plugin-workbox": "^8.1.0"
   },
