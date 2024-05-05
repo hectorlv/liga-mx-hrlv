@@ -266,21 +266,26 @@ class LigaMxHrlv extends LitElement {
       this.table[LIGUILLA.playIn2.visitante].equipo;
     playIn2[`/matches/${LIGUILLA.playIn2.id}/estadio`] = this.getEstadio(this.table[LIGUILLA.playIn2.local].equipo);
     const playIn3 = {};
-    if (!this.matches[LIGUILLA.playIn1.id].golLocal >= 0 && !this.matches[LIGUILLA.playIn1.id].golVisitante >= 0) {
-      if (this.matches[LIGUILLA.playIn1.id].golLocal > this.matches[LIGUILLA.playIn1.id].golVisitante) {
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] = this.matches[LIGUILLA.playIn1.id].visitante;
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(this.matches[LIGUILLA.playIn1.id].visitante);
-      } else if (this.matches[LIGUILLA.playIn1.id].golLocal < this.matches[LIGUILLA.playIn1.id].golVisitante) {
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] = this.matches[LIGUILLA.playIn1.id].local;
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(this.matches[LIGUILLA.playIn1.id].local);
+    const playIn1Match = this.matches.find(x => x.idMatch === LIGUILLA.playIn1.id);
+    const playIn2Match = this.matches.find(x => x.idMatch === LIGUILLA.playIn2.id);
+    if (!playIn1Match.golLocal >= 0 && !playIn1Match.golVisitante >= 0) {
+      if (playIn1Match.golLocal > playIn1Match.golVisitante) {
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] = playIn1Match.visitante;
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(playIn1Match.visitante);
+      } else if (playIn1Match.golLocal < playIn1Match.golVisitante) {
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] = playIn1Match.local;
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(playIn1Match.local);
+        [this.table[LIGUILLA.playIn1.local], this.table[LIGUILLA.playIn1.visitante]] = [this.table[LIGUILLA.playIn1.visitante], this.table[LIGUILLA.playIn1.local]];
       }
     }
-    if (!this.matches[LIGUILLA.playIn2.id].golLocal >= 0 && !this.matches[LIGUILLA.playIn2.id].golVisitante >= 0) {
-      if (this.matches[LIGUILLA.playIn2.id].golLocal > this.matches[LIGUILLA.playIn2.id].golVisitante) {
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/visitante`] = this.matches[LIGUILLA.playIn2.id].local;
+    if (!playIn2Match.golLocal >= 0 && !playIn2Match.golVisitante >= 0) {
+      if (playIn2Match.golLocal > playIn2Match.golVisitante) {
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/visitante`] =
+          playIn2Match.local;
         this.table[LIGUILLA.playIn2.visitante].eliminado = true;
-      } else if (this.matches[LIGUILLA.playIn2.id].golLocal < this.matches[LIGUILLA.playIn2.id].golVisitante) {
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/visitante`] = this.matches[LIGUILLA.playIn2.id].visitante;
+      } else if (playIn2Match.golLocal < playIn2Match.golVisitante) {
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/visitante`] =
+          playIn2Match.visitante;
         this.table[LIGUILLA.playIn2.local].eliminado = true;
       }
     }
