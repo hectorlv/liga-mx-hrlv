@@ -235,6 +235,8 @@ class MatchesPage extends LitElement {
           detail: updates,
         }),
       );
+      match.editMatch = true;
+      this.requestUpdate();
     }
   }
 
