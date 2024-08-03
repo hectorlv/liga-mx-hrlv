@@ -14,6 +14,8 @@ import '@material/web/tabs/tabs.js';
 import '@material/web/tabs/primary-tab.js';
 import './my-navbar.js';
 import { FIREBASE_CONFIG, LIGUILLA } from './constants.js';
+import './login-page.js';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Main class for LigaMX
@@ -27,7 +29,8 @@ class LigaMxHrlv extends LitElement {
     teams: { type: Array },
     selectedTab: { type: String },
     table: { type: Array },
-    evento: { type: String }
+    evento: { type: String },
+    auth: { type: Object },
   };
 
   static get styles() {
@@ -41,9 +44,10 @@ class LigaMxHrlv extends LitElement {
     this.database = getDatabase();
     this.matches = [];
     this.teams = [];
-    this.selectedTab = "Calendario";
+    this.selectedTab = "Login";
     this.table = [];
     this.evento = "";
+    this.auth = getAuth(this.app);
 
   }
 
@@ -72,6 +76,12 @@ class LigaMxHrlv extends LitElement {
 
   _getTab() {
     switch (this.selectedTab) {
+      case 'Login':
+        return html`
+          <login-page 
+            .auth="${this.auth}"
+            @login-success="${this.loginSuccess}"></login-page>
+        `;
       case 'Calendario':
         return html`
           <matches-page
@@ -92,6 +102,10 @@ class LigaMxHrlv extends LitElement {
       default:
         return html``;
     }
+  }
+
+  loginSuccess(e) {
+    this.selectedTab = 'Calendario';
   }
 
   /**
@@ -141,7 +155,10 @@ class LigaMxHrlv extends LitElement {
   _editMatch(e) {
     const db = getDatabase();
     const updates = e.detail;
-    update(ref(db), updates);
+    update(ref(db), updates).then(() => {
+    }).catch((error) => {
+      console.error('Error updating match', error);
+    });
   }
 
   /**

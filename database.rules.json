@@ -1,8 +1,10 @@
 {
   "rules": {
-    ".read": "auth != null",
-    "matches": {
-      ".write": "auth.uid === 'BReSd5gCMvhwgzYZFQtoklgTI3g2'"
+    ".read": true,
+    ".write": "root.child('allowedWriters').child(auth.uid).exists()",
+    "allowedWriters": {
+      ".read": false,
+      ".write": "auth != null"
     }
   }
 }
