@@ -16,6 +16,7 @@ import './my-navbar.js';
 import { FIREBASE_CONFIG, LIGUILLA } from './constants.js';
 import './login-page.js';
 import { getAuth } from 'firebase/auth';
+import '@material/web/dialog/dialog.js';
 
 /**
  * Main class for LigaMX
@@ -31,6 +32,8 @@ class LigaMxHrlv extends LitElement {
     table: { type: Array },
     evento: { type: String },
     auth: { type: Object },
+    titleError: { type: String },
+    contentError: { type: String },
   };
 
   static get styles() {
@@ -44,20 +47,23 @@ class LigaMxHrlv extends LitElement {
     this.database = getDatabase();
     this.matches = [];
     this.teams = [];
-    this.selectedTab = "Login";
+    this.selectedTab = 'Login';
     this.table = [];
-    this.evento = "";
+    this.evento = '';
     this.auth = getAuth(this.app);
-
+    this.titleError = '';
+    this.contentError = '';
   }
 
   render() {
     return html`
-      <my-navbar  @nav-clicked="${this._tabChanged}"></my-navbar>
-      <main>
-        ${this._getTab()}
-      </main>
+      <my-navbar @nav-clicked="${this._tabChanged}"></my-navbar>
+      <main>${this._getTab()}</main>
       <p class="app-footer">Made with love by HRLV.</p>
+      <md-dialog id="dialogLiga" type="alert">
+        <div slot="headline">${this.titleError}</div>
+        <div slot="content">${this.contentError}</div>
+      </md-dialog>
     `;
   }
 
@@ -67,7 +73,7 @@ class LigaMxHrlv extends LitElement {
   }
 
   updated(properties) {
-    if (properties.has("matches") || properties.has("teams")) {
+    if (properties.has('matches') || properties.has('teams')) {
       if (this.matches.length > 0 && this.teams.length > 0) {
         this._calculateTable();
       }
@@ -78,9 +84,10 @@ class LigaMxHrlv extends LitElement {
     switch (this.selectedTab) {
       case 'Login':
         return html`
-          <login-page 
+          <login-page
             .auth="${this.auth}"
-            @login-success="${this.loginSuccess}"></login-page>
+            @login-success="${this.loginSuccess}"
+          ></login-page>
         `;
       case 'Calendario':
         return html`
@@ -131,7 +138,7 @@ class LigaMxHrlv extends LitElement {
       } else {
         this.matches = [];
       }
-    })
+    });
   }
 
   /**
@@ -145,7 +152,7 @@ class LigaMxHrlv extends LitElement {
       } else {
         this.teams = [];
       }
-    })
+    });
   }
 
   /**
@@ -155,10 +162,15 @@ class LigaMxHrlv extends LitElement {
   _editMatch(e) {
     const db = getDatabase();
     const updates = e.detail;
-    update(ref(db), updates).then(() => {
-    }).catch((error) => {
-      console.error('Error updating match', error);
-    });
+    update(ref(db), updates)
+      .then(() => {})
+      .catch(error => {
+        console.error('Error updating match', error);
+        this.titleError = 'Error updating match';
+        this.contentError = error;
+        const dialog = this.shadowRoot.querySelector('#dialogLiga');
+        dialog.open = true;
+      });
   }
 
   /**
@@ -169,9 +181,9 @@ class LigaMxHrlv extends LitElement {
     // Hacer scroll hacia el inicio de la página
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
-    
+
     this.selectedTab = e.detail;
   }
 
@@ -220,10 +232,9 @@ class LigaMxHrlv extends LitElement {
     });
     table.forEach((team, index) => {
       team.eliminado = index >= 10;
-    })
+    });
     this.table = table;
     this._calculatePlayIn();
-
   }
 
   calculateTeamStats(team, matches) {
@@ -275,24 +286,43 @@ class LigaMxHrlv extends LitElement {
       this.table[LIGUILLA.playIn1.local].equipo;
     playIn1[`/matches/${LIGUILLA.playIn1.id}/visitante`] =
       this.table[LIGUILLA.playIn1.visitante].equipo;
-    playIn1[`/matches/${LIGUILLA.playIn1.id}/estadio`] = this.getEstadio(this.table[LIGUILLA.playIn1.local].equipo);
+    playIn1[`/matches/${LIGUILLA.playIn1.id}/estadio`] = this.getEstadio(
+      this.table[LIGUILLA.playIn1.local].equipo,
+    );
     const playIn2 = {};
     playIn2[`/matches/${LIGUILLA.playIn2.id}/local`] =
       this.table[LIGUILLA.playIn2.local].equipo;
     playIn2[`/matches/${LIGUILLA.playIn2.id}/visitante`] =
       this.table[LIGUILLA.playIn2.visitante].equipo;
-    playIn2[`/matches/${LIGUILLA.playIn2.id}/estadio`] = this.getEstadio(this.table[LIGUILLA.playIn2.local].equipo);
+    playIn2[`/matches/${LIGUILLA.playIn2.id}/estadio`] = this.getEstadio(
+      this.table[LIGUILLA.playIn2.local].equipo,
+    );
     const playIn3 = {};
-    const playIn1Match = this.matches.find(x => x.idMatch === LIGUILLA.playIn1.id);
-    const playIn2Match = this.matches.find(x => x.idMatch === LIGUILLA.playIn2.id);
+    const playIn1Match = this.matches.find(
+      x => x.idMatch === LIGUILLA.playIn1.id,
+    );
+    const playIn2Match = this.matches.find(
+      x => x.idMatch === LIGUILLA.playIn2.id,
+    );
     if (!playIn1Match.golLocal >= 0 && !playIn1Match.golVisitante >= 0) {
       if (playIn1Match.golLocal > playIn1Match.golVisitante) {
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] = playIn1Match.visitante;
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(playIn1Match.visitante);
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] =
+          playIn1Match.visitante;
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(
+          playIn1Match.visitante,
+        );
       } else if (playIn1Match.golLocal < playIn1Match.golVisitante) {
         playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] = playIn1Match.local;
-        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(playIn1Match.local);
-        [this.table[LIGUILLA.playIn1.local], this.table[LIGUILLA.playIn1.visitante]] = [this.table[LIGUILLA.playIn1.visitante], this.table[LIGUILLA.playIn1.local]];
+        playIn3[`/matches/${LIGUILLA.playOff3.id}/estadio`] = this.getEstadio(
+          playIn1Match.local,
+        );
+        [
+          this.table[LIGUILLA.playIn1.local],
+          this.table[LIGUILLA.playIn1.visitante],
+        ] = [
+          this.table[LIGUILLA.playIn1.visitante],
+          this.table[LIGUILLA.playIn1.local],
+        ];
       }
     }
     if (!playIn2Match.golLocal >= 0 && !playIn2Match.golVisitante >= 0) {
@@ -307,11 +337,24 @@ class LigaMxHrlv extends LitElement {
       }
     }
 
-    if (!this.matches[LIGUILLA.playOff3.id].golLocal >= 0 && !this.matches[LIGUILLA.playOff3.id].golVisitante >= 0) {
-      if (this.matches[LIGUILLA.playOff3.id].golLocal > this.matches[LIGUILLA.playOff3.id].golVisitante) {
-        this.table.find(team => team.equipo === this.matches[LIGUILLA.playOff3.id].visitante).eliminado = true;
-      } else if (this.matches[LIGUILLA.playOff3.id].golLocal < this.matches[LIGUILLA.playOff3.id].golVisitante) {
-        this.table.find(team => team.equipo === this.matches[LIGUILLA.playOff3.id].local).eliminado = true;
+    if (
+      !this.matches[LIGUILLA.playOff3.id].golLocal >= 0 &&
+      !this.matches[LIGUILLA.playOff3.id].golVisitante >= 0
+    ) {
+      if (
+        this.matches[LIGUILLA.playOff3.id].golLocal >
+        this.matches[LIGUILLA.playOff3.id].golVisitante
+      ) {
+        this.table.find(
+          team => team.equipo === this.matches[LIGUILLA.playOff3.id].visitante,
+        ).eliminado = true;
+      } else if (
+        this.matches[LIGUILLA.playOff3.id].golLocal <
+        this.matches[LIGUILLA.playOff3.id].golVisitante
+      ) {
+        this.table.find(
+          team => team.equipo === this.matches[LIGUILLA.playOff3.id].local,
+        ).eliminado = true;
       }
     }
 
@@ -332,8 +375,11 @@ class LigaMxHrlv extends LitElement {
       quarters[LIGUILLA.quarter1.local].equipo;
     quarter1[`/matches/${LIGUILLA.quarter1.vuelta.id}/visitante`] =
       quarters[LIGUILLA.quarter1.visitante].equipo;
-    quarter1[`/matches/${LIGUILLA.quarter1.ida.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter1.visitante].equipo);
-    quarter1[`/matches/${LIGUILLA.quarter1.vuelta.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter1.local].equipo);
+    quarter1[`/matches/${LIGUILLA.quarter1.ida.id}/estadio`] = this.getEstadio(
+      quarters[LIGUILLA.quarter1.visitante].equipo,
+    );
+    quarter1[`/matches/${LIGUILLA.quarter1.vuelta.id}/estadio`] =
+      this.getEstadio(quarters[LIGUILLA.quarter1.local].equipo);
     const quarter2 = {};
     quarter2[`/matches/${LIGUILLA.quarter2.ida.id}/local`] =
       quarters[LIGUILLA.quarter2.visitante].equipo;
@@ -343,8 +389,11 @@ class LigaMxHrlv extends LitElement {
       quarters[LIGUILLA.quarter2.local].equipo;
     quarter2[`/matches/${LIGUILLA.quarter2.vuelta.id}/visitante`] =
       quarters[LIGUILLA.quarter2.visitante].equipo;
-    quarter2[`/matches/${LIGUILLA.quarter2.ida.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter2.visitante].equipo);
-    quarter2[`/matches/${LIGUILLA.quarter2.vuelta.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter2.local].equipo);
+    quarter2[`/matches/${LIGUILLA.quarter2.ida.id}/estadio`] = this.getEstadio(
+      quarters[LIGUILLA.quarter2.visitante].equipo,
+    );
+    quarter2[`/matches/${LIGUILLA.quarter2.vuelta.id}/estadio`] =
+      this.getEstadio(quarters[LIGUILLA.quarter2.local].equipo);
     const quarter3 = {};
     quarter3[`/matches/${LIGUILLA.quarter3.ida.id}/local`] =
       quarters[LIGUILLA.quarter3.visitante].equipo;
@@ -354,8 +403,11 @@ class LigaMxHrlv extends LitElement {
       quarters[LIGUILLA.quarter3.local].equipo;
     quarter3[`/matches/${LIGUILLA.quarter3.vuelta.id}/visitante`] =
       quarters[LIGUILLA.quarter3.visitante].equipo;
-    quarter3[`/matches/${LIGUILLA.quarter3.ida.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter3.visitante].equipo);
-    quarter3[`/matches/${LIGUILLA.quarter3.vuelta.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter3.local].equipo);
+    quarter3[`/matches/${LIGUILLA.quarter3.ida.id}/estadio`] = this.getEstadio(
+      quarters[LIGUILLA.quarter3.visitante].equipo,
+    );
+    quarter3[`/matches/${LIGUILLA.quarter3.vuelta.id}/estadio`] =
+      this.getEstadio(quarters[LIGUILLA.quarter3.local].equipo);
     const quarter4 = {};
     quarter4[`/matches/${LIGUILLA.quarter4.ida.id}/local`] =
       quarters[LIGUILLA.quarter4.visitante].equipo;
@@ -365,8 +417,11 @@ class LigaMxHrlv extends LitElement {
       quarters[LIGUILLA.quarter4.local].equipo;
     quarter4[`/matches/${LIGUILLA.quarter4.vuelta.id}/visitante`] =
       quarters[LIGUILLA.quarter4.visitante].equipo;
-    quarter4[`/matches/${LIGUILLA.quarter4.ida.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter4.visitante].equipo);
-    quarter4[`/matches/${LIGUILLA.quarter4.vuelta.id}/estadio`] = this.getEstadio(quarters[LIGUILLA.quarter4.local].equipo);
+    quarter4[`/matches/${LIGUILLA.quarter4.ida.id}/estadio`] = this.getEstadio(
+      quarters[LIGUILLA.quarter4.visitante].equipo,
+    );
+    quarter4[`/matches/${LIGUILLA.quarter4.vuelta.id}/estadio`] =
+      this.getEstadio(quarters[LIGUILLA.quarter4.local].equipo);
     const db = getDatabase();
     const updates = { ...quarter1, ...quarter2, ...quarter3, ...quarter4 };
     update(ref(db), updates);
@@ -375,46 +430,90 @@ class LigaMxHrlv extends LitElement {
 
   calculateSemiFinal() {
     const quarter1 = {
-      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).visitante,
-      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).local,
-      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.quarter1.vuelta.id).golLocal,
-      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.quarter1.vuelta.id).golVisitante
-    }
+      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id)
+        .visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id)
+        .local,
+      golLocal:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id)
+          .golVisitante +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter1.vuelta.id)
+          .golLocal,
+      golVisitante:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id)
+          .golLocal +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter1.vuelta.id)
+          .golVisitante,
+    };
     const quarter2 = {
-      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id).visitante,
-      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id).local,
-      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.quarter2.vuelta.id).golLocal,
-      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.quarter2.vuelta.id).golVisitante
-    }
+      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id)
+        .visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id)
+        .local,
+      golLocal:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id)
+          .golVisitante +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter2.vuelta.id)
+          .golLocal,
+      golVisitante:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter2.ida.id)
+          .golLocal +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter2.vuelta.id)
+          .golVisitante,
+    };
     const quarter3 = {
-      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id).visitante,
-      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id).local,
-      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.quarter3.vuelta.id).golLocal,
-      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.quarter3.vuelta.id).golVisitante
-    }
+      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id)
+        .visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id)
+        .local,
+      golLocal:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id)
+          .golVisitante +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter3.vuelta.id)
+          .golLocal,
+      golVisitante:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter3.ida.id)
+          .golLocal +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter3.vuelta.id)
+          .golVisitante,
+    };
     const quarter4 = {
-      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id).visitante,
-      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id).local,
-      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.quarter4.vuelta.id).golLocal,
-      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.quarter4.vuelta.id).golVisitante
-    }
+      local: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id)
+        .visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id)
+        .local,
+      golLocal:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id)
+          .golVisitante +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter4.vuelta.id)
+          .golLocal,
+      golVisitante:
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter4.ida.id)
+          .golLocal +
+        this.matches.find(x => x.idMatch === LIGUILLA.quarter4.vuelta.id)
+          .golVisitante,
+    };
     if (quarter1.golLocal >= quarter1.golVisitante) {
-      this.table.find(team => team.equipo === quarter1.visitante).eliminado = true;
+      this.table.find(team => team.equipo === quarter1.visitante).eliminado =
+        true;
     } else {
       this.table.find(team => team.equipo === quarter1.local).eliminado = true;
     }
     if (quarter2.golLocal >= quarter2.golVisitante) {
-      this.table.find(team => team.equipo === quarter2.visitante).eliminado = true;
+      this.table.find(team => team.equipo === quarter2.visitante).eliminado =
+        true;
     } else {
       this.table.find(team => team.equipo === quarter2.local).eliminado = true;
     }
     if (quarter3.golLocal >= quarter3.golVisitante) {
-      this.table.find(team => team.equipo === quarter3.visitante).eliminado = true;
+      this.table.find(team => team.equipo === quarter3.visitante).eliminado =
+        true;
     } else {
       this.table.find(team => team.equipo === quarter3.local).eliminado = true;
     }
     if (quarter4.golLocal >= quarter4.golVisitante) {
-      this.table.find(team => team.equipo === quarter4.visitante).eliminado = true;
+      this.table.find(team => team.equipo === quarter4.visitante).eliminado =
+        true;
     } else {
       this.table.find(team => team.equipo === quarter4.local).eliminado = true;
     }
@@ -428,8 +527,12 @@ class LigaMxHrlv extends LitElement {
       semis[LIGUILLA.semi1.local].equipo;
     semis1[`/matches/${LIGUILLA.semi1.vuelta.id}/visitante`] =
       semis[LIGUILLA.semi1.visitante].equipo;
-    semis1[`/matches/${LIGUILLA.semi1.ida.id}/estadio`] = this.getEstadio(semis[LIGUILLA.semi1.visitante].equipo);
-    semis1[`/matches/${LIGUILLA.semi1.vuelta.id}/estadio`] = this.getEstadio(semis[LIGUILLA.semi1.local].equipo);
+    semis1[`/matches/${LIGUILLA.semi1.ida.id}/estadio`] = this.getEstadio(
+      semis[LIGUILLA.semi1.visitante].equipo,
+    );
+    semis1[`/matches/${LIGUILLA.semi1.vuelta.id}/estadio`] = this.getEstadio(
+      semis[LIGUILLA.semi1.local].equipo,
+    );
     const semis2 = {};
     semis2[`/matches/${LIGUILLA.semi2.ida.id}/local`] =
       semis[LIGUILLA.semi2.visitante].equipo;
@@ -439,8 +542,12 @@ class LigaMxHrlv extends LitElement {
       semis[LIGUILLA.semi2.local].equipo;
     semis2[`/matches/${LIGUILLA.semi2.vuelta.id}/visitante`] =
       semis[LIGUILLA.semi2.visitante].equipo;
-    semis2[`/matches/${LIGUILLA.semi2.ida.id}/estadio`] = this.getEstadio(semis[LIGUILLA.semi2.visitante].equipo);
-    semis2[`/matches/${LIGUILLA.semi2.vuelta.id}/estadio`] = this.getEstadio(semis[LIGUILLA.semi2.local].equipo);
+    semis2[`/matches/${LIGUILLA.semi2.ida.id}/estadio`] = this.getEstadio(
+      semis[LIGUILLA.semi2.visitante].equipo,
+    );
+    semis2[`/matches/${LIGUILLA.semi2.vuelta.id}/estadio`] = this.getEstadio(
+      semis[LIGUILLA.semi2.local].equipo,
+    );
     const db = getDatabase();
     const updates = { ...semis1, ...semis2 };
     update(ref(db), updates);
@@ -449,25 +556,43 @@ class LigaMxHrlv extends LitElement {
 
   calculateFinal() {
     const semis1 = {
-      local: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).visitante,
-      visitante: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).local,
-      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.semi1.vuelta.id).golLocal,
-      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.semi1.vuelta.id).golVisitante
-    }
+      local: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id)
+        .visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id)
+        .local,
+      golLocal:
+        this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id)
+          .golVisitante +
+        this.matches.find(x => x.idMatch === LIGUILLA.semi1.vuelta.id).golLocal,
+      golVisitante:
+        this.matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).golLocal +
+        this.matches.find(x => x.idMatch === LIGUILLA.semi1.vuelta.id)
+          .golVisitante,
+    };
     const semis2 = {
-      local: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).visitante,
-      visitante: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).local,
-      golLocal: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).golVisitante + this.matches.find(x => x.idMatch === LIGUILLA.semi2.vuelta.id).golLocal,
-      golVisitante: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).golLocal + this.matches.find(x => x.idMatch === LIGUILLA.semi2.vuelta.id).golVisitante
-    }
+      local: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id)
+        .visitante,
+      visitante: this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id)
+        .local,
+      golLocal:
+        this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id)
+          .golVisitante +
+        this.matches.find(x => x.idMatch === LIGUILLA.semi2.vuelta.id).golLocal,
+      golVisitante:
+        this.matches.find(x => x.idMatch === LIGUILLA.semi2.ida.id).golLocal +
+        this.matches.find(x => x.idMatch === LIGUILLA.semi2.vuelta.id)
+          .golVisitante,
+    };
 
     if (semis1.golLocal >= semis1.golVisitante) {
-      this.table.find(team => team.equipo === semis1.visitante).eliminado = true;
+      this.table.find(team => team.equipo === semis1.visitante).eliminado =
+        true;
     } else {
       this.table.find(team => team.equipo === semis1.local).eliminado = true;
     }
     if (semis2.golLocal >= semis2.golVisitante) {
-      this.table.find(team => team.equipo === semis2.visitante).eliminado = true;
+      this.table.find(team => team.equipo === semis2.visitante).eliminado =
+        true;
     } else {
       this.table.find(team => team.equipo === semis2.local).eliminado = true;
     }
@@ -482,19 +607,21 @@ class LigaMxHrlv extends LitElement {
       teams[LIGUILLA.final.local].equipo;
     final[`/matches/${LIGUILLA.final.vuelta.id}/visitante`] =
       teams[LIGUILLA.final.visitante].equipo;
-    final[`/matches/${LIGUILLA.final.ida.id}/estadio`] = this.getEstadio(teams[LIGUILLA.final.visitante].equipo);
-    final[`/matches/${LIGUILLA.final.vuelta.id}/estadio`] = this.getEstadio(teams[LIGUILLA.final.local].equipo);
+    final[`/matches/${LIGUILLA.final.ida.id}/estadio`] = this.getEstadio(
+      teams[LIGUILLA.final.visitante].equipo,
+    );
+    final[`/matches/${LIGUILLA.final.vuelta.id}/estadio`] = this.getEstadio(
+      teams[LIGUILLA.final.local].equipo,
+    );
 
     const db = getDatabase();
     const updates = { ...final };
     update(ref(db), updates);
-
   }
 
   getEstadio(team) {
     return this.matches.find(x => x.local === team).estadio;
   }
-
 }
 
 customElements.define('liga-mx-hrlv', LigaMxHrlv);

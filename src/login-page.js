@@ -4,14 +4,19 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth';
+import '@material/web/dialog/dialog.js';
 class LoginPage extends LitElement {
   static properties = {
     auth: { type: Object },
+    titleError: { type: String },
+    contentError: { type: String },
   };
 
   constructor() {
     super();
     this.auth = null;
+    this.tittleError = '';
+    this.contentError = '';
   }
 
   static get styles() {
@@ -75,6 +80,10 @@ class LoginPage extends LitElement {
       <input id="password" type="password" placeholder="Password" />
       <button @click="${this.loginWithEmail}">Login with email</button>
       <button @click="${this.loginWithGoogle}">Login with google</button>
+      <md-dialog id="dialogLogin" type="alert">
+        <div slot="headline">${this.titleError}</div>
+        <div slot="content">${this.contentError}</div>
+      </md-dialog>
     `;
   }
 
@@ -99,6 +108,10 @@ class LoginPage extends LitElement {
           errorCode,
           errorMessage,
         });
+        this.titleError = 'Error al autenticar con email';
+        this.contentError = errorMessage;
+        const dialog = this.shadowRoot.querySelector('#dialogLogin');
+        dialog.open = true;
       });
   }
 
@@ -126,6 +139,10 @@ class LoginPage extends LitElement {
           email,
           credential,
         });
+        this.titleError = 'Error al autenticar con google';
+        this.contentError = errorMessage;
+        const dialog = this.shadowRoot.querySelector('#dialogLogin');
+        dialog.open = true;
       });
   }
 }
