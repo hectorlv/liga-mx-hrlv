@@ -21,7 +21,8 @@ export default css`
     --md-sys-color-surface: #e0e0e0;
     --md-menu-container-color: #e0e0e0;
     --md-filled-select-text-field-input-text-color: #1d1b20;
-     background-color:      var(--liga-mx-hrlv-background-color);
+    --md-dialog-container-color: #e0e0e0;
+    background-color: var(--liga-mx-hrlv-background-color);
   }
 
   main {
@@ -86,6 +87,46 @@ export default css`
   .matches-filter {
     max-height: 350px;
     display: flex;
-    justify-content: space-evenly
+    justify-content: space-evenly;
+  }
+
+  h1 {
+    font-size: 2em;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  p {
+    font-size: 1.2em;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  input {
+    width: 80%;
+    max-width: 300px;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+  }
+
+  button {
+    width: 80%;
+    max-width: 300px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4caf50;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  button:hover {
+    background-color: #45a049;
   }
 `;

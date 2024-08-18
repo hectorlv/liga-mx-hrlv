@@ -34,6 +34,7 @@ class LigaMxHrlv extends LitElement {
     auth: { type: Object },
     titleError: { type: String },
     contentError: { type: String },
+    user: { type: Object },
   };
 
   static get styles() {
@@ -53,11 +54,19 @@ class LigaMxHrlv extends LitElement {
     this.auth = getAuth(this.app);
     this.titleError = '';
     this.contentError = '';
+    this.user = {};
   }
 
   render() {
     return html`
-      <my-navbar @nav-clicked="${this._tabChanged}"></my-navbar>
+      ${this.selectedTab === 'Login'
+        ? html``
+        : html`
+            <my-navbar
+              .user=${this.user}
+              @nav-clicked="${this._tabChanged}"
+            ></my-navbar>
+          `}
       <main>${this._getTab()}</main>
       <p class="app-footer">Made with love by HRLV.</p>
       <md-dialog id="dialogLiga" type="alert">
@@ -113,6 +122,7 @@ class LigaMxHrlv extends LitElement {
 
   loginSuccess(e) {
     this.selectedTab = 'Calendario';
+    this.user = e.detail.user;
   }
 
   /**
