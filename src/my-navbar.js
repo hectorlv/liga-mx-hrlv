@@ -2,6 +2,15 @@
 import { LitElement, html, css } from 'lit';
 
 class MyNavbar extends LitElement {
+  static properties = {
+    user: { type: Object },
+  };
+
+  constructor() {
+    super();
+    this.user = null;
+  }
+
   static styles = css`
     :host {
       display: block;
@@ -34,6 +43,7 @@ class MyNavbar extends LitElement {
         <label @click="${this.navClicked}">Calendario</label>
         <label @click="${this.navClicked}">Tabla General</label>
         <label @click="${this.navClicked}">Liguilla</label>
+        <label>Usuario: ${this.user.email}</label>
       </nav>
     `;
   }
