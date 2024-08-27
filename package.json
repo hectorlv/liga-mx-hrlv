@@ -15,7 +15,7 @@
     "start": "web-dev-server"
   },
   "dependencies": {
-    "@material/web": "^2.0.0",
+    "@material/web": "^2.1.0",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "firebase": "^10.13.0",
@@ -23,7 +23,7 @@
     "rollup-plugin-image": "^1.0.2"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.25.3",
+    "@babel/preset-env": "^7.25.4",
     "@custom-elements-manifest/analyzer": "^0.10.3",
     "@open-wc/building-rollup": "^2.0.2",
     "@open-wc/eslint-config": "^12.0.3",
@@ -37,7 +37,7 @@
     "eslint": "^9.9.1",
     "eslint-config-prettier": "^9.1.0",
     "file-loader": "^6.2.0",
-    "husky": "^9.1.4",
+    "husky": "^9.1.5",
     "lint-staged": "^15.2.9",
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
