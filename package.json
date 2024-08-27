@@ -15,7 +15,7 @@
     "start": "web-dev-server"
   },
   "dependencies": {
-    "@material/web": "^2.0.0",
+    "@material/web": "^2.1.0",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "firebase": "^10.13.0",
