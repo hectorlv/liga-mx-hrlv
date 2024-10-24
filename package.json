@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
     "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
-    "build": "rimraf dist && rollup -c rollup.config.js && npm run analyze -- --exclude dist",
+    "build": "rimraf dist && rollup -c rollup.config.js --bundleConfigAsCjs && npm run analyze -- --exclude dist",
     "start:build:open": "npm run build && web-dev-server --root-dir dist --app-index index.html --open",
     "start:build": "npm run build && web-dev-server --root-dir dist --app-index index.html",
     "analyze": "cem analyze --litelement",
