@@ -171,7 +171,7 @@ class MatchesPage extends LitElement {
                     ? html`
                         <td>
                           <input
-                            type="text"
+                            type="time"
                             .value="${match.hora}"
                             id="hora${match.idMatch}"
                           />
