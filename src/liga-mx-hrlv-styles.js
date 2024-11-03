@@ -129,4 +129,19 @@ export default css`
   button:hover {
     background-color: #45a049;
   }
+
+  .calified {
+    background-color: #4caf50 !important;
+    color: white;
+  }
+
+  .playin {
+    background-color: #ff9800 !important;
+    color: white;
+  }
+
+  .eliminated {
+    background-color: #f44336 !important;
+    color: white;
+  }
 `;
