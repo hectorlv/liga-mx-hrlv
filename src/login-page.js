@@ -1,11 +1,5 @@
-import { LitElement, css, html } from 'lit';
-import {
-  getRedirectResult,
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
-} from 'firebase/auth';
+import { LitElement, html } from 'lit';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import '@material/web/dialog/dialog.js';
 import styles from './liga-mx-hrlv-styles.js';
 class LoginPage extends LitElement {
@@ -13,6 +7,8 @@ class LoginPage extends LitElement {
     auth: { type: Object },
     titleError: { type: String },
     contentError: { type: String },
+    email: { type: String },
+    password: { type: String },
   };
 
   constructor() {
@@ -20,6 +16,8 @@ class LoginPage extends LitElement {
     this.auth = null;
     this.tittleError = '';
     this.contentError = '';
+    this.email = '';
+    this.password = '';
   }
 
   static get styles() {
@@ -30,53 +28,50 @@ class LoginPage extends LitElement {
     return html`
       <h1>Login</h1>
       <p>Por favor, inicia sesión para continuar</p>
-      <input id="email" type="email" placeholder="Email" />
-      <input id="password" type="password" placeholder="Password" />
-      <button @click="${this.loginWithEmail}">Login with email</button>
-      <button @click="${this.loginWithGoogle}">Login with google</button>
-      <md-dialog id="dialogLogin" type="alert">
-        <div slot="headline">${this.titleError}</div>
-        <div slot="content">${this.contentError}</div>
-      </md-dialog>
+      <form id="loginForm" @submit="${this.loginWithEmail}">
+        <input
+          id="email"
+          type="email"
+          .value=${this.email}
+          placeholder="Email"
+          required
+          @input="${e => (this.email = e.target.value)}"
+        />
+        <input
+          id="password"
+          type="password"
+          placeholder="Password"
+          .value=${this.password}
+          required
+          @input="${e => (this.password = e.target.value)}"
+        />
+        <button type="submit">Login</button>
+      </form>
+        <md-dialog id="dialogLogin" type="alert">
+          <div slot="headline">${this.titleError}</div>
+          <div slot="content">${this.contentError}</div>
+        </md-dialog>
+      </form>
     `;
   }
 
   firstUpdated() {
-    getRedirectResult(this.auth)
-      .then(result => {
-        if (result && result.user) {
-          const user = result.user;
-          this.dispatchEvent(
-            new CustomEvent('login-success', {
-              detail: { user },
-              bubbles: true,
-              composed: true,
-            }),
-          );
-        }
-      })
-      .catch(error => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        const email = error.email;
-        const credential = GoogleAuthProvider.credentialFromError(error);
-        console.error('Error al autenticar con google:', {
-          errorCode,
-          errorMessage,
-          email,
-          credential,
-        });
-        this.titleError = 'Error al autenticar con google';
-        this.contentError = errorMessage;
-        const dialog = this.shadowRoot.querySelector('#dialogLogin');
-        dialog.open = true;
-      });
+    onAuthStateChanged(this.auth, user => {
+      if (user) {
+        this.dispatchEvent(
+          new CustomEvent('login-success', {
+            detail: { user },
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }
+    });
   }
 
-  loginWithEmail() {
-    const email = this.shadowRoot.querySelector('#email').value;
-    const password = this.shadowRoot.querySelector('#password').value;
-    signInWithEmailAndPassword(this.auth, email, password)
+  loginWithEmail(e) {
+    e.preventDefault();
+    signInWithEmailAndPassword(this.auth, this.email, this.password)
       .then(result => {
         const user = result.user;
         this.dispatchEvent(
@@ -99,11 +94,6 @@ class LoginPage extends LitElement {
         const dialog = this.shadowRoot.querySelector('#dialogLogin');
         dialog.open = true;
       });
-  }
-
-  loginWithGoogle() {
-    const provider = new GoogleAuthProvider();
-    signInWithRedirect(this.auth, provider);
   }
 }
 
