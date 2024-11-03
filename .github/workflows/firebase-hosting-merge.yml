@@ -17,13 +17,13 @@ jobs:
         id: create_tag
         run: |
           TAG_NAME="v$(date +'%Y%m%d%H%M%S')"  # Crea un tag con la fecha y hora actual
-          echo "::set-output name=TAG_NAME::$TAG_NAME"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
           git tag $TAG_NAME
           git push origin $TAG_NAME
       - name: Push Tag
-        if: steps.create_tag.outputs.TAG_NAME != ''
+        if: ${{ steps.create_tag.outputs.TAG_NAME != '' }}
         run: |
-          echo "Tag ${{ steps.create_tag.outputs.TAG_NAME }} created and pushed."
+          echo "Tag ${{ steps.create_tag.outputs.TAG_NAME != '' }} created and pushed."
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
