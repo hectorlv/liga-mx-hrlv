@@ -76,11 +76,6 @@ class LigaMxHrlv extends LitElement {
     `;
   }
 
-  firstUpdated() {
-    this._getMatches();
-    this._getTeams();
-  }
-
   updated(properties) {
     if (properties.has('matches') || properties.has('teams')) {
       if (this.matches.length > 0 && this.teams.length > 0) {
@@ -123,6 +118,8 @@ class LigaMxHrlv extends LitElement {
   loginSuccess(e) {
     this.selectedTab = 'Calendario';
     this.user = e.detail.user;
+    this._getMatches();
+    this._getTeams();
   }
 
   /**
