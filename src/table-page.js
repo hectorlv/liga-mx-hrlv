@@ -43,7 +43,7 @@ class TablePage extends LitElement {
           <body>
             ${this.table.map(
               (team, i) => html`
-                <tr>
+                <tr class="${this.getClass(i)}">
                   <td>${i + 1}</td>
                   <td>
                     ${images[LOGOS.find(t => t.equipo === team.equipo).img]}
@@ -66,7 +66,33 @@ class TablePage extends LitElement {
     `;
   }
 
-  
+  getClass(i) {
+    const team = this.table[i];
+    const team7 = this.table[6];
+    const team10 = this.table[9];
+    const team11 = this.table[10];
+    const TOTAL_MATCHES = 17;
+    if (
+      (team7.jj < TOTAL_MATCHES &&
+        team7.pts + 3 * (TOTAL_MATCHES - team7.jj) < team.pts) ||
+      (team7.jj === TOTAL_MATCHES && team7.pts <= team.pts)
+    ) {
+      return 'calified';
+    } else if (
+      (team11.jj < TOTAL_MATCHES &&
+        team11.pts + 3 * (TOTAL_MATCHES - team11.jj) < team.pts) ||
+      (team11.jj === TOTAL_MATCHES && team11.pts <= team.pts)
+    ) {
+      return 'playin';
+    } else if (
+      (team.jj < TOTAL_MATCHES &&
+        team.pts + 3 * (TOTAL_MATCHES - team.jj) < team10.pts) ||
+      (team.jj === TOTAL_MATCHES && team.pts <= team10.pts)
+    ) {
+      return 'eliminated';
+    }
+    return '';
+  }
 }
 
 customElements.define('table-page', TablePage);
