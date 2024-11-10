@@ -75,13 +75,13 @@ class TablePage extends LitElement {
     if (
       (team7.jj < TOTAL_MATCHES &&
         team7.pts + 3 * (TOTAL_MATCHES - team7.jj) < team.pts) ||
-      (team7.jj === TOTAL_MATCHES && team7.pts <= team.pts)
+      (team.equipo != team7.equipo && team7.jj === TOTAL_MATCHES && team7.pts <= team.pts)
     ) {
       return 'calified';
     } else if (
       (team11.jj < TOTAL_MATCHES &&
         team11.pts + 3 * (TOTAL_MATCHES - team11.jj) < team.pts) ||
-      (team11.jj === TOTAL_MATCHES && team11.pts <= team.pts)
+      (team.equipo != team11.equipo && team11.jj === TOTAL_MATCHES && team11.pts <= team.pts)
     ) {
       return 'playin';
     } else if (
