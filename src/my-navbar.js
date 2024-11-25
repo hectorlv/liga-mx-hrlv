@@ -4,11 +4,13 @@ import { LitElement, html, css } from 'lit';
 class MyNavbar extends LitElement {
   static properties = {
     user: { type: Object },
+    menuVisible: { type: Boolean },
   };
 
   constructor() {
     super();
     this.user = null;
+    this.menuVisible = false;
   }
 
   static styles = css`
@@ -35,17 +37,48 @@ class MyNavbar extends LitElement {
     a:hover {
       text-decoration: underline;
     }
+    .menu-button {
+      display: none;
+    }
+    @media (max-width: 37.5em) {
+      nav {
+        flex-direction: column;
+        display: none;
+      }
+      nav[visible] {
+        display: flex;
+      }
+      label {
+        margin: 10px 0;
+      }
+      .menu-button {
+        display: block;
+        background-color: #444;
+        color: white;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        font-size: 24px;
+      }
+    }
   `;
 
   render() {
     return html`
-      <nav>
+      <button class="menu-button" @click="${this.toggleMenu}">&#9776;</button>
+      <nav ?visible="${this.menuVisible}">
         <label @click="${this.navClicked}">Calendario</label>
         <label @click="${this.navClicked}">Tabla General</label>
         <label @click="${this.navClicked}">Liguilla</label>
         <label>Usuario: ${this.user.email}</label>
       </nav>
     `;
+  }
+
+  toggleMenu() {
+    this.menuVisible = !this.menuVisible;
   }
 
   navClicked(e) {
