@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-console */
-import { LitElement, html } from 'lit';
+import { LitElement, html, css } from 'lit';
 import styles from './liga-mx-hrlv-styles.js';
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
@@ -23,7 +23,55 @@ class MatchesPage extends LitElement {
   };
 
   static get styles() {
-    return [styles];
+    return [
+      styles,
+      css`
+        @media (max-width: 600px) {
+          .greyGridTable {
+            width: 100%;
+            font-size: 12px;
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+          }
+          .greyGridTable thead, .greyGridTable tbody {
+            display: block;
+          }
+          .greyGridTable th, .greyGridTable td {
+            padding: 5px;
+            box-sizing: border-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .greyGridTable tbody tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+          }
+          .matches-filter {
+            display: flex;
+            flex-direction: column;
+          }
+          .matches-filter md-filled-select {
+            width: 100%;
+            margin-bottom: 10px;
+          }
+          .greyGridTable th:nth-child(5),
+          .greyGridTable th:nth-child(6),
+          .greyGridTable th:nth-child(7),
+          .greyGridTable th:nth-child(8),
+          .greyGridTable td:nth-child(2),
+          .greyGridTable td:nth-child(5),
+          .greyGridTable td:nth-child(7),
+          .greyGridTable td:nth-child(8),
+          .greyGridTable td:nth-child(9),
+          .greyGridTable td:nth-child(10) {
+            display: none;
+          }
+        }
+      `
+    ];
   }
 
   constructor() {
@@ -39,6 +87,12 @@ class MatchesPage extends LitElement {
     });
     this.images = { ...images };
     this.todayDateSelected = false;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._adjustTable();
+    window.addEventListener('resize', this._adjustTable.bind(this));
   }
 
   /**
@@ -101,9 +155,9 @@ class MatchesPage extends LitElement {
         <table class="greyGridTable">
           <head>
             <tr>
-              <th colspan="2">Local</th>
+              <th class="dynamic-colspan">Local</th>
               <th>Gol Local</th>
-              <th colspan="2">Visitante</th>
+              <th class="dynamic-colspan">Visitante</th>
               <th>Gol Visitante</th>
               <th>Jornada</th>
               <th>Fecha</th>
@@ -311,6 +365,14 @@ class MatchesPage extends LitElement {
   checkboxChanged(e) {
     this.todayDateSelected = e.target.checked;
     this._filtersChanged();
+  }
+
+  _adjustTable() {
+    const dynamicColspan = this.shadowRoot.querySelectorAll('.dynamic-colspan');
+    const isMobile = window.innerWidth < 600;
+    dynamicColspan.forEach(col => {
+      col.colSpan = isMobile ? 1 : 2;
+    });
   }
 }
 
