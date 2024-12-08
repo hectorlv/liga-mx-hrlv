@@ -35,6 +35,7 @@ class LigaMxHrlv extends LitElement {
     titleError: { type: String },
     contentError: { type: String },
     user: { type: Object },
+    stadiums: { type: Array },
   };
 
   static get styles() {
@@ -55,6 +56,7 @@ class LigaMxHrlv extends LitElement {
     this.titleError = '';
     this.contentError = '';
     this.user = {};
+    this.stadiums = [];
   }
 
   render() {
@@ -98,6 +100,7 @@ class LigaMxHrlv extends LitElement {
           <matches-page
             .matches="${this.matches}"
             .teams="${this.teams}"
+            .stadiums="${this.stadiums}"
             @edit-match="${this._editMatch}"
           ></matches-page>
         `;
@@ -120,6 +123,7 @@ class LigaMxHrlv extends LitElement {
     this.user = e.detail.user;
     this._getMatches();
     this._getTeams();
+    this._getStadiums();
   }
 
   /**
@@ -170,7 +174,7 @@ class LigaMxHrlv extends LitElement {
     const db = getDatabase();
     const updates = e.detail;
     update(ref(db), updates)
-      .then(() => {})
+      .then(() => { })
       .catch(error => {
         console.error('Error updating match', error);
         this.titleError = 'Error updating match';
@@ -327,9 +331,9 @@ class LigaMxHrlv extends LitElement {
           this.table[LIGUILLA.playIn1.local],
           this.table[LIGUILLA.playIn1.visitante],
         ] = [
-          this.table[LIGUILLA.playIn1.visitante],
-          this.table[LIGUILLA.playIn1.local],
-        ];
+            this.table[LIGUILLA.playIn1.visitante],
+            this.table[LIGUILLA.playIn1.local],
+          ];
       }
     }
     if (!playIn2Match.golLocal >= 0 && !playIn2Match.golVisitante >= 0) {
@@ -628,6 +632,17 @@ class LigaMxHrlv extends LitElement {
 
   getEstadio(team) {
     return this.matches.find(x => x.local === team).estadio;
+  }
+
+  _getStadiums() {
+    const dbRef = ref(getDatabase(), '/stadiums');
+    onValue(dbRef, snapshot => {
+      if (snapshot.exists()) {
+        this.stadiums = snapshot.val();
+      } else {
+        this.stadiums = [];
+      }
+    });
   }
 }
 

@@ -20,6 +20,7 @@ class MatchesPage extends LitElement {
     todayDate: { type: Object },
     images: { type: Object },
     todayDateSelected: { type: Boolean },
+    stadiums: { type: Array },
   };
 
   static get styles() {
@@ -78,6 +79,7 @@ class MatchesPage extends LitElement {
     super();
     this.matches = [];
     this.teams = [];
+    this.stadiums = [];
     this.matchesRender = [];
     this.todayDate = new Date();
     const keys = Object.keys(images);
@@ -91,8 +93,11 @@ class MatchesPage extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this._adjustTable();
     window.addEventListener('resize', this._adjustTable.bind(this));
+  }
+  
+  firstUpdated() {
+    this._adjustTable();
   }
 
   /**
@@ -147,7 +152,8 @@ class MatchesPage extends LitElement {
               `,
             )}
           </md-filled-select>
-          <label class="checkboxToday">
+          <label class="checkbox
+          Today">
             <md-checkbox @change="${this.checkboxChanged}"></md-checkbox>
             Partidos de hoy
           </label>
@@ -232,7 +238,16 @@ class MatchesPage extends LitElement {
                         </td>
                       `
                     : html` <td>${match.hora}</td> `}
-                  <td>${match.estadio}</td>
+                  ${match.editMatch ? html`
+                  <md-filled-select id="estadio${match.idMatch}" @change="${this._stadiumChanged}">
+                    ${this.stadiums.map(
+                      stadium => html`
+                        <md-select-option value="${stadium}" ?selected=${stadium === match.estadio}>
+                          <div slot="headline">${stadium}</div></md-select-option>
+                      `,
+                    )}
+                  </md-filled-select>
+                  ` : html`<td>${match.estadio}</td>`}
                   <td>
                     <iron-icon
                       id="icon${match.idMatch}"
@@ -269,6 +284,7 @@ class MatchesPage extends LitElement {
       ).value;
       const fecha = this.shadowRoot.querySelector(`#fecha${index}`).value;
       const hora = this.shadowRoot.querySelector(`#hora${index}`).value;
+      const estadio = this.shadowRoot.querySelector(`#estadio${index}`).value;
       const updates = {};
       updates[`/matches/${match.idMatch}/golLocal`] =
         golLocal !== '' ? Number(golLocal) : '';
@@ -276,6 +292,8 @@ class MatchesPage extends LitElement {
         golVisitante !== '' ? Number(golVisitante) : '';
       updates[`/matches/${match.idMatch}/fecha`] = fecha;
       updates[`/matches/${match.idMatch}/hora`] = hora;
+      updates[`/matches/${match.idMatch}/estadio`] = estadio
+      console.log(updates);
       /**
        * Fired when a match is edited
        * @event edit-match
