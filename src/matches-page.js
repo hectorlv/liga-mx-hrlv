@@ -242,8 +242,8 @@ class MatchesPage extends LitElement {
                   <md-filled-select id="estadio${match.idMatch}" @change="${this._stadiumChanged}">
                     ${this.stadiums.map(
                       stadium => html`
-                        <md-select-option value="${stadium}" ?selected=${stadium === match.estadio}>
-                          <div slot="headline">${stadium}</div></md-select-option>
+                        <td><md-select-option value="${stadium}" ?selected=${stadium === match.estadio}>
+                          <div slot="headline">${stadium}</div></md-select-option></td>
                       `,
                     )}
                   </md-filled-select>
