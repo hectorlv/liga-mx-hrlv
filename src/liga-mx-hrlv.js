@@ -210,9 +210,9 @@ class LigaMxHrlv extends LitElement {
     }
     // Dividir la cadena en día, mes y año
     const partesFecha = fechaString.split('/');
-    const day = parseInt(partesFecha[0], 10);
+    const year = parseInt(partesFecha[0], 10);
     const month = parseInt(partesFecha[1], 10);
-    const year = parseInt(partesFecha[2], 10);
+    const day = parseInt(partesFecha[2], 10);
     const fecha = new Date(year, month - 1, day);
     return new Date(fecha.toISOString().substring(0, 11) + hora);
   }

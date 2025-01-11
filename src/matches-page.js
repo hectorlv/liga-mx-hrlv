@@ -220,8 +220,8 @@ class MatchesPage extends LitElement {
                     ? html`
                         <td>
                           <input
-                            type="text"
-                            .value="${this._formatDateddmmyyy(match.fecha)}"
+                            type="date"
+                            .value="${this._formatDateyyyymmdd(match.fecha)}"
                             id="fecha${match.idMatch}"
                           />
                         </td>
@@ -284,7 +284,7 @@ class MatchesPage extends LitElement {
       const golVisitante = this.shadowRoot.querySelector(
         `#golVisitante${index}`,
       ).value;
-      const fecha = this.shadowRoot.querySelector(`#fecha${index}`).value;
+      const fecha = this._formatDate(this.shadowRoot.querySelector(`#fecha${index}`).value);
       const hora = this.shadowRoot.querySelector(`#hora${index}`).value;
       const estadio = this.shadowRoot.querySelector(`#estadio${index}`).value;
       const updates = {};
@@ -295,7 +295,6 @@ class MatchesPage extends LitElement {
       updates[`/matches/${match.idMatch}/fecha`] = fecha;
       updates[`/matches/${match.idMatch}/hora`] = hora;
       updates[`/matches/${match.idMatch}/estadio`] = estadio
-      console.log(updates);
       /**
        * Fired when a match is edited
        * @event edit-match
@@ -357,6 +356,23 @@ class MatchesPage extends LitElement {
       month < 10 ? '0' : ''
     }${month}/${year}`;
     return fechaFormateada;
+  }
+
+  _formatDateyyyymmdd(fecha) {
+    if (fecha === '') {
+      return '';
+    }
+    const day = fecha.getDate();
+    const month = fecha.getMonth() + 1;
+    const year = fecha.getFullYear();
+    const fechaFormateada = `${year}-${(month < 10 ? '0' : '') + month}-${
+      day < 10 ? '0' : ''
+    }${day}`;
+    return fechaFormateada;
+  }
+
+  _formatDate(date) {
+    return date.replaceAll('-', '/');
   }
 
   /**
