@@ -18,7 +18,7 @@
     "@material/web": "^2.2.0",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
-    "firebase": "^11.1.0",
+    "firebase": "^11.2.0",
     "lit": "^3.2.1",
     "rollup-plugin-image": "^1.0.2"
   },
@@ -34,7 +34,7 @@
     "@web/rollup-plugin-import-meta-assets": "^2.2.1",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "deepmerge": "^4.2.2",
-    "eslint": "^9.17.0",
+    "eslint": "^9.19.0",
     "eslint-config-prettier": "^10.0.1",
     "file-loader": "^6.2.0",
     "husky": "^9.1.7",
