@@ -26,7 +26,7 @@ class TablePage extends LitElement {
     return html`
       <main>
         <table class="greyGridTable">
-          <head>
+          <thead>
             <tr>
               <th>Pos</th>
               <th colspan="2">Equipo</th>
@@ -39,8 +39,8 @@ class TablePage extends LitElement {
               <th>DG</th>
               <th>PTS</th>
             </tr>
-          </head>
-          <body>
+          </thead>
+          <tbody>
             ${this.table.map(
               (team, i) => html`
                 <tr class="${this.getClass(i)}">
@@ -60,7 +60,7 @@ class TablePage extends LitElement {
                 </tr>
               `,
             )}
-          </body>
+          </tbody>
         </table>
       </main>
     `;

@@ -159,7 +159,7 @@ class MatchesPage extends LitElement {
           </label>
         </div>
         <table class="greyGridTable">
-          <head>
+          <thead>
             <tr>
               <th class="dynamic-colspan">Local</th>
               <th>Gol Local</th>
@@ -171,8 +171,8 @@ class MatchesPage extends LitElement {
               <th>Estadio</th>
               <th></th>
             </tr>
-          </head>
-          <body>
+          </thead>
+          <tbody>
             ${this.matchesRender.map(
               match => html`
                 <tr
@@ -261,7 +261,7 @@ class MatchesPage extends LitElement {
                 </tr>
               `,
             )}
-          </body>
+          </tbody>
         </table>
       </main>
     `;
@@ -346,7 +346,7 @@ class MatchesPage extends LitElement {
    * @returns String
    */
   _formatDateddmmyyy(fecha) {
-    if (fecha === '') {
+    if (fecha == '') {
       return '';
     }
     const day = fecha.getDate();
@@ -381,7 +381,7 @@ class MatchesPage extends LitElement {
    * @returns String
    */
   _getClass(fecha) {
-    return fecha !== '' &&
+    return fecha != '' &&
       fecha.getFullYear() === this.todayDate.getFullYear() &&
       fecha.getMonth() === this.todayDate.getMonth() &&
       fecha.getDate() === this.todayDate.getDate()
