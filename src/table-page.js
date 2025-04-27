@@ -2,8 +2,7 @@
 /* eslint-disable no-console */
 import { LitElement, html } from 'lit';
 import styles from './liga-mx-hrlv-styles.js';
-import * as images from './images/index.js';
-import { LOGOS } from './constants.js';
+import { getTeamImage } from './imageUtils.js';
 
 /**
  * Page for the table of positions
@@ -46,7 +45,7 @@ class TablePage extends LitElement {
                 <tr class="${this.getClass(i)}">
                   <td>${i + 1}</td>
                   <td>
-                    ${images[LOGOS.find(t => t.equipo === team.equipo).img]}
+                    ${getTeamImage(team.equipo)}
                   </td>
                   <td>${team.equipo}</td>
                   <td>${team.jj}</td>
@@ -75,7 +74,7 @@ class TablePage extends LitElement {
     if (
       (team7.jj < TOTAL_MATCHES &&
         team7.pts + 3 * (TOTAL_MATCHES - team7.jj) < team.pts) ||
-      (team.equipo != team7.equipo && team7.jj === TOTAL_MATCHES && team7.pts <= team.pts)
+      (team.equipo != team7.equipo && team7.jj === TOTAL_MATCHES && i < 6 && team7.pts <= team.pts)
     ) {
       return 'calified';
     } else if (
