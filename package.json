@@ -41,7 +41,7 @@
     "lint-staged": "^16.1.2",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
-    "rollup": "^4.40.2",
+    "rollup": "^4.44.1",
     "rollup-plugin-esbuild": "^6.2.1",
     "rollup-plugin-image": "^1.0.2",
     "rollup-plugin-workbox": "^8.1.2"
