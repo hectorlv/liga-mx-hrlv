@@ -9,7 +9,7 @@ import '@material/web/select/select-option.js';
 import '@material/web/checkbox/checkbox.js';
 
 import { JORNADA_LIGUILLA } from './constants.js';
-import { formatDateddmmyyy, formatDateyyyymmdd, getMatchRowClass, replaceDateSeparator } from './dateUtils.js';
+import { formatDateDDMMYYYY, formatDateYYYYMMDD, getMatchRowClass, replaceDateSeparator } from './dateUtils.js';
 import { getTeamImage } from './imageUtils.js';
 /**
  * Page for show the fixture
@@ -216,12 +216,12 @@ class MatchesPage extends LitElement {
                         <td>
                           <input
                             type="date"
-                            .value="${formatDateyyyymmdd(match.fecha)}"
+                            .value="${formatDateYYYYMMDD(match.fecha)}"
                             id="fecha${match.idMatch}"
                           />
                         </td>
                       `
-                    : html`<td>${formatDateddmmyyy(match.fecha)}</td> `}
+                    : html`<td>${formatDateDDMMYYYY(match.fecha)}</td> `}
                   ${match.editMatch
                     ? html`
                         <td>
