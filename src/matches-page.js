@@ -7,8 +7,10 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
 import '@material/web/checkbox/checkbox.js';
-import * as images from './images/index.js';
-import { LOGOS, JORNADA_LIGUILLA } from './constants.js';
+
+import { JORNADA_LIGUILLA } from './constants.js';
+import { formatDateddmmyyy, formatDateyyyymmdd, getMatchRowClass, replaceDateSeparator } from './dateUtils.js';
+import { getTeamImage } from './imageUtils.js';
 /**
  * Page for show the fixture
  */
@@ -18,7 +20,6 @@ class MatchesPage extends LitElement {
     teams: { type: Array },
     matchesRender: { type: Array },
     todayDate: { type: Object },
-    images: { type: Object },
     todayDateSelected: { type: Boolean },
     stadiums: { type: Array },
   };
@@ -82,12 +83,6 @@ class MatchesPage extends LitElement {
     this.stadiums = [];
     this.matchesRender = [];
     this.todayDate = new Date();
-    const keys = Object.keys(images);
-    keys.forEach(key => {
-      // eslint-disable-next-line no-param-reassign
-      images[key].className = 'logo';
-    });
-    this.images = { ...images };
     this.todayDateSelected = false;
   }
 
@@ -159,7 +154,7 @@ class MatchesPage extends LitElement {
           </label>
         </div>
         <table class="greyGridTable">
-          <head>
+          <thead>
             <tr>
               <th class="dynamic-colspan">Local</th>
               <th>Gol Local</th>
@@ -171,17 +166,17 @@ class MatchesPage extends LitElement {
               <th>Estadio</th>
               <th></th>
             </tr>
-          </head>
-          <body>
+          </thead>
+          <tbody>
             ${this.matchesRender.map(
               match => html`
                 <tr
                   id="match${match.idMatch}"
-                  class="${this._getClass(match.fecha)}"
+                  class="${getMatchRowClass(match.fecha)}"
                 >
                   <td>
                     ${match.local.trim() !== ''
-                      ? html`${this._getImage(match.local)}`
+                      ? html`${getTeamImage(match.local)}`
                       : html``}
                   </td>
                   <td>${match.local}</td>
@@ -199,7 +194,7 @@ class MatchesPage extends LitElement {
                     : html` <td>${match.golLocal}</td> `}
                   <td>
                     ${match.visitante.trim() !== ''
-                      ? html` ${this._getImage(match.visitante)} `
+                      ? html` ${getTeamImage(match.visitante)} `
                       : html``}
                   </td>
                   <td>${match.visitante}</td>
@@ -221,12 +216,12 @@ class MatchesPage extends LitElement {
                         <td>
                           <input
                             type="date"
-                            .value="${this._formatDateyyyymmdd(match.fecha)}"
+                            .value="${formatDateyyyymmdd(match.fecha)}"
                             id="fecha${match.idMatch}"
                           />
                         </td>
                       `
-                    : html`<td>${this._formatDateddmmyyy(match.fecha)}</td> `}
+                    : html`<td>${formatDateddmmyyy(match.fecha)}</td> `}
                   ${match.editMatch
                     ? html`
                         <td>
@@ -261,7 +256,7 @@ class MatchesPage extends LitElement {
                 </tr>
               `,
             )}
-          </body>
+          </tbody>
         </table>
       </main>
     `;
@@ -284,7 +279,7 @@ class MatchesPage extends LitElement {
       const golVisitante = this.shadowRoot.querySelector(
         `#golVisitante${index}`,
       ).value;
-      const fecha = this._formatDate(this.shadowRoot.querySelector(`#fecha${index}`).value);
+      const fecha = replaceDateSeparator(this.shadowRoot.querySelector(`#fecha${index}`).value);
       const hora = this.shadowRoot.querySelector(`#hora${index}`).value;
       const estadio = this.shadowRoot.querySelector(`#estadio${index}`).value;
       const updates = {};
@@ -338,60 +333,6 @@ class MatchesPage extends LitElement {
         match.fecha.getDate() === this.todayDate.getDate();
       return findTeam && findMatchDay && todayDate;
     });
-  }
-
-  /**
-   * Format a date to dd/MM/yyyy
-   * @param {Date} fecha
-   * @returns String
-   */
-  _formatDateddmmyyy(fecha) {
-    if (fecha === '') {
-      return '';
-    }
-    const day = fecha.getDate();
-    const month = fecha.getMonth() + 1;
-    const year = fecha.getFullYear();
-    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${
-      month < 10 ? '0' : ''
-    }${month}/${year}`;
-    return fechaFormateada;
-  }
-
-  _formatDateyyyymmdd(fecha) {
-    if (fecha === '') {
-      return '';
-    }
-    const day = fecha.getDate();
-    const month = fecha.getMonth() + 1;
-    const year = fecha.getFullYear();
-    const fechaFormateada = `${year}-${(month < 10 ? '0' : '') + month}-${
-      day < 10 ? '0' : ''
-    }${day}`;
-    return fechaFormateada;
-  }
-
-  _formatDate(date) {
-    return date.replaceAll('-', '/');
-  }
-
-  /**
-   * Method to style matches for today
-   * @param {Date} fecha
-   * @returns String
-   */
-  _getClass(fecha) {
-    return fecha !== '' &&
-      fecha.getFullYear() === this.todayDate.getFullYear() &&
-      fecha.getMonth() === this.todayDate.getMonth() &&
-      fecha.getDate() === this.todayDate.getDate()
-      ? 'todayMatch'
-      : '';
-  }
-
-  _getImage(equipo) {
-    const img = this.images[LOGOS.find(t => t.equipo === equipo).img];
-    return html`<img src="${img.src}" class="${img.className}" alt="equipo" />`;
   }
 
   /**

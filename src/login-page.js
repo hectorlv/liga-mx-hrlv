@@ -14,7 +14,7 @@ class LoginPage extends LitElement {
   constructor() {
     super();
     this.auth = null;
-    this.tittleError = '';
+    this.titleError = '';
     this.contentError = '';
     this.email = '';
     this.password = '';

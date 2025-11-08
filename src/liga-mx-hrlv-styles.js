@@ -80,6 +80,11 @@ export default css`
     height: 3em;
   }
 
+  .logo-error {
+    height: 3em;
+    background-color: red;
+  }
+
   .checkboxToday {
     margin: auto 0;
   }
