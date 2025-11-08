@@ -86,7 +86,7 @@ class TablePage extends LitElement {
     } else if (
       (team.jj < TOTAL_MATCHES &&
         team.pts + 3 * (TOTAL_MATCHES - team.jj) < team10.pts) ||
-      (team.jj === TOTAL_MATCHES && team.pts <= team10.pts)
+      (team.equipo != team10.equipo && team.jj === TOTAL_MATCHES && team.pts <= team10.pts)
     ) {
       return 'eliminated';
     }
