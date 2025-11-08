@@ -27,7 +27,7 @@
     "@custom-elements-manifest/analyzer": "^0.10.10",
     "@open-wc/building-rollup": "^3.0.2",
     "@open-wc/eslint-config": "^13.0.0",
-    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@web/dev-server": "^0.4.6",
     "@web/rollup-plugin-html": "^2.3.0",
