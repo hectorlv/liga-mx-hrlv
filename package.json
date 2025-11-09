@@ -19,13 +19,11 @@
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "firebase": "^12.5.0",
-    "lit": "^3.3.1",
-    "rollup-plugin-image": "^1.0.2"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.5",
     "@custom-elements-manifest/analyzer": "^0.10.10",
-    "@open-wc/building-rollup": "^3.0.2",
     "@open-wc/eslint-config": "^13.0.0",
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -33,12 +31,8 @@
     "@web/rollup-plugin-html": "^2.3.0",
     "@web/rollup-plugin-import-meta-assets": "^2.3.0",
     "babel-plugin-template-html-minifier": "^4.1.0",
-    "deepmerge": "^4.3.1",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
-    "file-loader": "^6.2.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.6",
     "prettier": "^3.6.2",
     "rimraf": "^6.1.0",
     "rollup": "^4.52.5",
@@ -55,17 +49,6 @@
   "prettier": {
     "singleQuote": true,
     "arrowParens": "avoid"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
-  "lint-staged": {
-    "*.js": [
-      "eslint --fix",
-      "prettier --write"
-    ]
   },
   "customElements": "custom-elements.json"
 }

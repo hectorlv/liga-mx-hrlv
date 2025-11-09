@@ -50,6 +50,17 @@ export function fetchStadiums(callback) {
   });
 }
 
+export function fetchPlayers(callback) {
+  const dbRef = ref(getDatabase(), '/players');
+  onValue(dbRef, snapshot => {
+    callback(snapshot.exists() ? snapshot.val() : []);
+  },
+  error => {
+    console.error('Error fetching players:', error);
+    callback([]);
+  });
+}
+
 export function saveUpdates(updates) {
   const db = getDatabase();
   update(ref(db), updates);

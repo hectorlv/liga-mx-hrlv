@@ -21,15 +21,6 @@ class TeamPage extends LitElement {
     return html`
       <main>
         <h1>${this.team.equipo}</h1>
-        <section class="team">
-          <img src="${images[LOGOS.find(t => t.equipo === this.team.equipo).img]}" />
-          <div>
-            <p><strong>Director Técnico:</strong> ${this.team.dt}</p>
-            <p><strong>Estadio:</strong> ${this.team.estadio}</p>
-            <p><strong>Capacidad:</strong> ${this.team.capacidad}</p>
-            <p><strong>Ubicación:</strong> ${this.team.ubicacion}</p>
-          </div>
-        </section>
       </main>
     `;
   }

@@ -24,7 +24,7 @@ export function formatDate(fechaString, hora) {
  * @param {Date} fecha
  * @returns String
  */
-export function formatDateddmmyyy(fecha) {
+export function formatDateDDMMYYYY(fecha) {
     if (fecha == '') {
         return '';
     }
@@ -36,7 +36,7 @@ export function formatDateddmmyyy(fecha) {
     return fechaFormateada;
 }
 
-export function formatDateyyyymmdd(fecha) {
+export function formatDateYYYYMMDD(fecha) {
     if (fecha === '') {
         return '';
     }

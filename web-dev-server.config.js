@@ -1,5 +1,3 @@
-// import { hmrPlugin, presets } from '@open-wc/dev-server-hmr';
- import 'file-loader/dist/index.js';
 /** Use Hot Module replacement by adding --hmr to the start command */
 const hmr = process.argv.includes('--hmr');
 
@@ -21,19 +19,6 @@ export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
     /** Use Hot Module Replacement by uncommenting. Requires @open-wc/dev-server-hmr plugin */
     // hmr && hmrPlugin({ exclude: ['**/*/node_modules/**/*'], presets: [presets.litElement] }),
   ],
-
-  module: {
-    rules: [
-      {
-        test: /.(png|jpe?g|gif)$/i,
-        loader: 'file-loader',
-        options: {
-          name: '/src/images/[name].[ext]',
-          outputPath: 'src/images',
-        },
-      },
-    ],
-  },
 
   // See documentation for all available options
 });
