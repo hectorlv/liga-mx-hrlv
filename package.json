@@ -12,8 +12,7 @@
     "start:build:open": "npm run build && web-dev-server --root-dir dist --app-index index.html --open",
     "start:build": "npm run build && web-dev-server --root-dir dist --app-index index.html",
     "analyze": "cem analyze --litelement",
-    "start": "web-dev-server",
-    "install": "npm install --legacy-peer-deps"
+    "start": "web-dev-server"
   },
   "dependencies": {
     "@material/web": "^2.4.0",
