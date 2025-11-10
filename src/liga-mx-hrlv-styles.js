@@ -135,7 +135,7 @@ export default css`
     background-color: #45a049;
   }
 
-  .calified {
+  .qualified {
     background-color: #4caf50 !important;
     color: white;
   }
