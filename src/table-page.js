@@ -44,9 +44,7 @@ class TablePage extends LitElement {
               (team, i) => html`
                 <tr class="${this.getClass(i)}">
                   <td>${i + 1}</td>
-                  <td>
-                    ${getTeamImage(team.equipo)}
-                  </td>
+                  <td>${getTeamImage(team.equipo)}</td>
                   <td>${team.equipo}</td>
                   <td>${team.jj}</td>
                   <td>${team.jg}</td>
@@ -74,19 +72,26 @@ class TablePage extends LitElement {
     if (
       (team7.jj < TOTAL_MATCHES &&
         team7.pts + 3 * (TOTAL_MATCHES - team7.jj) < team.pts) ||
-      (team.equipo != team7.equipo && team7.jj === TOTAL_MATCHES && i < 6 && team7.pts <= team.pts)
+      (team.equipo != team7.equipo &&
+        team7.jj === TOTAL_MATCHES &&
+        i < 6 &&
+        team7.pts <= team.pts)
     ) {
       return 'calified';
     } else if (
       (team11.jj < TOTAL_MATCHES &&
         team11.pts + 3 * (TOTAL_MATCHES - team11.jj) < team.pts) ||
-      (team.equipo != team11.equipo && team11.jj === TOTAL_MATCHES && team11.pts <= team.pts)
+      (i < 11 &&
+        team11.jj === TOTAL_MATCHES &&
+        team11.pts <= team.pts)
     ) {
       return 'playin';
     } else if (
       (team.jj < TOTAL_MATCHES &&
         team.pts + 3 * (TOTAL_MATCHES - team.jj) < team10.pts) ||
-      (team.equipo != team10.equipo && team.jj === TOTAL_MATCHES && team.pts <= team10.pts)
+      (team.equipo != team10.equipo &&
+        team.jj === TOTAL_MATCHES &&
+        team.pts <= team10.pts)
     ) {
       return 'eliminated';
     }
