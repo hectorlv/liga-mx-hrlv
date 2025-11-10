@@ -77,11 +77,11 @@ class TablePage extends LitElement {
         i < 6 &&
         team7.pts <= team.pts)
     ) {
-      return 'calified';
+      return 'qualified';
     } else if (
       (team11.jj < TOTAL_MATCHES &&
         team11.pts + 3 * (TOTAL_MATCHES - team11.jj) < team.pts) ||
-      (i < 11 &&
+      (i < 10 &&
         team11.jj === TOTAL_MATCHES &&
         team11.pts <= team.pts)
     ) {
