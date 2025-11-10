@@ -20,6 +20,7 @@ import '@material/web/dialog/dialog.js';
 import { fetchMatches, fetchStadiums, fetchTeams, saveUpdates } from './firebaseService.js';
 import { calculateTable } from './tableCalculator.js';
 import { calculatePlayIn } from './playoffCalculator.js';
+import { APP_VERSION } from './version.js';
 
 /**
  * Main class for LigaMX
@@ -73,7 +74,7 @@ class LigaMxHrlv extends LitElement {
             ></my-navbar>
           `}
       <main>${this._getTab()}</main>
-      <p class="app-footer">Made with love by HRLV.</p>
+      <p class="app-footer">Made with love by HRLV - <span> v${APP_VERSION}</span></p>
       <md-dialog id="dialogLiga" type="alert">
         <div slot="headline">${this.titleError}</div>
         <div slot="content">${this.contentError}</div>
