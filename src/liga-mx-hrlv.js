@@ -74,7 +74,7 @@ class LigaMxHrlv extends LitElement {
             ></my-navbar>
           `}
       <main>${this._getTab()}</main>
-      <p class="app-footer">Made with love by HRLV - <span> v${APP_VERSION}</span></p>
+      <p class="app-footer">Made with love by HRLV - <span>v${APP_VERSION}</span></p>
       <md-dialog id="dialogLiga" type="alert">
         <div slot="headline">${this.titleError}</div>
         <div slot="content">${this.contentError}</div>
