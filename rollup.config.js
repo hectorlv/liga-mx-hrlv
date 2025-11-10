@@ -6,6 +6,7 @@ import _esbuild from 'rollup-plugin-esbuild';
 import { generateSW } from 'rollup-plugin-workbox';
 import path from 'path';
 import image from 'rollup-plugin-image';
+import json from '@rollup/plugin-json';
 
 const esbuild = _esbuild.default || _esbuild;
 export default {
@@ -27,6 +28,7 @@ export default {
       serviceWorkerPath: 'dist/sw.js',
     }),
     image(),
+    json(),
     /** Resolve bare module imports */
     nodeResolve(),
     /** Minify JS, compile JS to a lower language target */
