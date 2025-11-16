@@ -7,9 +7,15 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
 import '@material/web/checkbox/checkbox.js';
+import './match-detail-page.js';
 
 import { JORNADA_LIGUILLA } from './constants.js';
-import { formatDateDDMMYYYY, formatDateYYYYMMDD, getMatchRowClass, replaceDateSeparator } from './dateUtils.js';
+import {
+  formatDateDDMMYYYY,
+  formatDateYYYYMMDD,
+  getMatchRowClass,
+  replaceDateSeparator,
+} from './dateUtils.js';
 import { getTeamImage } from './imageUtils.js';
 /**
  * Page for show the fixture
@@ -22,6 +28,10 @@ class MatchesPage extends LitElement {
     todayDate: { type: Object },
     todayDateSelected: { type: Boolean },
     stadiums: { type: Array },
+    showDetails: { type: Boolean },
+    selectedMatch: { type: Object },
+    savedFilters: { type: Object },
+    players: { type: Array },
   };
 
   static get styles() {
@@ -36,10 +46,12 @@ class MatchesPage extends LitElement {
             overflow-x: auto;
             white-space: nowrap;
           }
-          .greyGridTable thead, .greyGridTable tbody {
+          .greyGridTable thead,
+          .greyGridTable tbody {
             display: block;
           }
-          .greyGridTable th, .greyGridTable td {
+          .greyGridTable th,
+          .greyGridTable td {
             padding: 5px;
             box-sizing: border-box;
             overflow: hidden;
@@ -72,7 +84,7 @@ class MatchesPage extends LitElement {
             display: none;
           }
         }
-      `
+      `,
     ];
   }
 
@@ -84,13 +96,17 @@ class MatchesPage extends LitElement {
     this.matchesRender = [];
     this.todayDate = new Date();
     this.todayDateSelected = false;
+    this.showDetails = false;
+    this.selectedMatch = null;
+    this.savedFilters = null;
+    this.players = [];
   }
 
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener('resize', this._adjustTable.bind(this));
   }
-  
+
   firstUpdated() {
     this._adjustTable();
   }
@@ -106,6 +122,16 @@ class MatchesPage extends LitElement {
   }
 
   render() {
+    if (this.showDetails && this.selectedMatch) {
+      return html` <main>
+        <match-detail-page
+          .match="${this.selectedMatch}"
+          .teams="${this.teams}"
+          .players="${this.players}"
+          @back-to-calendar="${this._backToCalendar}"
+        ></match-detail-page>
+      </main>`;
+    }
     return html`
       <main>
         <div class="matches-filter">
@@ -147,8 +173,10 @@ class MatchesPage extends LitElement {
               `,
             )}
           </md-filled-select>
-          <label class="checkbox
-          Today">
+          <label
+            class="checkbox
+          Today"
+          >
             <md-checkbox @change="${this.checkboxChanged}"></md-checkbox>
             Partidos de hoy
           </label>
@@ -164,6 +192,7 @@ class MatchesPage extends LitElement {
               <th>Fecha</th>
               <th>Hora</th>
               <th>Estadio</th>
+              <th></th>
               <th></th>
             </tr>
           </thead>
@@ -185,6 +214,7 @@ class MatchesPage extends LitElement {
                         <td>
                           <input
                             type="number"
+                            inputmode="numeric"
                             min="0"
                             .value="${match.golLocal}"
                             id="golLocal${match.idMatch}"
@@ -203,6 +233,7 @@ class MatchesPage extends LitElement {
                         <td>
                           <input
                             type="number"
+                            inputmode="numeric"
                             min="0"
                             .value="${match.golVisitante}"
                             id="golVisitante${match.idMatch}"
@@ -233,24 +264,43 @@ class MatchesPage extends LitElement {
                         </td>
                       `
                     : html` <td>${match.hora}</td> `}
-                  ${match.editMatch ? html`
-                  <td>
-                    <md-filled-select id="estadio${match.idMatch}" @change="${this._stadiumChanged}">
-                      ${this.stadiums.map(
-                        stadium => html`
-                          <md-select-option value="${stadium}" ?selected=${stadium === match.estadio}>
-                            <div slot="headline">${stadium}</div></md-select-option>
-                        `,
-                      )}
-                    </md-filled-select>
-                  </td>
-                  ` : html`<td>${match.estadio}</td>`}
+                  ${match.editMatch
+                    ? html`
+                        <td>
+                          <md-filled-select
+                            id="estadio${match.idMatch}"
+                            @change="${this._stadiumChanged}"
+                          >
+                            ${this.stadiums.map(
+                              stadium => html`
+                                <md-select-option
+                                  value="${stadium}"
+                                  ?selected=${stadium === match.estadio}
+                                >
+                                  <div slot="headline">
+                                    ${stadium}
+                                  </div></md-select-option
+                                >
+                              `,
+                            )}
+                          </md-filled-select>
+                        </td>
+                      `
+                    : html`<td>${match.estadio}</td>`}
                   <td>
                     <iron-icon
                       id="icon${match.idMatch}"
                       index="${match.idMatch}"
                       icon="${match.editMatch ? 'check' : 'create'}"
                       @click="${this._editMatch}"
+                    ></iron-icon>
+                  </td>
+                  <td>
+                    <iron-icon
+                      id="iconDetails${match.idMatch}"
+                      index="${match.idMatch}"
+                      icon="info"
+                      @click="${this._showMatchDetails}"
                     ></iron-icon>
                   </td>
                 </tr>
@@ -279,7 +329,9 @@ class MatchesPage extends LitElement {
       const golVisitante = this.shadowRoot.querySelector(
         `#golVisitante${index}`,
       ).value;
-      const fecha = replaceDateSeparator(this.shadowRoot.querySelector(`#fecha${index}`).value);
+      const fecha = replaceDateSeparator(
+        this.shadowRoot.querySelector(`#fecha${index}`).value,
+      );
       const hora = this.shadowRoot.querySelector(`#hora${index}`).value;
       const estadio = this.shadowRoot.querySelector(`#estadio${index}`).value;
       const updates = {};
@@ -289,7 +341,7 @@ class MatchesPage extends LitElement {
         golVisitante !== '' ? Number(golVisitante) : '';
       updates[`/matches/${match.idMatch}/fecha`] = fecha;
       updates[`/matches/${match.idMatch}/hora`] = hora;
-      updates[`/matches/${match.idMatch}/estadio`] = estadio
+      updates[`/matches/${match.idMatch}/estadio`] = estadio;
       /**
        * Fired when a match is edited
        * @event edit-match
@@ -327,10 +379,13 @@ class MatchesPage extends LitElement {
       const findTeam =
         team === '' ? true : match.local === team || match.visitante === team;
       const findMatchDay = matchDay === '' ? true : match.jornada === matchDay;
-      const todayDate = !this.todayDateSelected || this.todayDateSelected  && match.fecha !== '' &&
-        match.fecha.getFullYear() === this.todayDate.getFullYear() &&
-        match.fecha.getMonth() === this.todayDate.getMonth() &&
-        match.fecha.getDate() === this.todayDate.getDate();
+      const todayDate =
+        !this.todayDateSelected ||
+        (this.todayDateSelected &&
+          match.fecha !== '' &&
+          match.fecha.getFullYear() === this.todayDate.getFullYear() &&
+          match.fecha.getMonth() === this.todayDate.getMonth() &&
+          match.fecha.getDate() === this.todayDate.getDate());
       return findTeam && findMatchDay && todayDate;
     });
   }
@@ -351,6 +406,43 @@ class MatchesPage extends LitElement {
       col.colSpan = isMobile ? 1 : 2;
     });
   }
-}
 
+  _showMatchDetails(e) {
+    const index = e.target.getAttribute('index');
+    const match = this.matches.find(m => m.idMatch === Number(index));
+    if (!match) return;
+
+    //Guardar filtros actuales
+    const teamIndex =
+      this.shadowRoot.querySelector('#teamsSelect')?.value || '';
+    const matchDayValue =
+      this.shadowRoot.querySelector('#matchDaySelect')?.value || '';
+    this.savedFilters = {
+      teamIndex,
+      matchDayValue,
+      todayDateSelected: this.todayDateSelected,
+    };
+    this.selectedMatch = match;
+    this.showDetails = true;
+    this.requestUpdate();
+  }
+
+  _backToCalendar() {
+    this.showDetails = false;
+    //Restaurar filtros
+    this.updateComplete.then(() => {
+      if (this.savedFilters) {
+        this.shadowRoot.querySelector('#teamsSelect').value =
+          this.savedFilters.teamIndex;
+        this.shadowRoot.querySelector('#matchDaySelect').value =
+          this.savedFilters.matchDayValue;
+        this.todayDateSelected = this.savedFilters.todayDateSelected;
+        this.shadowRoot.querySelector('#todayCheckbox').checked =
+          this.todayDateSelected;
+        this.savedFilters = null;
+        this._filtersChanged();
+      }
+    });
+  }
+}
 customElements.define('matches-page', MatchesPage);

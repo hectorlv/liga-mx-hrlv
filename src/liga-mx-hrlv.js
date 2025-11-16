@@ -17,7 +17,7 @@ import { FIREBASE_CONFIG } from './constants.js';
 import './login-page.js';
 import { getAuth } from 'firebase/auth';
 import '@material/web/dialog/dialog.js';
-import { fetchMatches, fetchStadiums, fetchTeams, saveUpdates } from './firebaseService.js';
+import { fetchMatches, fetchStadiums, fetchTeams, saveUpdates, fetchPlayers } from './firebaseService.js';
 import { calculateTable } from './tableCalculator.js';
 import { calculatePlayIn } from './playoffCalculator.js';
 import { APP_VERSION } from './version.js';
@@ -40,6 +40,7 @@ class LigaMxHrlv extends LitElement {
     contentError: { type: String },
     user: { type: Object },
     stadiums: { type: Array },
+    players: { type: Array },
   };
 
   static get styles() {
@@ -61,6 +62,7 @@ class LigaMxHrlv extends LitElement {
     this.contentError = '';
     this.user = {};
     this.stadiums = [];
+    this.players = [];
   }
 
   render() {
@@ -106,6 +108,7 @@ class LigaMxHrlv extends LitElement {
             .matches="${this.matches}"
             .teams="${this.teams}"
             .stadiums="${this.stadiums}"
+            .players="${this.players}"
             @edit-match="${this._editMatch}"
           ></matches-page>
         `;
@@ -135,7 +138,9 @@ class LigaMxHrlv extends LitElement {
     this._unsubscribeStadiums = fetchStadiums((stadiums) => {
       this.stadiums = stadiums;
     });
-    
+    this._unsubscribePlayers = fetchPlayers((players) => {
+      this.players = players;
+    });
   }
 
   disconnectedCallback() {
@@ -148,6 +153,9 @@ class LigaMxHrlv extends LitElement {
     }
     if (this._unsubscribeStadiums) {
       this._unsubscribeStadiums();
+    }
+    if (this._unsubscribePlayers) {
+      this._unsubscribePlayers();
     }
   }
 

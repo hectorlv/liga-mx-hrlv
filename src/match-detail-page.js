@@ -1,6 +1,10 @@
 import { LitElement, html, css } from 'lit';
 import { formatDateDDMMYYYY } from './dateUtils';
 import { getTeamImage } from './imageUtils';
+import styles from './liga-mx-hrlv-styles.js';
+import '@material/web/checkbox/checkbox.js';
+import '@material/web/select/filled-select.js';
+import '@material/web/select/select-option.js';
 
 class MatchDetailPage extends LitElement {
   static properties = {
@@ -27,15 +31,55 @@ class MatchDetailPage extends LitElement {
           margin-top: 16px;
         }
         .lineup {
-          display: flex;
-          flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 24px;
+          align-items: start;
+        }
+        .lineup > div {
+          width: 100%;
+        }
+        .player-row {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          padding: 6px 8px;
+          box-sizing: border-box;
+          justify-content: start;
+          gap: 10px;
+        }
+        .player-row md-checkbox {
+          flex: 0 0 auto;
+          width: 16px;
+          height: 16px;
+          margin: auto 0;
+        }
+        .player-row img {
+          flex: 0 0 auto;
+          width: 60px;
+          height: auto;
+          object-fit: contain;
+        }
+        .player-row span {
+          flex: 0 0 auto;
+          margin: auto 0;
+        }
+        @media (max-width: 600px) {
+          .lineup {
+            grid-template-columns: 1fr;
+          }
         }
         ul {
           padding-left: 20px;
         }
         li {
           margin-bottom: 4px;
+        }
+        .minute-input {
+          width: 5ch;
+          min-width: 5ch;
+          max-width: 5ch;
+          text-align: center;
         }
       `,
     ];
@@ -50,17 +94,18 @@ class MatchDetailPage extends LitElement {
   }
 
   _updatePlayerLists() {
-    if (this.match || !this.teams.length) return;
-    const localTeam = this.teams.find(t => t.name === this.match.local);
-    const visitorTeam = this.teams.find(t => t.name === this.match.visitante);
-    this.localPlayers = localTeam?.players || [];
-    this.visitorPlayers = visitorTeam?.players || [];
+    if (!this.match || !this.teams.length) return;
+    this.localPlayers =
+      this.players[this.match.local.replaceAll('.', '')] || [];
+    this.visitorPlayers =
+      this.players[this.match.visitante.replaceAll('.', '')] || [];
   }
 
   render() {
     if (!this.match) {
       return html`<p>Cargando detalles del partido</p>`;
     }
+    this._updatePlayerLists();
 
     const {
       local,
@@ -86,6 +131,7 @@ class MatchDetailPage extends LitElement {
         ${getTeamImage(local)} ${local} vs ${visitante}
         ${getTeamImage(visitante)}
       </h2>
+      <button @click=${this._goBack}>Volver</button>
       <p>
         <strong>Fecha:</strong> ${formatDateDDMMYYYY(fecha)} &nbsp;|&nbsp;
         <strong>Hora:</strong> ${hora} &nbsp;|&nbsp;
@@ -99,14 +145,16 @@ class MatchDetailPage extends LitElement {
             <h4>Local</h4>
             ${this.localPlayers.map(
               player => html`
-                <label>
-                  <input
-                    type="checkbox"
-                    .checked=${lineupLocal.includes(player.id)}
-                    @change=${e => this._onLineupChange(e, 'local', player.id)}
-                  />
-                  ${player.name}
-                </label>
+                <div class="player-row">
+                  <md-checkbox
+                    id="lineupLocal-${player.number}"
+                    .checked=${lineupLocal.includes(player.number)}
+                    @change=${e =>
+                      this._onLineupChange(e, 'local', player.number)}
+                  ></md-checkbox>
+                  <img src=${player.imgSrc} alt=${player.name} width="30" />
+                  <span>${player.number} ${player.name}</span>
+                </div>
               `,
             )}
           </div>
@@ -114,15 +162,16 @@ class MatchDetailPage extends LitElement {
             <h4>Visitante</h4>
             ${this.visitorPlayers.map(
               player => html`
-                <label>
-                  <input
-                    type="checkbox"
-                    .checked=${lineupVisitor.includes(player.id)}
+                <div class="player-row">
+                  <md-checkbox
+                    id="lineupVisitor-${player.number}"
+                    .checked=${lineupVisitor.includes(player.number)}
                     @change=${e =>
-                      this._onLineupChange(e, 'visitor', player.id)}
-                  />
-                  ${player.name}
-                </label>
+                      this._onLineupChange(e, 'visitor', player.number)}
+                  ></md-checkbox>
+                  <img src=${player.imgSrc} alt=${player.name} width="30" />
+                  <span>${player.number} ${player.name}</span>
+                </div>
               `,
             )}
           </div>
@@ -149,17 +198,25 @@ class MatchDetailPage extends LitElement {
           )}
         </ul>
         <div>
-          <select id="goalTeam" @change=${() => this.requestUpdate()}>
-            <option value="local">Local</option>
-            <option value="visitor">Visitante</option>
-          </select>
-          <select id="newGoalPlayer">
+          <md-filled-select id="goalTeam" @change=${() => this.requestUpdate()}>
+            <md-select-option value="local">Local</md-select-option>
+            <md-select-option value="visitor">Visitante</md-select-option>
+          </md-filled-select>
+          <md-filled-select id="newGoalPlayer">
             ${[...this.localPlayers, ...this.visitorPlayers].map(
-              p => html`<option value=${p.id}>${p.name}</option>`,
+              p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`,
             )}
-          </select>
-          <input type="number" id="newGoalMinute" placeholder="Minuto" />
-          <label><input type="checkbox" id="newGoalOwn" /> Autogol </label>
+          </md-filled-select>
+          <input
+            type="number"
+            inputmode="numeric"
+            id="newGoalMinute"
+            class="minute-input"
+            placeholder="Minuto"
+            min="0"
+            max="90"
+          />
+          <label><md-checkbox id="newGoalOwn"></md-checkbox> Autogol </label>
           <button @click=${this._addGoal}>Agregar Gol</button>
         </div>
       </div>
@@ -178,21 +235,29 @@ class MatchDetailPage extends LitElement {
           )}
         </ul>
         <div>
-          <select id="subTeam" @change=${() => this.requestUpdate()}>
-            <option value="local">Local</option>
-            <option value="visitor">Visitante</option>
-          </select>
-          <select id="subOut">
+          <md-filled-select id="subTeam" @change=${() => this.requestUpdate()}>
+            <md-select-option value="local">Local</md-select-option>
+            <md-select-option value="visitor">Visitante</md-select-option>
+          </md-filled-select>
+          <md-filled-select id="subOut">
             ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
-              p => html`<option value=${p.id}>${p.name}</option>`,
+              p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`,
             )}
-          </select>
-          <select id="subIn">
+          </md-filled-select>
+          <md-filled-select id="subIn">
             ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
-              p => html`<option value=${p.id}>${p.name}</option>`,
+              p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`,
             )}
-          </select>
-          <input type="number" id="subMinute" placeholder="Minuto" />
+          </md-filled-select>
+          <input
+            type="number"
+            inputmode="numeric"
+            id="subMinute"
+            class="minute-input"
+            placeholder="Minuto"
+            min="0"
+            max="90"
+          />
           <button @click=${this._addSub}>Agregar cambio</button>
         </div>
       </div>
@@ -211,18 +276,29 @@ class MatchDetailPage extends LitElement {
           )}
         </ul>
         <div>
-          <select id="cardTeam" @change=${() => this.requestUpdate()}>
-            <option value="local">Local</option>
-            <option value="visitor">Visitante</option>
-          </select>
-          <select id="cardPlayer">
-            ${(cardSide === 'local' ? this.localPlayers : this.visitorPlayers).map(p => html`<option value=${p.id}>${p.name}</option>`)}
-          </select>
-          <input type="number" id="cardMinute" placeholder="Minuto" />
-          <select id="cardType">
-            <option value="yellow">Amarilla</option>
-            <option value="red">Roja</option>
-          </select>
+          <md-filled-select id="cardTeam" @change=${() => this.requestUpdate()}>
+            <md-select-option value="local">Local</md-select-option>
+            <md-select-option value="visitor">Visitante</md-select-option>
+          </md-filled-select>
+          <md-filled-select id="cardPlayer">
+            ${(cardSide === 'local'
+              ? this.localPlayers
+              : this.visitorPlayers
+            ).map(p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`)}
+          </md-filled-select>
+          <input
+            type="number"
+            inputmode="numeric"
+            id="cardMinute"
+            class="minute-input"
+            placeholder="Minuto"
+            min="0"
+            max="90"
+          />
+          <md-filled-select id="cardType">
+            <md-select-option value="yellow">Amarilla</md-select-option>
+            <md-select-option value="red">Roja</md-select-option>
+          </md-filled-select>
           <button @click=${this._addCard}>Agregar Tarjeta</button>
         </div>
       </div>
@@ -244,9 +320,14 @@ class MatchDetailPage extends LitElement {
   _addGoal() {
     const side = this.shadowRoot.getElementById('goalTeam').value;
     const playerId = this.shadowRoot.getElementById('newGoalPlayer').value;
-    const minute = Number(this.shadowRoot.getElementById('newGoalMinute').value);
+    const minute = Number(
+      this.shadowRoot.getElementById('newGoalMinute').value,
+    );
     const ownGoal = this.shadowRoot.getElementById('newGoalOwn').checked;
-    const goals = [...(this.match.goals || []), { side, playerId, minute, ownGoal }];
+    const goals = [
+      ...(this.match.goals || []),
+      { side, playerId, minute, ownGoal },
+    ];
     this._updateGoals(goals);
   }
 
@@ -256,24 +337,34 @@ class MatchDetailPage extends LitElement {
     const playerOutId = this.shadowRoot.getElementById('subOut').value;
     const playerInId = this.shadowRoot.getElementById('subIn').value;
     const minute = Number(this.shadowRoot.getElementById('subMinute').value);
-    const substitutions = [...(this.match.substitutions || []), { teamId: this.match[teamKey], playerOutId, playerInId, minute }];
+    const substitutions = [
+      ...(this.match.substitutions || []),
+      { teamId: this.match[teamKey], playerOutId, playerInId, minute },
+    ];
     this._updateSubstitutions(substitutions);
   }
 
   _addCard() {
     const side = this.shadowRoot.getElementById('cardTeam').value;
-    const teamId = side === 'local' ? this.match.localTeamId : this.match.visitorTeamId;
+    const teamId =
+      side === 'local' ? this.match.localTeamId : this.match.visitorTeamId;
     const playerId = this.shadowRoot.getElementById('cardPlayer').value;
     const minute = Number(this.shadowRoot.getElementById('cardMinute').value);
     const cardType = this.shadowRoot.getElementById('cardType').value;
-    const cards = [...(this.match.cards || []), { teamId, playerId, minute, cardType }];
+    const cards = [
+      ...(this.match.cards || []),
+      { teamId, playerId, minute, cardType },
+    ];
     this._updateCards(cards);
   }
 
-  _updateGoals(goals) {
-    
-  }
+  _updateGoals(goals) {}
 
+  _goBack() {
+    this.dispatchEvent(
+      new CustomEvent('back-to-calendar', { bubbles: true, composed: true }),
+    );
+  }
 }
 
 customElements.define('match-detail-page', MatchDetailPage);

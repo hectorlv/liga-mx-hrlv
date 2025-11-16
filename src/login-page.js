@@ -32,6 +32,7 @@ class LoginPage extends LitElement {
         <input
           id="email"
           type="email"
+          inputmode="email"
           .value=${this.email}
           placeholder="Email"
           required
@@ -40,6 +41,7 @@ class LoginPage extends LitElement {
         <input
           id="password"
           type="password"
+          inputmode="text"
           placeholder="Password"
           .value=${this.password}
           required
