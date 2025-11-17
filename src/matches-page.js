@@ -126,6 +126,7 @@ class MatchesPage extends LitElement {
     ];
   }
 
+
   constructor() {
     super();
     this.matches = [];
@@ -139,12 +140,21 @@ class MatchesPage extends LitElement {
     this.savedFilters = null;
     this.players = [];
     this.isMobile = window.innerWidth < 600;
+    this.openRowMenuId = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this._boundOnResize = this._onResize.bind(this);
     window.addEventListener('resize', this._boundOnResize);
+    this._boundOnDocClick = this._onDocumentClick.bind(this);
+    window.addEventListener('click', this._boundOnDocClick);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('resize', this._boundOnResize);
+    window.removeEventListener('click', this._boundOnDocClick);
+    super.disconnectedCallback();
   }
 
   firstUpdated() {
@@ -159,6 +169,35 @@ class MatchesPage extends LitElement {
     if (changed.has('matches')) {
       this._filtersChanged();
     }
+  }
+
+  _toggleRowMenu(e) {
+    e.stopPropagation();
+    const id = Number(e.currentTarget.getAttribute('data-id'));
+    this.openRowMenuId = this.openRowMenuId === id ? null : id;
+    this.requestUpdate();
+  }
+
+  _onDocumentClick() {
+    if (this.openRowMenuId !== null) {
+      this.openRowMenuId = null;
+      this.requestUpdate();
+    }
+  }
+
+  _onEditFromMenu(e) {
+    e.stopPropagation();
+    const id = Number(e.currentTarget.getAttribute('data-id'));
+    // reuse existing handler by synthesizing expected event structure
+    this._editMatch({ target: { getAttribute: () => id } });
+    this.openRowMenuId = null;
+  }
+
+  _onDetailsFromMenu(e) {
+    e.stopPropagation();
+    const id = Number(e.currentTarget.getAttribute('data-id'));
+    this._showMatchDetails({ target: { getAttribute: () => id } });
+    this.openRowMenuId = null;
   }
 
   render() {
@@ -225,16 +264,15 @@ class MatchesPage extends LitElement {
               <table class="greyGridTable">
                 <thead>
                   <tr>
-                    <th class="dynamic-colspan">Local</th>
+                    <th class="dynamic-colspan" colspan="2">Local</th>
                     <th>Gol Local</th>
-                    <th class="dynamic-colspan">Visitante</th>
+                    <th class="dynamic-colspan" colspan="2">Visitante</th>
                     <th>Gol Visitante</th>
                     <th>Jornada</th>
                     <th>Fecha</th>
                     <th>Hora</th>
                     <th>Estadio</th>
-                    <th></th>
-                    <th></th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -259,7 +297,7 @@ class MatchesPage extends LitElement {
                               <input aria-label="Goles visitante" type="number" inputmode="numeric" min="0" .value="${match.golVisitante}" id="golVisitante${match.idMatch}" />
                             </td>`
                           : html` <td>${match.golVisitante}</td> `}
-                        <td>${match.jornada}</td>
+                          <td><span class="chip">${match.jornada}</span></td>
                         ${match.editMatch
                           ? html` <td>
                               <input aria-label="Fecha del partido" type="date" .value="${formatDateYYYYMMDD(match.fecha)}" id="fecha${match.idMatch}" />
@@ -277,17 +315,16 @@ class MatchesPage extends LitElement {
                               </md-filled-select>
                             </td>`
                           : html`<td>${match.estadio}</td>`}
-                        <td>
-                          <md-filled-button class="action-btn" id="icon${match.idMatch}" index="${match.idMatch}" aria-label="${match.editMatch ? 'Guardar' : 'Editar'}" title="${match.editMatch ? 'Guardar' : 'Editar'}" @click="${this._editMatch}">
-                            <md-icon>${match.editMatch ? 'check' : 'edit'}</md-icon>
-                            <span class="btn-label">${match.editMatch ? 'Guardar' : 'Editar'}</span>
-                          </md-filled-button>
-                        </td>
-                        <td>
-                          <md-filled-button class="action-btn" id="iconDetails${match.idMatch}" index="${match.idMatch}" aria-label="Detalles" title="Detalles" @click="${this._showMatchDetails}">
-                            <md-icon>info</md-icon>
-                            <span class="btn-label">Detalles</span>
-                          </md-filled-button>
+                        <td class="actions-cell">
+                          <md-icon-button data-id="${match.idMatch}" aria-label="Acciones" title="Más" @click="${this._toggleRowMenu}">
+                            <md-icon>more_vert</md-icon>
+                          </md-icon-button>
+                          ${this.openRowMenuId === match.idMatch
+                            ? html`<div class="row-menu" role="menu" aria-label="Menú de acciones">
+                                <md-filled-button role="menuitem" @click="${this._onEditFromMenu}" data-id="${match.idMatch}"><md-icon>edit</md-icon>Editar</md-filled-button>
+                                <md-filled-button role="menuitem" @click="${this._onDetailsFromMenu}" data-id="${match.idMatch}"><md-icon>info</md-icon>Detalles</md-filled-button>
+                              </div>`
+                            : ''}
                         </td>
                       </tr>
                     `,

@@ -38,6 +38,8 @@ export default css`
     /* Map a tokens de Material Web */
     --md-sys-color-primary: var(--color-primary);
     --md-sys-color-on-primary: var(--color-on-primary);
+    /* RGB helper for translucent accents (use as: rgba(var(--color-primary-rgb), .06)) */
+    --color-primary-rgb: 76,175,80;
     --md-sys-color-surface: var(--color-surface);
     --md-sys-color-on-surface: var(--color-on-surface);
     --md-sys-color-surface-container-highest: var(--color-surface-variant);
@@ -82,6 +84,10 @@ export default css`
   }
   table.greyGridTable thead {
     background: #ffffff;
+    /* make header sticky */
+    position: sticky;
+    top: 0;
+    z-index: 3;
   }
   table.greyGridTable thead th {
     font-size: 15px;
@@ -89,6 +95,8 @@ export default css`
     color: #333333;
     text-align: center;
     border-left: 2px solid #333333;
+    position: sticky;
+    top: 0;
   }
   table.greyGridTable thead th:first-child {
     border-left: none;
@@ -96,6 +104,50 @@ export default css`
 
   table.greyGridTable tfoot td {
     font-size: 14px;
+  }
+
+  /* Row hover and chips */
+  table.greyGridTable tr:hover {
+    background: rgba(var(--color-primary-rgb), 0.06);
+  }
+  table.greyGridTable tr.selected-row {
+    background: rgba(var(--color-primary-rgb), 0.12);
+  }
+
+  /* Small chip used for jornada / status */
+  .chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--md-sys-color-surface-container-highest);
+    color: var(--md-sys-color-on-surface);
+    border: 1px solid var(--color-outline);
+    font-size: 12px;
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  /* Row actions menu */
+  .actions-cell {
+    position: relative;
+  }
+  .row-menu {
+    position: absolute;
+    right: 8px;
+    top: 36px;
+    background: var(--md-sys-color-surface-container-highest);
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 140px;
+    z-index: 6;
+  }
+  .row-menu md-filled-button {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .todayMatch {
