@@ -5,8 +5,7 @@ import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getDatabase } from 'firebase/database';
 import styles from './liga-mx-hrlv-styles.js';
-import '@polymer/iron-icon/iron-icon.js';
-import '@polymer/iron-icons/iron-icons.js';
+import '@material/web/icon/icon.js';
 import './matches-page.js';
 import './table-page.js';
 import './playoff-page.js';
@@ -70,10 +69,14 @@ class LigaMxHrlv extends LitElement {
       ${this.selectedTab === 'Login'
         ? html``
         : html`
-            <my-navbar
-              .user=${this.user}
-              @nav-clicked="${this._tabChanged}"
-            ></my-navbar>
+            <md-tabs
+              .activeTabIndex=${this._getTabIndex(this.selectedTab)}
+              @change=${this._onTabsChange}
+            >
+              <md-primary-tab aria-label="Calendario">Calendario</md-primary-tab>
+              <md-primary-tab aria-label="Tabla General">Tabla General</md-primary-tab>
+              <md-primary-tab aria-label="Liguilla">Liguilla</md-primary-tab>
+            </md-tabs>
           `}
       <main>${this._getTab()}</main>
       <p class="app-footer">Made with love by HRLV - <span>v${APP_VERSION}</span></p>
@@ -178,8 +181,31 @@ class LigaMxHrlv extends LitElement {
       top: 0,
       behavior: 'smooth',
     });
-
     this.selectedTab = e.detail;
+  }
+
+  _getTabIndex(tab) {
+    switch (tab) {
+      case 'Calendario':
+        return 0;
+      case 'Tabla General':
+        return 1;
+      case 'Liguilla':
+        return 2;
+      default:
+        return 0;
+    }
+  }
+
+  _onTabsChange(e) {
+    const index = e.target.activeTabIndex ?? 0;
+    const tabs = ['Calendario', 'Tabla General', 'Liguilla'];
+    const next = tabs[index] || 'Calendario';
+    if (this.selectedTab !== next) {
+      // Scroll al inicio para mantener UX consistente
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      this.selectedTab = next;
+    }
   }
 
 }

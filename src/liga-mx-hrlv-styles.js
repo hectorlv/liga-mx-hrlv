@@ -2,27 +2,54 @@ import { css } from 'lit';
 
 export default css`
   :host {
+    /* Layout base */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    font-size: 12px;
-    color: #1a2b42;
     margin: 0 auto;
     text-align: center;
-    --md-sys-color-primary: #4caf50;
-    --liga-mx-hrlv-background-color: #f7f7f7;
-    --md-sys-color-surface-container-highest: #e0e0e0;
-    --md-filled-select-text-field-container-color: #e0e0e0;
-    --md-sys-color-on-surface: #4caf50;
-    --md-sys-color-secondary-container: #4caf50;
-    --md-menu-item-label-text-color: #1d1b20;
-    --md-sys-color-surface: #e0e0e0;
-    --md-menu-container-color: #e0e0e0;
-    --md-filled-select-text-field-input-text-color: #1d1b20;
-    --md-dialog-container-color: #e0e0e0;
-    background-color: var(--liga-mx-hrlv-background-color);
+
+    /* Tipografía base */
+    font-family: var(--font-family, Roboto, system-ui, -apple-system, Segoe UI, Arial, sans-serif);
+    font-size: 14px;
+
+    /* Design tokens (mezcla marca + M3) */
+    --color-primary: #4caf50; /* marca */
+    --color-on-primary: #ffffff;
+    --color-surface: #f7f7f7;
+    --color-surface-variant: #e0e0e0;
+    --color-on-surface: #1a2b42;
+    --color-outline: #d0d7de;
+    --table-row-alt: #d0e4f5;
+
+    /* Espaciado y radios */
+    --space-2: 2px;
+    --space-4: 4px;
+    --space-6: 6px;
+    --space-8: 8px;
+    --space-12: 12px;
+    --space-16: 16px;
+    --space-24: 24px;
+    --radius-s: 6px;
+    --radius-m: 12px;
+
+    /* Map a tokens de Material Web */
+    --md-sys-color-primary: var(--color-primary);
+    --md-sys-color-on-primary: var(--color-on-primary);
+    --md-sys-color-surface: var(--color-surface);
+    --md-sys-color-on-surface: var(--color-on-surface);
+    --md-sys-color-surface-container-highest: var(--color-surface-variant);
+    --md-filled-select-text-field-container-color: var(--color-surface-variant);
+    --md-sys-color-secondary-container: var(--color-primary);
+    --md-menu-item-label-text-color: var(--color-on-surface);
+    --md-menu-container-color: var(--color-surface-variant);
+    --md-filled-select-text-field-input-text-color: var(--color-on-surface);
+    --md-dialog-container-color: var(--color-surface-variant);
+
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
   }
 
   main {
@@ -51,7 +78,7 @@ export default css`
     padding: 3px 4px;
   }
   table.greyGridTable tr:nth-child(even) {
-    background: #d0e4f5;
+    background: var(--table-row-alt);
   }
   table.greyGridTable thead {
     background: #ffffff;
@@ -72,8 +99,8 @@ export default css`
   }
 
   .todayMatch {
-    background: #4caf50 !important;
-    color: white;
+    background: var(--color-primary) !important;
+    color: var(--color-on-primary);
   }
 
   .logo {
@@ -117,15 +144,30 @@ export default css`
     font-size: 1em;
   }
 
+  /* Focus states accesibles */
+  input:focus,
+  button:focus,
+  md-filled-button:focus,
+  md-icon-button:focus,
+  md-outlined-select:focus {
+    outline: 3px solid rgba(76, 175, 80, 0.35);
+    outline-offset: 3px;
+  }
+
+  /* Use focus-visible for keyboard users when available */
+  :is(button, md-filled-button, md-icon-button):focus:not(:focus-visible) {
+    outline: none;
+  }
+
   button {
     width: 80%;
     max-width: 300px;
     padding: 10px;
     margin-bottom: 10px;
     border: none;
-    border-radius: 5px;
-    background-color: #4caf50;
-    color: white;
+    border-radius: var(--radius-s);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
     font-size: 1em;
     cursor: pointer;
     transition: background-color 0.3s ease;
@@ -136,8 +178,8 @@ export default css`
   }
 
   .qualified {
-    background-color: #4caf50 !important;
-    color: white;
+    background-color: var(--color-primary) !important;
+    color: var(--color-on-primary);
   }
 
   .playin {
@@ -148,5 +190,24 @@ export default css`
   .eliminated {
     background-color: #f44336 !important;
     color: white;
+  }
+
+  /* Dark mode automático */
+  @media (prefers-color-scheme: dark) {
+    :host {
+      --color-surface: #0f1115;
+      --color-surface-variant: #1c1f26;
+      --color-on-surface: #e6e6e6;
+      --table-row-alt: #19202a;
+      background-color: var(--color-surface);
+      color: var(--color-on-surface);
+    }
+    table.greyGridTable thead {
+      background: var(--color-surface-variant);
+    }
+    table.greyGridTable thead th {
+      color: var(--color-on-surface);
+      border-left: 2px solid var(--color-outline);
+    }
   }
 `;

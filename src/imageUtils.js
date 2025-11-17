@@ -8,5 +8,5 @@ export function getTeamImage(equipo) {
       images[key].className = 'logo';
     });
     const img = images[LOGOS.find(t => t.equipo === equipo).img];
-    return html`<img src="${img.src}" class="${img.className}" alt="equipo" />`;
+    return html`<img src="${img.src}" class="${img.className}" alt="equipo" loading="lazy" decoding="async" />`;
 }

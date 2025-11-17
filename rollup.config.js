@@ -57,6 +57,7 @@ export default {
           },
         ],
       ],
+      exclude: ['node_modules/**'],
       babelHelpers: 'bundled',
     }),
     /** Create and inject a service worker */

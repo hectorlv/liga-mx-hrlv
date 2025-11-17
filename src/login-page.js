@@ -35,6 +35,7 @@ class LoginPage extends LitElement {
           inputmode="email"
           .value=${this.email}
           placeholder="Email"
+          aria-label="Email"
           required
           @input="${e => (this.email = e.target.value)}"
         />
@@ -43,11 +44,12 @@ class LoginPage extends LitElement {
           type="password"
           inputmode="text"
           placeholder="Password"
+          aria-label="Password"
           .value=${this.password}
           required
           @input="${e => (this.password = e.target.value)}"
         />
-        <button type="submit">Login</button>
+        <button type="submit" aria-label="Iniciar sesión">Login</button>
       </form>
         <md-dialog id="dialogLogin" type="alert">
           <div slot="headline">${this.titleError}</div>

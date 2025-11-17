@@ -2,11 +2,12 @@
 /* eslint-disable no-console */
 import { LitElement, html, css } from 'lit';
 import styles from './liga-mx-hrlv-styles.js';
-import '@polymer/iron-icon/iron-icon.js';
-import '@polymer/iron-icons/iron-icons.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
-import '@material/web/checkbox/checkbox.js';
+import '@material/web/switch/switch.js';
+import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/button/filled-button.js';
 import './match-detail-page.js';
 
 import { JORNADA_LIGUILLA } from './constants.js';
@@ -32,36 +33,85 @@ class MatchesPage extends LitElement {
     selectedMatch: { type: Object },
     savedFilters: { type: Object },
     players: { type: Array },
+    isMobile: { type: Boolean },
   };
 
   static get styles() {
     return [
       styles,
       css`
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .action-btn md-icon {
+          font-size: 18px;
+        }
         @media (max-width: 600px) {
+          .action-btn .btn-label {
+            display: none;
+          }
+          .action-btn {
+            padding: 6px 8px;
+            min-width: 40px;
+            justify-content: center;
+          }
+        }
+
+        .filters-card {
+          width: 100%;
+          max-width: 1100px;
+          margin: var(--space-8) auto var(--space-16);
+          padding: var(--space-12) var(--space-16);
+          background: var(--md-sys-color-surface-container-highest);
+          border-radius: var(--radius-m);
+          display: flex;
+          gap: var(--space-12);
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        .filters-card md-filled-select {
+          min-width: 220px;
+        }
+
+        .today-row {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-8);
+        }
+
+        @media (max-width: 600px) {
+          .filters-card {
+            flex-direction: column;
+            align-items: stretch;
+          }
           .greyGridTable {
-            width: 100%;
-            font-size: 12px;
+            display: none;
+          }
+          .match-cards {
             display: block;
-            overflow-x: auto;
-            white-space: nowrap;
+            padding: 0 var(--space-8);
           }
-          .greyGridTable thead,
-          .greyGridTable tbody {
-            display: block;
+          .match-card {
+            background: var(--md-sys-color-surface-container-highest);
+            border-radius: var(--radius-s);
+            padding: var(--space-8);
+            margin-bottom: var(--space-8);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
           }
-          .greyGridTable th,
-          .greyGridTable td {
-            padding: 5px;
-            box-sizing: border-box;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+          .match-card .teams {
+            display: flex;
+            align-items: center;
+            gap: var(--space-8);
+            justify-content: space-between;
           }
-          .greyGridTable tbody tr {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
+          .match-card .meta {
+            margin-top: var(--space-6);
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface);
           }
           .matches-filter {
             display: flex;
@@ -70,18 +120,6 @@ class MatchesPage extends LitElement {
           .matches-filter md-filled-select {
             width: 100%;
             margin-bottom: 10px;
-          }
-          .greyGridTable th:nth-child(5),
-          .greyGridTable th:nth-child(6),
-          .greyGridTable th:nth-child(7),
-          .greyGridTable th:nth-child(8),
-          .greyGridTable td:nth-child(2),
-          .greyGridTable td:nth-child(5),
-          .greyGridTable td:nth-child(7),
-          .greyGridTable td:nth-child(8),
-          .greyGridTable td:nth-child(9),
-          .greyGridTable td:nth-child(10) {
-            display: none;
           }
         }
       `,
@@ -100,15 +138,17 @@ class MatchesPage extends LitElement {
     this.selectedMatch = null;
     this.savedFilters = null;
     this.players = [];
+    this.isMobile = window.innerWidth < 600;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    window.addEventListener('resize', this._adjustTable.bind(this));
+    this._boundOnResize = this._onResize.bind(this);
+    window.addEventListener('resize', this._boundOnResize);
   }
 
   firstUpdated() {
-    this._adjustTable();
+    this._onResize();
   }
 
   /**
@@ -134,10 +174,11 @@ class MatchesPage extends LitElement {
     }
     return html`
       <main>
-        <div class="matches-filter">
+        <div class="filters-card">
           <md-filled-select
             id="teamsSelect"
             label="Equipos"
+            aria-label="Seleccionar equipo"
             @change="${this._filtersChanged}"
           >
             <md-select-option selected></md-select-option>
@@ -152,6 +193,7 @@ class MatchesPage extends LitElement {
           <md-filled-select
             id="matchDaySelect"
             label="Jornada"
+            aria-label="Seleccionar jornada"
             @change="${this._filtersChanged}"
           >
             <md-select-option selected></md-select-option>
@@ -173,141 +215,126 @@ class MatchesPage extends LitElement {
               `,
             )}
           </md-filled-select>
-          <label
-            class="checkbox
-          Today"
-          >
-            <md-checkbox @change="${this.checkboxChanged}"></md-checkbox>
-            Partidos de hoy
-          </label>
+          <div class="today-row">
+            <md-switch id="todayCheckbox" aria-label="Partidos de hoy" @change="${this.checkboxChanged}"></md-switch>
+            <span>Partidos de hoy</span>
+          </div>
         </div>
-        <table class="greyGridTable">
-          <thead>
-            <tr>
-              <th class="dynamic-colspan">Local</th>
-              <th>Gol Local</th>
-              <th class="dynamic-colspan">Visitante</th>
-              <th>Gol Visitante</th>
-              <th>Jornada</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Estadio</th>
-              <th></th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.matchesRender.map(
-              match => html`
-                <tr
-                  id="match${match.idMatch}"
-                  class="${getMatchRowClass(match.fecha)}"
-                >
-                  <td>
-                    ${match.local.trim() !== ''
-                      ? html`${getTeamImage(match.local)}`
-                      : html``}
-                  </td>
-                  <td>${match.local}</td>
-                  ${match.editMatch
-                    ? html`
+        ${!this.isMobile
+          ? html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th class="dynamic-colspan">Local</th>
+                    <th>Gol Local</th>
+                    <th class="dynamic-colspan">Visitante</th>
+                    <th>Gol Visitante</th>
+                    <th>Jornada</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Estadio</th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this.matchesRender.map(
+                    match => html`
+                      <tr id="match${match.idMatch}" class="${getMatchRowClass(match.fecha)}">
                         <td>
-                          <input
-                            type="number"
-                            inputmode="numeric"
-                            min="0"
-                            .value="${match.golLocal}"
-                            id="golLocal${match.idMatch}"
-                          />
+                          ${match.local.trim() !== '' ? html`${getTeamImage(match.local)}` : html``}
                         </td>
-                      `
-                    : html` <td>${match.golLocal}</td> `}
-                  <td>
-                    ${match.visitante.trim() !== ''
-                      ? html` ${getTeamImage(match.visitante)} `
-                      : html``}
-                  </td>
-                  <td>${match.visitante}</td>
-                  ${match.editMatch
-                    ? html`
+                        <td>${match.local}</td>
+                        ${match.editMatch
+                          ? html` <td>
+                              <input aria-label="Goles local" type="number" inputmode="numeric" min="0" .value="${match.golLocal}" id="golLocal${match.idMatch}" />
+                            </td>`
+                          : html` <td>${match.golLocal}</td> `}
                         <td>
-                          <input
-                            type="number"
-                            inputmode="numeric"
-                            min="0"
-                            .value="${match.golVisitante}"
-                            id="golVisitante${match.idMatch}"
-                          />
+                          ${match.visitante.trim() !== '' ? html` ${getTeamImage(match.visitante)} ` : html``}
                         </td>
-                      `
-                    : html` <td>${match.golVisitante}</td> `}
-                  <td>${match.jornada}</td>
-                  ${match.editMatch
-                    ? html`
+                        <td>${match.visitante}</td>
+                        ${match.editMatch
+                          ? html` <td>
+                              <input aria-label="Goles visitante" type="number" inputmode="numeric" min="0" .value="${match.golVisitante}" id="golVisitante${match.idMatch}" />
+                            </td>`
+                          : html` <td>${match.golVisitante}</td> `}
+                        <td>${match.jornada}</td>
+                        ${match.editMatch
+                          ? html` <td>
+                              <input aria-label="Fecha del partido" type="date" .value="${formatDateYYYYMMDD(match.fecha)}" id="fecha${match.idMatch}" />
+                            </td>`
+                          : html`<td>${formatDateDDMMYYYY(match.fecha)}</td> `}
+                        ${match.editMatch
+                          ? html` <td>
+                              <input aria-label="Hora del partido" type="time" .value="${match.hora}" id="hora${match.idMatch}" />
+                            </td>`
+                          : html` <td>${match.hora}</td> `}
+                        ${match.editMatch
+                          ? html` <td>
+                              <md-filled-select aria-label="Estadio" id="estadio${match.idMatch}" @change="${this._stadiumChanged}">
+                                ${this.stadiums.map(stadium => html`<md-select-option value="${stadium}" ?selected=${stadium === match.estadio}><div slot="headline">${stadium}</div></md-select-option>`) }
+                              </md-filled-select>
+                            </td>`
+                          : html`<td>${match.estadio}</td>`}
                         <td>
-                          <input
-                            type="date"
-                            .value="${formatDateYYYYMMDD(match.fecha)}"
-                            id="fecha${match.idMatch}"
-                          />
+                          <md-filled-button class="action-btn" id="icon${match.idMatch}" index="${match.idMatch}" aria-label="${match.editMatch ? 'Guardar' : 'Editar'}" title="${match.editMatch ? 'Guardar' : 'Editar'}" @click="${this._editMatch}">
+                            <md-icon>${match.editMatch ? 'check' : 'edit'}</md-icon>
+                            <span class="btn-label">${match.editMatch ? 'Guardar' : 'Editar'}</span>
+                          </md-filled-button>
                         </td>
-                      `
-                    : html`<td>${formatDateDDMMYYYY(match.fecha)}</td> `}
-                  ${match.editMatch
-                    ? html`
                         <td>
-                          <input
-                            type="time"
-                            .value="${match.hora}"
-                            id="hora${match.idMatch}"
-                          />
+                          <md-filled-button class="action-btn" id="iconDetails${match.idMatch}" index="${match.idMatch}" aria-label="Detalles" title="Detalles" @click="${this._showMatchDetails}">
+                            <md-icon>info</md-icon>
+                            <span class="btn-label">Detalles</span>
+                          </md-filled-button>
                         </td>
-                      `
-                    : html` <td>${match.hora}</td> `}
-                  ${match.editMatch
-                    ? html`
-                        <td>
-                          <md-filled-select
-                            id="estadio${match.idMatch}"
-                            @change="${this._stadiumChanged}"
-                          >
-                            ${this.stadiums.map(
-                              stadium => html`
-                                <md-select-option
-                                  value="${stadium}"
-                                  ?selected=${stadium === match.estadio}
-                                >
-                                  <div slot="headline">
-                                    ${stadium}
-                                  </div></md-select-option
-                                >
-                              `,
-                            )}
-                          </md-filled-select>
-                        </td>
-                      `
-                    : html`<td>${match.estadio}</td>`}
-                  <td>
-                    <iron-icon
-                      id="icon${match.idMatch}"
-                      index="${match.idMatch}"
-                      icon="${match.editMatch ? 'check' : 'create'}"
-                      @click="${this._editMatch}"
-                    ></iron-icon>
-                  </td>
-                  <td>
-                    <iron-icon
-                      id="iconDetails${match.idMatch}"
-                      index="${match.idMatch}"
-                      icon="info"
-                      @click="${this._showMatchDetails}"
-                    ></iron-icon>
-                  </td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
+                      </tr>
+                    `,
+                  )}
+                </tbody>
+              </table>
+            `
+          : html`
+              <div class="match-cards">
+                ${this.matchesRender.map(
+                  match => html`
+                    <div class="match-card">
+                      <div class="teams">
+                        <div class="team-left">
+                          ${match.local.trim() !== '' ? getTeamImage(match.local) : ''}
+                          <div>${match.local}</div>
+                        </div>
+                        <div class="score">
+                          <strong>${match.golLocal}</strong>
+                          <span> - </span>
+                          <strong>${match.golVisitante}</strong>
+                        </div>
+                        <div class="team-right">
+                          ${match.visitante.trim() !== '' ? getTeamImage(match.visitante) : ''}
+                          <div>${match.visitante}</div>
+                        </div>
+                      </div>
+                      <div class="meta">
+                        <div>Jornada: ${match.jornada}</div>
+                        <div>${formatDateDDMMYYYY(match.fecha)} ${match.hora}</div>
+                        <div>${match.estadio}</div>
+                      </div>
+                      <div class="actions" style="margin-top:8px; display:flex; gap:8px;">
+                        <md-filled-button class="action-btn" index="${match.idMatch}" aria-label="${match.editMatch ? 'Guardar' : 'Editar'}" @click="${this._editMatch}">
+                          <md-icon>${match.editMatch ? 'check' : 'edit'}</md-icon>
+                          <span class="btn-label">${match.editMatch ? 'Guardar' : 'Editar'}</span>
+                        </md-filled-button>
+                        <md-filled-button class="action-btn" index="${match.idMatch}" aria-label="Detalles" @click="${this._showMatchDetails}">
+                          <md-icon>info</md-icon>
+                          <span class="btn-label">Detalles</span>
+                        </md-filled-button>
+                      </div>
+                    </div>
+                  `,
+                )}
+              </div>
+            `}
       </main>
     `;
   }
@@ -395,16 +422,16 @@ class MatchesPage extends LitElement {
    * @param {Event} e
    */
   checkboxChanged(e) {
-    this.todayDateSelected = e.target.checked;
+    this.todayDateSelected = (e.target.selected ?? e.target.checked) || false;
     this._filtersChanged();
   }
 
-  _adjustTable() {
-    const dynamicColspan = this.shadowRoot.querySelectorAll('.dynamic-colspan');
+  _onResize() {
     const isMobile = window.innerWidth < 600;
-    dynamicColspan.forEach(col => {
-      col.colSpan = isMobile ? 1 : 2;
-    });
+    if (this.isMobile !== isMobile) {
+      this.isMobile = isMobile;
+      this.requestUpdate();
+    }
   }
 
   _showMatchDetails(e) {
@@ -437,8 +464,8 @@ class MatchesPage extends LitElement {
         this.shadowRoot.querySelector('#matchDaySelect').value =
           this.savedFilters.matchDayValue;
         this.todayDateSelected = this.savedFilters.todayDateSelected;
-        this.shadowRoot.querySelector('#todayCheckbox').checked =
-          this.todayDateSelected;
+        const todaySwitch = this.shadowRoot.querySelector('#todayCheckbox');
+        if (todaySwitch) todaySwitch.selected = this.todayDateSelected;
         this.savedFilters = null;
         this._filtersChanged();
       }

@@ -67,12 +67,12 @@ class MyNavbar extends LitElement {
 
   render() {
     return html`
-      <button class="menu-button" @click="${this.toggleMenu}">&#9776;</button>
-      <nav ?visible="${this.menuVisible}">
-        <label @click="${this.navClicked}">Calendario</label>
-        <label @click="${this.navClicked}">Tabla General</label>
-        <label @click="${this.navClicked}">Liguilla</label>
-        <label>Usuario: ${this.user.email}</label>
+      <button class="menu-button" @click="${this.toggleMenu}" aria-label="Abrir menú" aria-expanded="${this.menuVisible}">&#9776;</button>
+      <nav ?visible="${this.menuVisible}" role="navigation" aria-label="Menú principal">
+        <button class="nav-link" @click="${this.navClicked}" aria-label="Ir a Calendario">Calendario</button>
+        <button class="nav-link" @click="${this.navClicked}" aria-label="Ir a Tabla General">Tabla General</button>
+        <button class="nav-link" @click="${this.navClicked}" aria-label="Ir a Liguilla">Liguilla</button>
+        <div class="nav-user" aria-label="Usuario">Usuario: ${this.user?.email || ''}</div>
       </nav>
     `;
   }
