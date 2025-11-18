@@ -29,9 +29,11 @@
     "@web/dev-server": "^0.4.6",
     "@web/rollup-plugin-html": "^2.3.0",
     "@web/rollup-plugin-import-meta-assets": "^2.3.0",
+    "axe-core": "^4.11.0",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "playwright": "^1.56.1",
     "prettier": "^3.6.2",
     "rimraf": "^6.1.0",
     "rollup": "^4.53.2",
@@ -49,8 +51,7 @@
     "singleQuote": true,
     "arrowParens": "avoid"
   },
-  "customElements": "custom-elements.json"
-  ,
+  "customElements": "custom-elements.json",
   "overrides": {
     "glob": "11.1.0"
   }

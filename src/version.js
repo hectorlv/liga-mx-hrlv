@@ -1,2 +1,1 @@
-import pkg from '../package.json';
-export const APP_VERSION = pkg.version;
+export * from './utils/version.js';
