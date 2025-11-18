@@ -1,5 +1,5 @@
-import { LIGUILLA } from './constants';
-import { saveUpdates } from './firebaseService';
+import { LIGUILLA } from './constants.js';
+import { saveUpdates } from './firebaseService.js';
 
 export function calculatePlayIn(table, matches) {
   const playIn1 = {};

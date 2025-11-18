@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
-import { formatDateDDMMYYYY } from './dateUtils';
-import { getTeamImage } from './imageUtils';
-import styles from './liga-mx-hrlv-styles.js';
+import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
+import { getTeamImage } from '../utils/imageUtils.js';
+import styles from '../styles/liga-mx-hrlv-styles.js';
 import '@material/web/checkbox/checkbox.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/outlined-select.js';
@@ -27,52 +27,16 @@ class MatchDetailPage extends LitElement {
           display: block;
           padding: 16px;
         }
-        h2,
-        h3,
-        h4 {
-          margin: 0;
-        }
-            .section {
-              margin-top: 16px;
-            }
-            .card {
-              background: var(--md-sys-color-surface-container-highest);
-              border-radius: var(--radius-m);
-              padding: var(--space-12);
-              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-              margin-bottom: var(--space-12);
-              text-align: left;
-            }
-            .action-btn {
-              display: inline-flex;
-              align-items: center;
-              gap: 8px;
-            }
-            .action-btn md-icon {
-              font-size: 20px;
-            }
-            @media (max-width: 600px) {
-              .action-btn .btn-label {
-                display: none;
-              }
-              .action-btn {
-                padding: 6px 8px;
-                min-width: 40px;
-                justify-content: center;
-              }
-              .action-btn md-icon {
-                margin: 0;
-              }
-            }
 
-            .player-row:hover,
-            .player-row:focus-within {
-              background: rgba(0, 0, 0, 0.03);
-              outline: none;
-            }
-            .player-row.selected {
-              background: rgba(76, 175, 80, 0.08);
-            }
+        /* Player rows and lineup layout are specific to this component */
+        .player-row:hover,
+        .player-row:focus-within {
+          background: rgba(0, 0, 0, 0.03);
+          outline: none;
+        }
+        .player-row.selected {
+          background: rgba(var(--color-primary-rgb), 0.08);
+        }
         .lineup {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -117,12 +81,7 @@ class MatchDetailPage extends LitElement {
             grid-template-columns: 1fr;
           }
         }
-        ul {
-          padding-left: 20px;
-        }
-        li {
-          margin-bottom: 4px;
-        }
+
         .minute-input {
           width: 5ch;
           min-width: 5ch;
@@ -196,11 +155,13 @@ class MatchDetailPage extends LitElement {
             ${this.localPlayers.map(
               player => html`
                 <div
-                  class="${`player-row ${lineupLocal.includes(player.number) ? 'selected' : ''}`}" 
+                  class="${`player-row ${lineupLocal.includes(player.number) ? 'selected' : ''}`}"
                   role="button"
                   tabindex="0"
                   aria-label="Jugador ${player.number} ${player.name} — alternar alineación local"
-                  aria-pressed="${lineupLocal.includes(player.number) ? 'true' : 'false'}"
+                  aria-pressed="${lineupLocal.includes(player.number)
+                    ? 'true'
+                    : 'false'}"
                   @click=${() => this._toggleRow('local', player.number)}
                   @keydown=${e => this._onRowKeydown(e, 'local', player.number)}
                 >
@@ -222,13 +183,16 @@ class MatchDetailPage extends LitElement {
             ${this.visitorPlayers.map(
               player => html`
                 <div
-                  class="${`player-row ${lineupVisitor.includes(player.number) ? 'selected' : ''}`}" 
+                  class="${`player-row ${lineupVisitor.includes(player.number) ? 'selected' : ''}`}"
                   role="button"
                   tabindex="0"
                   aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
-                  aria-pressed="${lineupVisitor.includes(player.number) ? 'true' : 'false'}"
+                  aria-pressed="${lineupVisitor.includes(player.number)
+                    ? 'true'
+                    : 'false'}"
                   @click=${() => this._toggleRow('visitor', player.number)}
-                  @keydown=${e => this._onRowKeydown(e, 'visitor', player.number)}
+                  @keydown=${e =>
+                    this._onRowKeydown(e, 'visitor', player.number)}
                 >
                   <md-checkbox
                     id="lineupVisitor-${player.number}"
@@ -244,13 +208,23 @@ class MatchDetailPage extends LitElement {
             )}
           </div>
         </div>
-        <md-filled-button aria-label="Guardar alineación local" title="Guardar alineación local" @click=${() => this.updateLineupLocal(lineupLocal)}>
+        <md-filled-button
+          class="action-btn"
+          aria-label="Guardar alineación local"
+          title="Guardar alineación local"
+          @click=${() => this.updateLineupLocal(lineupLocal)}
+        >
           <md-icon>save</md-icon>
-          Guardar Local
+          <span class="btn-label">Guardar Local</span>
         </md-filled-button>
-        <md-filled-button aria-label="Guardar alineación visitante" title="Guardar alineación visitante" @click=${() => this.updateLineupVisitor(lineupVisitor)}>
+        <md-filled-button
+          class="action-btn"
+          aria-label="Guardar alineación visitante"
+          title="Guardar alineación visitante"
+          @click=${() => this.updateLineupVisitor(lineupVisitor)}
+        >
           <md-icon>save</md-icon>
-          Guardar Visitante
+          <span class="btn-label">Guardar Visitante</span>
         </md-filled-button>
       </div>
 
@@ -268,13 +242,25 @@ class MatchDetailPage extends LitElement {
           )}
         </ul>
         <div>
-          <md-outlined-select id="goalTeam" aria-label="Equipo del gol" title="Equipo del gol" @change=${() => this.requestUpdate()}>
+          <md-outlined-select
+            id="goalTeam"
+            aria-label="Equipo del gol"
+            title="Equipo del gol"
+            @change=${() => this.requestUpdate()}
+          >
             <md-select-option value="local">Local</md-select-option>
             <md-select-option value="visitor">Visitante</md-select-option>
           </md-outlined-select>
-          <md-outlined-select id="newGoalPlayer" aria-label="Jugador que anotó" title="Jugador que anotó">
+          <md-outlined-select
+            id="newGoalPlayer"
+            aria-label="Jugador que anotó"
+            title="Jugador que anotó"
+          >
             ${[...this.localPlayers, ...this.visitorPlayers].map(
-              p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`,
+              p =>
+                html`<md-select-option value=${p.id}
+                  >${p.name}</md-select-option
+                >`,
             )}
           </md-outlined-select>
           <input
@@ -287,8 +273,21 @@ class MatchDetailPage extends LitElement {
             min="0"
             max="90"
           />
-          <label><md-checkbox id="newGoalOwn" aria-label="Gol en propia puerta"></md-checkbox> Autogol </label>
-          <md-filled-button aria-label="Agregar gol" title="Agregar gol" @click=${this._addGoal}><md-icon>add</md-icon>Agregar Gol</md-filled-button>
+          <label
+            ><md-checkbox
+              id="newGoalOwn"
+              aria-label="Gol en propia puerta"
+            ></md-checkbox>
+            Autogol
+          </label>
+          <md-filled-button
+            class="action-btn"
+            aria-label="Agregar gol"
+            title="Agregar gol"
+            @click=${this._addGoal}
+            ><md-icon>add</md-icon
+            ><span class="btn-label">Agregar Gol</span></md-filled-button
+          >
         </div>
       </div>
 
@@ -306,18 +305,37 @@ class MatchDetailPage extends LitElement {
           )}
         </ul>
         <div>
-          <md-outlined-select id="subTeam" aria-label="Equipo del cambio" title="Equipo del cambio" @change=${() => this.requestUpdate()}>
+          <md-outlined-select
+            id="subTeam"
+            aria-label="Equipo del cambio"
+            title="Equipo del cambio"
+            @change=${() => this.requestUpdate()}
+          >
             <md-select-option value="local">Local</md-select-option>
             <md-select-option value="visitor">Visitante</md-select-option>
           </md-outlined-select>
-          <md-outlined-select id="subOut" aria-label="Jugador que sale" title="Jugador que sale">
+          <md-outlined-select
+            id="subOut"
+            aria-label="Jugador que sale"
+            title="Jugador que sale"
+          >
             ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
-              p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`,
+              p =>
+                html`<md-select-option value=${p.id}
+                  >${p.name}</md-select-option
+                >`,
             )}
           </md-outlined-select>
-          <md-outlined-select id="subIn" aria-label="Jugador que entra" title="Jugador que entra">
+          <md-outlined-select
+            id="subIn"
+            aria-label="Jugador que entra"
+            title="Jugador que entra"
+          >
             ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
-              p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`,
+              p =>
+                html`<md-select-option value=${p.id}
+                  >${p.name}</md-select-option
+                >`,
             )}
           </md-outlined-select>
           <input
@@ -330,7 +348,14 @@ class MatchDetailPage extends LitElement {
             min="0"
             max="90"
           />
-          <md-filled-button aria-label="Agregar cambio" title="Agregar cambio" @click=${this._addSub}><md-icon>swap_horiz</md-icon>Agregar cambio</md-filled-button>
+          <md-filled-button
+            class="action-btn"
+            aria-label="Agregar cambio"
+            title="Agregar cambio"
+            @click=${this._addSub}
+            ><md-icon>swap_horiz</md-icon
+            ><span class="btn-label">Agregar cambio</span></md-filled-button
+          >
         </div>
       </div>
 
@@ -348,15 +373,29 @@ class MatchDetailPage extends LitElement {
           )}
         </ul>
         <div>
-          <md-outlined-select id="cardTeam" aria-label="Equipo tarjeta" title="Equipo tarjeta" @change=${() => this.requestUpdate()}>
+          <md-outlined-select
+            id="cardTeam"
+            aria-label="Equipo tarjeta"
+            title="Equipo tarjeta"
+            @change=${() => this.requestUpdate()}
+          >
             <md-select-option value="local">Local</md-select-option>
             <md-select-option value="visitor">Visitante</md-select-option>
           </md-outlined-select>
-          <md-outlined-select id="cardPlayer" aria-label="Jugador tarjeta" title="Jugador tarjeta">
+          <md-outlined-select
+            id="cardPlayer"
+            aria-label="Jugador tarjeta"
+            title="Jugador tarjeta"
+          >
             ${(cardSide === 'local'
               ? this.localPlayers
               : this.visitorPlayers
-            ).map(p => html`<md-select-option value=${p.id}>${p.name}</md-select-option>`)}
+            ).map(
+              p =>
+                html`<md-select-option value=${p.id}
+                  >${p.name}</md-select-option
+                >`,
+            )}
           </md-outlined-select>
           <input
             aria-label="Minuto de la tarjeta"
@@ -368,11 +407,22 @@ class MatchDetailPage extends LitElement {
             min="0"
             max="90"
           />
-          <md-filled-select id="cardType" aria-label="Tipo de tarjeta" title="Tipo de tarjeta">
+          <md-filled-select
+            id="cardType"
+            aria-label="Tipo de tarjeta"
+            title="Tipo de tarjeta"
+          >
             <md-select-option value="yellow">Amarilla</md-select-option>
             <md-select-option value="red">Roja</md-select-option>
           </md-filled-select>
-          <md-filled-button aria-label="Agregar tarjeta" title="Agregar tarjeta" @click=${this._addCard}><md-icon>warning</md-icon>Agregar Tarjeta</md-filled-button>
+          <md-filled-button
+            class="action-btn"
+            aria-label="Agregar tarjeta"
+            title="Agregar tarjeta"
+            @click=${this._addCard}
+            ><md-icon>warning</md-icon
+            ><span class="btn-label">Agregar Tarjeta</span></md-filled-button
+          >
         </div>
       </div>
     `;
@@ -451,7 +501,10 @@ class MatchDetailPage extends LitElement {
 
   _toggleRow(side, playerNumber) {
     // Evita interferir si el click fue directamente en el checkbox
-    const checkboxId = side === 'local' ? `lineupLocal-${playerNumber}` : `lineupVisitor-${playerNumber}`;
+    const checkboxId =
+      side === 'local'
+        ? `lineupLocal-${playerNumber}`
+        : `lineupVisitor-${playerNumber}`;
     const cb = this.shadowRoot?.getElementById(checkboxId);
     if (!cb) return;
     cb.checked = !cb.checked;
