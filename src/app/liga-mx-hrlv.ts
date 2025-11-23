@@ -158,7 +158,6 @@ export class LigaMxHrlv extends LitElement {
     });
     this._unsubscribePlayers = fetchPlayers(players => {
       this.players = players;
-      console.log('Fetched players:', this.players);
     });
   }
 
