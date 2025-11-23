@@ -1,25 +1,16 @@
-/* eslint-disable class-methods-use-this */
-/* eslint-disable no-console */
 import { LitElement, html } from 'lit';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { customElement, property } from 'lit/decorators.js';
+import { TableEntry } from '../app/types/index.js';
 
 /**
  * Page for the table of positions
  */
-class TablePage extends LitElement {
-  static properties = {
-    table: { type: Array },
-  };
-
-  static get styles() {
-    return [styles];
-  }
-
-  constructor() {
-    super();
-    this.table = [];
-  }
+@customElement('table-page')
+export class TablePage extends LitElement {
+  static styles = [styles];
+  @property({ type: Array }) table: TableEntry[] = [];
 
   render() {
     return html`
@@ -63,7 +54,7 @@ class TablePage extends LitElement {
     `;
   }
 
-  getClass(i) {
+  private getClass(i: number) {
     const team = this.table[i];
     const team7 = this.table[6];
     const team10 = this.table[9];
@@ -81,9 +72,7 @@ class TablePage extends LitElement {
     } else if (
       (team11.jj < TOTAL_MATCHES &&
         team11.pts + 3 * (TOTAL_MATCHES - team11.jj) < team.pts) ||
-      (i < 10 &&
-        team11.jj === TOTAL_MATCHES &&
-        team11.pts <= team.pts)
+      (i < 10 && team11.jj === TOTAL_MATCHES && team11.pts <= team.pts)
     ) {
       return 'playin';
     } else if (
@@ -98,5 +87,3 @@ class TablePage extends LitElement {
     return '';
   }
 }
-
-customElements.define('table-page', TablePage);

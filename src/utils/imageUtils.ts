@@ -1,7 +1,8 @@
 import { html } from "lit";
 import { LOGOS } from "./constants.js";
 import * as images from '../images/index.js';
-export function getTeamImage(equipo) {
+import { Team } from "../app/types/index.js";
+export function getTeamImage(equipo : Team) {
     const keys = Object.keys(images);
     keys.forEach(key => {
       // eslint-disable-next-line no-param-reassign

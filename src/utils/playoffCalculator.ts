@@ -1,7 +1,8 @@
+import { Match, TableEntry } from '../app/types/index.js';
 import { LIGUILLA } from './constants.js';
 import { saveUpdates } from './firebaseService.js';
 
-export function calculatePlayIn(table, matches) {
+export function calculatePlayIn(table: TableEntry[], matches: Match[]) {
   const playIn1 = {};
   playIn1[`/matches/${LIGUILLA.playIn1.id}/local`] =
     table[LIGUILLA.playIn1.local].equipo;
@@ -23,7 +24,7 @@ export function calculatePlayIn(table, matches) {
   const playIn3 = {};
   const playIn1Match = matches.find(x => x.idMatch === LIGUILLA.playIn1.id);
   const playIn2Match = matches.find(x => x.idMatch === LIGUILLA.playIn2.id);
-  if (!playIn1Match.golLocal >= 0 && !playIn1Match.golVisitante >= 0) {
+  if (playIn1Match.golLocal >= 0 && playIn1Match.golVisitante >= 0) {
     if (playIn1Match.golLocal > playIn1Match.golVisitante) {
       playIn3[`/matches/${LIGUILLA.playOff3.id}/local`] =
         playIn1Match.visitante;
@@ -43,7 +44,7 @@ export function calculatePlayIn(table, matches) {
       ];
     }
   }
-  if (!playIn2Match.golLocal >= 0 && !playIn2Match.golVisitante >= 0) {
+  if (playIn2Match.golLocal >= 0 && playIn2Match.golVisitante >= 0) {
     if (playIn2Match.golLocal > playIn2Match.golVisitante) {
       playIn3[`/matches/${LIGUILLA.playOff3.id}/visitante`] =
         playIn2Match.local;
@@ -56,8 +57,8 @@ export function calculatePlayIn(table, matches) {
   }
 
   if (
-    !matches[LIGUILLA.playOff3.id].golLocal >= 0 &&
-    !matches[LIGUILLA.playOff3.id].golVisitante >= 0
+    matches[LIGUILLA.playOff3.id].golLocal >= 0 &&
+    matches[LIGUILLA.playOff3.id].golVisitante >= 0
   ) {
     if (
       matches[LIGUILLA.playOff3.id].golLocal >
@@ -80,7 +81,7 @@ export function calculatePlayIn(table, matches) {
   calculateQuarterFinal(table, matches);
 }
 
-function calculateQuarterFinal(table, matches) {
+function calculateQuarterFinal(table: TableEntry[], matches: Match[]) {
   const quarters = table.filter(team => !team.eliminado);
   const quarter1 = {};
   quarter1[`/matches/${LIGUILLA.quarter1.ida.id}/local`] =
@@ -155,7 +156,7 @@ function calculateQuarterFinal(table, matches) {
   calculateSemiFinal(table, matches);
 }
 
-function calculateSemiFinal(table, matches) {
+function calculateSemiFinal(table: TableEntry[], matches: Match[]) {
   const quarter1 = {
     local: matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).visitante,
     visitante: matches.find(x => x.idMatch === LIGUILLA.quarter1.ida.id).local,
@@ -256,7 +257,7 @@ function calculateSemiFinal(table, matches) {
   calculateFinal(table, matches);
 }
 
-function calculateFinal(table, matches) {
+function calculateFinal(table: TableEntry[], matches: Match[]) {
   const semis1 = {
     local: matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).visitante,
     visitante: matches.find(x => x.idMatch === LIGUILLA.semi1.ida.id).local,
@@ -312,6 +313,6 @@ function calculateFinal(table, matches) {
   saveUpdates(updates);
 }
 
-function getEstadio(team, matches) {
+function getEstadio(team: string, matches: Match[]) {
   return matches.find(x => x.local === team).estadio;
 }

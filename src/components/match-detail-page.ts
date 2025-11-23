@@ -10,102 +10,136 @@ import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
+import {
+  Card,
+  Goal,
+  Match,
+  Player,
+  PlayerTeam,
+  Substitution,
+  Team,
+} from '../app/types/index.js';
+import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
+import { MdCheckbox } from '@material/web/checkbox/checkbox.js';
 
-class MatchDetailPage extends LitElement {
-  static properties = {
-    match: { type: Object },
-    players: { type: Array },
-    teams: { type: Array },
-    localPlayers: { type: Array },
-    visitorPlayers: { type: Array },
-  };
-  static get styles() {
-    return [
-      styles,
-      css`
-        :host {
-          display: block;
-          padding: 16px;
-        }
+@customElement('match-detail-page')
+export class MatchDetailPage extends LitElement {
+  static styles = [
+    styles,
+    css`
+      :host {
+        display: block;
+        padding: 16px;
+      }
 
-        /* Player rows and lineup layout are specific to this component */
-        .player-row:hover,
-        .player-row:focus-within {
-          background: rgba(0, 0, 0, 0.03);
-          outline: none;
-        }
-        .player-row.selected {
-          background: rgba(var(--color-primary-rgb), 0.08);
-        }
+      /* Player rows and lineup layout are specific to this component */
+      .player-row:hover,
+      .player-row:focus-within {
+        background: rgba(0, 0, 0, 0.03);
+        outline: none;
+      }
+      .player-row.selected {
+        background: rgba(var(--color-primary-rgb), 0.08);
+      }
+      .lineup {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        align-items: start;
+      }
+      .lineup > div {
+        width: 100%;
+      }
+      .player-row {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 6px 8px;
+        box-sizing: border-box;
+        justify-content: start;
+        gap: 10px;
+        cursor: pointer;
+      }
+      .player-row md-checkbox {
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+        margin: auto 0;
+      }
+      .player-row img {
+        flex: 0 0 auto;
+        width: 60px;
+        height: auto;
+        object-fit: contain;
+      }
+      .player-row span {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: auto 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      @media (max-width: 600px) {
         .lineup {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 24px;
-          align-items: start;
+          grid-template-columns: 1fr;
         }
-        .lineup > div {
-          width: 100%;
-        }
-        .player-row {
-          display: flex;
-          align-items: center;
-          width: 100%;
-          padding: 6px 8px;
-          box-sizing: border-box;
-          justify-content: start;
-          gap: 10px;
-          cursor: pointer;
-        }
-        .player-row md-checkbox {
-          flex: 0 0 auto;
-          width: 16px;
-          height: 16px;
-          margin: auto 0;
-        }
-        .player-row img {
-          flex: 0 0 auto;
-          width: 60px;
-          height: auto;
-          object-fit: contain;
-        }
-        .player-row span {
-          flex: 1 1 auto;
-          min-width: 0;
-          margin: auto 0;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        @media (max-width: 600px) {
-          .lineup {
-            grid-template-columns: 1fr;
-          }
-        }
+      }
 
-        .minute-input {
-          width: 5ch;
-          min-width: 5ch;
-          max-width: 5ch;
-          text-align: center;
-        }
-      `,
-    ];
-  }
-  constructor() {
-    super();
-    this.match = {};
-    this.players = [];
-    this.teams = [];
-    this.localPlayers = [];
-    this.visitorPlayers = [];
-  }
+      .minute-input {
+        width: 5ch;
+        min-width: 5ch;
+        max-width: 5ch;
+        text-align: center;
+      }
+    `,
+  ];
 
-  _updatePlayerLists() {
+  @property({ type: Object }) match: Match = null;
+  @property({ type: Object }) players: PlayerTeam = new Map();
+  @property({ type: Array }) teams: Team[] = [];
+  @state() localPlayers: Player[] = [];
+  @state() visitorPlayers: Player[] = [];
+
+  @query('subTeam') subTeamSelect: MdOutlinedSelect;
+  @query('cardTeam') cardTeamSelect: MdOutlinedSelect;
+  @query('goalTeam') goalTeamSelect: MdOutlinedSelect;
+  @query('newGoalPlayer') newGoalPlayerSelect: MdOutlinedSelect;
+  @query('newGoalMinute') newGoalMinuteInput: HTMLInputElement;
+  @query('newGoalOwn') newGoalOwnCheckbox: HTMLInputElement;
+  @query('subOut') subOutSelect: MdOutlinedSelect;
+  @query('subIn') subInSelect: MdOutlinedSelect;
+  @query('subMinute') subMinuteInput: HTMLInputElement;
+  @query('cardplayer') cardPlayerSelect: MdOutlinedSelect;
+  @query('cardminute') cardMinuteInput: HTMLInputElement;
+  @query('cardtype') cardTypeSelect: MdOutlinedSelect;
+
+  private _updatePlayerLists() {
     if (!this.match || !this.teams.length) return;
     this.localPlayers =
-      this.players[this.match.local.replaceAll('.', '')] || [];
-    this.visitorPlayers =
-      this.players[this.match.visitante.replaceAll('.', '')] || [];
+      this.players.get(this.match.local.replaceAll('.', '')) || [];
+    this.visitorPlayers = 
+      this.players.get(this.match.visitante.replaceAll('.', '')) || [];
+    // Cambiar el dominio de las imágenes por https://cldrsrcs.apilmx.com/v1/media/wpagephotos/76/1/
+    this.localPlayers = this.localPlayers.map(player => {
+      return {
+        ...player,
+        imgSrc: player.imgSrc.replace(
+          'https://s3.amazonaws.com/lmxwebsite/media/wpagephotos/75/2/',
+          'https://cldrsrcs.apilmx.com/v1/media/wpagephotos/76/1/',
+        ),
+      };
+    });
+    this.visitorPlayers = this.visitorPlayers.map(player => {
+      return {
+        ...player,
+        imgSrc: player.imgSrc.replace(
+          'https://s3.amazonaws.com/lmxwebsite/media/wpagephotos/75/2/',
+          'https://cldrsrcs.apilmx.com/v1/media/wpagephotos/76/1/',
+        ),
+      };
+    });
   }
 
   render() {
@@ -120,18 +154,16 @@ class MatchDetailPage extends LitElement {
       fecha,
       hora,
       estadio,
-      lineupLocal = [],
-      lineupVisitor = [],
-      goals = [],
-      substitutions = [],
-      cards = [],
+      lineupLocal,
+      lineupVisitor,
+      goals,
+      substitutions,
+      cards,
     } = this.match;
 
-    const side = this.shadowRoot?.getElementById('subTeam')?.value || 'local';
-    const cardSide =
-      this.shadowRoot?.getElementById('cardTeam')?.value || 'local';
-    const goalSide =
-      this.shadowRoot?.getElementById('goalTeam')?.value || 'local';
+    const side = this.subTeamSelect?.value || 'local';
+    const cardSide = this.cardTeamSelect?.value || 'local';
+    const goalSide = this.goalTeamSelect?.value || 'local';
 
     return html`
       <h2>
@@ -142,8 +174,8 @@ class MatchDetailPage extends LitElement {
         <md-icon>arrow_back</md-icon>
       </md-icon-button>
       <p>
-        <strong>Fecha:</strong> ${formatDateDDMMYYYY(fecha)} &nbsp;|&nbsp;
-        <strong>Hora:</strong> ${hora} &nbsp;|&nbsp;
+        <strong>Fecha:</strong> ${formatDateDDMMYYYY(fecha as Date)}
+        &nbsp;|&nbsp; <strong>Hora:</strong> ${hora} &nbsp;|&nbsp;
         <strong>Estadio:</strong> ${estadio}
       </p>
 
@@ -155,21 +187,22 @@ class MatchDetailPage extends LitElement {
             ${this.localPlayers.map(
               player => html`
                 <div
-                  class="${`player-row ${lineupLocal.includes(player.number) ? 'selected' : ''}`}"
+                  class="${`player-row ${lineupLocal?.includes(player.number) ? 'selected' : ''}`}"
                   role="button"
                   tabindex="0"
                   aria-label="Jugador ${player.number} ${player.name} — alternar alineación local"
-                  aria-pressed="${lineupLocal.includes(player.number)
+                  aria-pressed="${lineupLocal?.includes(player.number)
                     ? 'true'
                     : 'false'}"
                   @click=${() => this._toggleRow('local', player.number)}
-                  @keydown=${e => this._onRowKeydown(e, 'local', player.number)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    this._onRowKeydown(e, 'local', player.number)}
                 >
                   <md-checkbox
                     id="lineupLocal-${player.number}"
                     aria-label="Incluir ${player.name} en alineación local"
-                    .checked=${lineupLocal.includes(player.number)}
-                    @change=${e =>
+                    .checked=${lineupLocal?.includes(player.number)}
+                    @change=${(e: Event) =>
                       this._onLineupChange(e, 'local', player.number)}
                   ></md-checkbox>
                   <img src=${player.imgSrc} alt=${player.name} width="60" />
@@ -183,22 +216,22 @@ class MatchDetailPage extends LitElement {
             ${this.visitorPlayers.map(
               player => html`
                 <div
-                  class="${`player-row ${lineupVisitor.includes(player.number) ? 'selected' : ''}`}"
+                  class="${`player-row ${lineupVisitor?.includes(player.number) ? 'selected' : ''}`}"
                   role="button"
                   tabindex="0"
                   aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
-                  aria-pressed="${lineupVisitor.includes(player.number)
+                  aria-pressed="${lineupVisitor?.includes(player.number)
                     ? 'true'
                     : 'false'}"
                   @click=${() => this._toggleRow('visitor', player.number)}
-                  @keydown=${e =>
+                  @keydown=${(e: KeyboardEvent) =>
                     this._onRowKeydown(e, 'visitor', player.number)}
                 >
                   <md-checkbox
                     id="lineupVisitor-${player.number}"
                     aria-label="Incluir ${player.name} en alineación visitante"
-                    .checked=${lineupVisitor.includes(player.number)}
-                    @change=${e =>
+                    .checked=${lineupVisitor?.includes(player.number)}
+                    @change=${(e: Event) =>
                       this._onLineupChange(e, 'visitor', player.number)}
                   ></md-checkbox>
                   <img src=${player.imgSrc} alt=${player.name} width="60" />
@@ -229,12 +262,12 @@ class MatchDetailPage extends LitElement {
       </div>
 
       <div class="section card">
-        <h3>Goles (${goals.length})</h3>
+        <h3>Goles (${goals?.length})</h3>
         <ul>
-          ${goals.map(
+          ${goals?.map(
             g => html`
               <li>
-                ${this._getPlayerName(g.playerId)}
+                ${this._getPlayerName(g.player)}
                 ${g.ownGoal ? html`<em>(Gol en propia)</em>` : ''} &mdash;
                 Minuto ${g.minute}
               </li>
@@ -258,7 +291,7 @@ class MatchDetailPage extends LitElement {
           >
             ${[...this.localPlayers, ...this.visitorPlayers].map(
               p =>
-                html`<md-select-option value=${p.id}
+                html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
                 >`,
             )}
@@ -292,14 +325,14 @@ class MatchDetailPage extends LitElement {
       </div>
 
       <div class="section card">
-        <h3>Cambios (${substitutions.length})</h3>
+        <h3>Cambios (${substitutions?.length || 0})</h3>
         <ul>
-          ${substitutions.map(
+          ${substitutions?.map(
             s => html`
               <li>
-                <strong>${s.teamId}</strong>:
-                ${this._getPlayerName(s.playerOutId)} &rarr;
-                ${this._getPlayerName(s.playerInId)} &mdash; Minuto ${s.minute}
+                <strong>${s.team}</strong>: ${this._getPlayerName(s.playerOut)}
+                &rarr; ${this._getPlayerName(s.playerIn)} &mdash; Minuto
+                ${s.minute}
               </li>
             `,
           )}
@@ -321,7 +354,7 @@ class MatchDetailPage extends LitElement {
           >
             ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
               p =>
-                html`<md-select-option value=${p.id}
+                html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
                 >`,
             )}
@@ -333,7 +366,7 @@ class MatchDetailPage extends LitElement {
           >
             ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
               p =>
-                html`<md-select-option value=${p.id}
+                html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
                 >`,
             )}
@@ -360,12 +393,12 @@ class MatchDetailPage extends LitElement {
       </div>
 
       <div class="section card">
-        <h3>Tarjetas (${cards.length})</h3>
+        <h3>Tarjetas (${cards?.length || 0})</h3>
         <ul>
-          ${cards.map(
+          ${cards?.map(
             c => html`
               <li>
-                <strong>${c.teamId}</strong>: ${this._getPlayerName(c.playerId)}
+                <strong>${c.team}</strong>: ${this._getPlayerName(c.player)}
                 &mdash; Minuto ${c.minute} —
                 <em>${c.cardType.toUpperCase()}</em>
               </li>
@@ -392,7 +425,7 @@ class MatchDetailPage extends LitElement {
               : this.visitorPlayers
             ).map(
               p =>
-                html`<md-select-option value=${p.id}
+                html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
                 >`,
             )}
@@ -427,8 +460,18 @@ class MatchDetailPage extends LitElement {
       </div>
     `;
   }
+  private _getPlayerName(playerId: string): unknown {
+    throw new Error('Method not implemented.');
+  }
 
-  _onLineupChange(e, side, playerId) {
+  private updateLineupVisitor(lineupVisitor: string[]) {
+    throw new Error('Method not implemented.');
+  }
+  private updateLineupLocal(lineupLocal: string[]) {
+    throw new Error('Method not implemented.');
+  }
+
+  private _onLineupChange(e, side, playerId) {
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
     const lineup = [...(this.match[key] || [])];
     if (e.target.checked) {
@@ -456,63 +499,70 @@ class MatchDetailPage extends LitElement {
     }
   }
 
-  _addGoal() {
-    const side = this.shadowRoot.getElementById('goalTeam').value;
-    const playerId = this.shadowRoot.getElementById('newGoalPlayer').value;
-    const minute = Number(
-      this.shadowRoot.getElementById('newGoalMinute').value,
-    );
-    const ownGoal = this.shadowRoot.getElementById('newGoalOwn').checked;
-    const goals = [
-      ...(this.match.goals || []),
-      { side, playerId, minute, ownGoal },
-    ];
+  private _addGoal() {
+    const team = this.goalTeamSelect.value as 'local' | 'visitor';
+    const player = this.newGoalPlayerSelect.value;
+    const minute = Number(this.newGoalMinuteInput.value);
+    const ownGoal = this.newGoalOwnCheckbox.checked;
+    const newGoal: Goal = { team, player, minute, ownGoal };
+    const goals = [...(this.match.goals || []), newGoal];
     this._updateGoals(goals);
   }
 
-  _addSub() {
-    const side = this.shadowRoot.getElementById('subTeam').value;
-    const teamKey = side === 'local' ? 'localTeamId' : 'visitorTeamId';
-    const playerOutId = this.shadowRoot.getElementById('subOut').value;
-    const playerInId = this.shadowRoot.getElementById('subIn').value;
-    const minute = Number(this.shadowRoot.getElementById('subMinute').value);
+  private _addSub() {
+    const team = this.subTeamSelect.value as 'local' | 'visitor';
+    const playerOut = this.subOutSelect.value;
+    const playerIn = this.subInSelect.value;
+    const minute = Number(this.subMinuteInput.value);
+    const newSubstitution: Substitution = {
+      team,
+      playerOut,
+      playerIn,
+      minute,
+    };
     const substitutions = [
       ...(this.match.substitutions || []),
-      { teamId: this.match[teamKey], playerOutId, playerInId, minute },
+      newSubstitution,
     ];
     this._updateSubstitutions(substitutions);
   }
 
-  _addCard() {
-    const side = this.shadowRoot.getElementById('cardTeam').value;
-    const teamId =
-      side === 'local' ? this.match.localTeamId : this.match.visitorTeamId;
-    const playerId = this.shadowRoot.getElementById('cardPlayer').value;
-    const minute = Number(this.shadowRoot.getElementById('cardMinute').value);
-    const cardType = this.shadowRoot.getElementById('cardType').value;
-    const cards = [
-      ...(this.match.cards || []),
-      { teamId, playerId, minute, cardType },
-    ];
+  private _addCard() {
+    const team = this.cardTeamSelect.value as 'local' | 'visitor';
+    const player = this.cardPlayerSelect.value;
+    const minute = Number(this.cardMinuteInput.value);
+    const cardType = this.cardTypeSelect.value as 'yellow' | 'red';
+    const newCard: Card = { team, player, minute, cardType };
+    const cards = [...(this.match.cards || []), newCard];
     this._updateCards(cards);
   }
 
-  _updateGoals(goals) {}
+  private _updateGoals(goals: Goal[]) {
+    throw new Error('Method not implemented.');
+  }
 
-  _toggleRow(side, playerNumber) {
+  private _updateSubstitutions(substitutions: Substitution[]) {
+    throw new Error('Method not implemented.');
+  }
+
+  private _updateCards(cards: Card[]) {
+    throw new Error('Method not implemented.');
+  }
+
+  private _toggleRow(side: 'local' | 'visitor', playerNumber: string) {
     // Evita interferir si el click fue directamente en el checkbox
     const checkboxId =
       side === 'local'
         ? `lineupLocal-${playerNumber}`
         : `lineupVisitor-${playerNumber}`;
-    const cb = this.shadowRoot?.getElementById(checkboxId);
+    const cb = this.shadowRoot?.getElementById(checkboxId) as MdCheckbox;
     if (!cb) return;
     cb.checked = !cb.checked;
     // Generar un objeto de evento mínimo para reutilizar la lógica existente
     this._onLineupChange({ target: cb }, side, playerNumber);
   }
 
-  _onRowKeydown(e, side, playerNumber) {
+  private _onRowKeydown(e : KeyboardEvent, side: 'local' | 'visitor', playerNumber: string) {
     const key = e.key;
     if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
       e.preventDefault();
@@ -520,11 +570,9 @@ class MatchDetailPage extends LitElement {
     }
   }
 
-  _goBack() {
+  private _goBack() {
     this.dispatchEvent(
       new CustomEvent('back-to-calendar', { bubbles: true, composed: true }),
     );
   }
 }
-
-customElements.define('match-detail-page', MatchDetailPage);

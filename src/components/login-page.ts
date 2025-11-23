@@ -1,28 +1,28 @@
 import { LitElement, html } from 'lit';
+import { customElement, property, state, query } from 'lit/decorators.js';
 import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import type { Auth, User, UserCredential } from 'firebase/auth';
 import '@material/web/dialog/dialog.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
-class LoginPage extends LitElement {
-  static properties = {
-    auth: { type: Object },
-    titleError: { type: String },
-    contentError: { type: String },
-    email: { type: String },
-    password: { type: String },
-  };
+import type { MdDialog } from '@material/web/dialog/dialog.js';
 
-  constructor() {
-    super();
-    this.auth = null;
-    this.titleError = '';
-    this.contentError = '';
-    this.email = '';
-    this.password = '';
-  }
+@customElement('login-page')
+export class LoginPage extends LitElement {
+  @property({ type: Object })
+  auth: Auth | null = null;
+  @state()
+  private titleError: string = '';
+  @state()
+  private contentError: string = '';
+  @state()
+  private email: string = '';
+  @state()
+  private password: string = '';
 
-  static get styles() {
-    return [styles];
-  }
+  @query('#dialogLogin')
+  private dialog!: MdDialog;
+
+  static styles = [styles];
 
   render() {
     return html`
@@ -37,7 +37,7 @@ class LoginPage extends LitElement {
           placeholder="Email"
           aria-label="Email"
           required
-          @input="${e => (this.email = e.target.value)}"
+          @input="${this.onEmailInput}"
         />
         <input
           id="password"
@@ -47,7 +47,7 @@ class LoginPage extends LitElement {
           aria-label="Password"
           .value=${this.password}
           required
-          @input="${e => (this.password = e.target.value)}"
+          @input="${this.onPasswordInput}"
         />
         <button type="submit" aria-label="Iniciar sesión">Login</button>
       </form>
@@ -55,36 +55,47 @@ class LoginPage extends LitElement {
           <div slot="headline">${this.titleError}</div>
           <div slot="content">${this.contentError}</div>
         </md-dialog>
-      </form>
     `;
   }
 
+  private onEmailInput(e: InputEvent) {
+    const target = e.target as HTMLInputElement;
+    this.email = target.value;
+  }
+
+  private onPasswordInput(e: InputEvent) {
+    const target = e.target as HTMLInputElement;
+    this.password = target.value;
+  }
   firstUpdated() {
+    if (!this.auth) return;
+
     onAuthStateChanged(this.auth, user => {
       if (user) {
-        this.dispatchEvent(
-          new CustomEvent('login-success', {
-            detail: { user },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        this.dispatchSucess(user);
       }
     });
   }
 
-  loginWithEmail(e) {
+  private dispatchSucess(user: User) {
+    this.dispatchEvent(
+      new CustomEvent('login-success', {
+        detail: { user },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  private loginWithEmail(e: SubmitEvent) {
     e.preventDefault();
+    if (!this.auth) {
+      console.error('Auth no está inicializado');
+      return;
+    }
     signInWithEmailAndPassword(this.auth, this.email, this.password)
-      .then(result => {
-        const user = result.user;
-        this.dispatchEvent(
-          new CustomEvent('login-success', {
-            detail: { user },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+      .then((result : UserCredential) => {
+        this.dispatchSucess(result.user);
       })
       .catch(error => {
         const errorCode = error.code;
@@ -95,10 +106,7 @@ class LoginPage extends LitElement {
         });
         this.titleError = 'Error al autenticar con email';
         this.contentError = errorMessage;
-        const dialog = this.shadowRoot.querySelector('#dialogLogin');
-        dialog.open = true;
+        this.dialog.open = true;
       });
   }
 }
-
-customElements.define('login-page', LoginPage);

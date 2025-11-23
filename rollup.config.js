@@ -34,7 +34,9 @@ export default {
     /** Minify JS, compile JS to a lower language target */
     esbuild({
       minify: true,
-      target: 'esnext',
+      target: 'es2020',
+      tsconfig: 'tsconfig.json',
+      include: /\.[jt]s?$/,
     }),
     /** Bundle assets references via import.meta.url */
     importMetaAssets(),
