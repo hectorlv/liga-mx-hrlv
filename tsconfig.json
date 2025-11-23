@@ -3,18 +3,20 @@
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["DOM", "ES2022"],
-    "strict": false,
-    "allowJs": true,
-    "checkJs": false,
     "moduleDetection": "force",
+    "lib": ["DOM", "ES2021"],
+    "strict": true,
+    "allowJs": false,
+    "checkJs": false,
     "isolatedModules": true,
-
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-
-    "outDir": "dist",
-    "noEmit": true
+    "noEmit": true,
+    "skipLibCheck": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false
   },
   "include": ["src"]
 }

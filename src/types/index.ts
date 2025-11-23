@@ -9,11 +9,11 @@ export interface Match {
   visitante: string;
   golLocal: number;
   golVisitante: number;
-  lineupLocal?: string[];
-  lineupVisitor?: string[];
-  goals?: Goal[];
-  substitutions?: Substitution[];
-  cards?: Card[];
+  lineupLocal: number[];
+  lineupVisitor: number[];
+  goals: Goal[];
+  substitutions: Substitution[];
+  cards: Card[];
 }
 
 export interface TableEntry {
@@ -35,7 +35,7 @@ export type Team = string;
 export interface Player {
     imgSrc: string;
     name: string;
-    number: string;
+    number: number;
     position: string;
 }
 
@@ -43,21 +43,23 @@ export type PlayerTeam = Map<string, Player[]>;
 
 export interface Goal {
     minute: number;
-    player: string;
+    player: number;
     team: 'local' | 'visitor';
     ownGoal?: boolean;
 }
 
 export interface Substitution {
     minute: number;
-    playerIn: string;
-    playerOut: string;
+    playerIn: number;
+    playerOut: number;
     team: 'local' | 'visitor';
 }
 
 export interface Card {
     minute: number;
-    player: string;
+    player: number;
     cardType: 'yellow' | 'red';
     team: 'local' | 'visitor';
 }
+
+export type FirebaseUpdates = Record<string, unknown>;

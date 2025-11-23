@@ -19,13 +19,13 @@ import {
   PlayerTeam,
   Substitution,
   Team,
-} from '../app/types/index.js';
+} from '../types/index.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
 import { MdCheckbox } from '@material/web/checkbox/checkbox.js';
 
 @customElement('match-detail-page')
 export class MatchDetailPage extends LitElement {
-  static styles = [
+  static override styles = [
     styles,
     css`
       :host {
@@ -96,53 +96,34 @@ export class MatchDetailPage extends LitElement {
     `,
   ];
 
-  @property({ type: Object }) match: Match = null;
+  @property({ type: Object }) match: Match | null = null;
   @property({ type: Object }) players: PlayerTeam = new Map();
   @property({ type: Array }) teams: Team[] = [];
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
 
-  @query('subTeam') subTeamSelect: MdOutlinedSelect;
-  @query('cardTeam') cardTeamSelect: MdOutlinedSelect;
-  @query('goalTeam') goalTeamSelect: MdOutlinedSelect;
-  @query('newGoalPlayer') newGoalPlayerSelect: MdOutlinedSelect;
-  @query('newGoalMinute') newGoalMinuteInput: HTMLInputElement;
-  @query('newGoalOwn') newGoalOwnCheckbox: HTMLInputElement;
-  @query('subOut') subOutSelect: MdOutlinedSelect;
-  @query('subIn') subInSelect: MdOutlinedSelect;
-  @query('subMinute') subMinuteInput: HTMLInputElement;
-  @query('cardplayer') cardPlayerSelect: MdOutlinedSelect;
-  @query('cardminute') cardMinuteInput: HTMLInputElement;
-  @query('cardtype') cardTypeSelect: MdOutlinedSelect;
+  @query('subTeam') subTeamSelect!: MdOutlinedSelect;
+  @query('cardTeam') cardTeamSelect!: MdOutlinedSelect;
+  @query('goalTeam') goalTeamSelect!: MdOutlinedSelect;
+  @query('newGoalPlayer') newGoalPlayerSelect!: MdOutlinedSelect;
+  @query('newGoalMinute') newGoalMinuteInput!: HTMLInputElement;
+  @query('newGoalOwn') newGoalOwnCheckbox!: HTMLInputElement;
+  @query('subOut') subOutSelect!: MdOutlinedSelect;
+  @query('subIn') subInSelect!: MdOutlinedSelect;
+  @query('subMinute') subMinuteInput!: HTMLInputElement;
+  @query('cardplayer') cardPlayerSelect!: MdOutlinedSelect;
+  @query('cardminute') cardMinuteInput!: HTMLInputElement;
+  @query('cardtype') cardTypeSelect!: MdOutlinedSelect;
 
   private _updatePlayerLists() {
     if (!this.match || !this.teams.length) return;
     this.localPlayers =
       this.players.get(this.match.local.replaceAll('.', '')) || [];
-    this.visitorPlayers = 
+    this.visitorPlayers =
       this.players.get(this.match.visitante.replaceAll('.', '')) || [];
-    // Cambiar el dominio de las imágenes por https://cldrsrcs.apilmx.com/v1/media/wpagephotos/76/1/
-    this.localPlayers = this.localPlayers.map(player => {
-      return {
-        ...player,
-        imgSrc: player.imgSrc.replace(
-          'https://s3.amazonaws.com/lmxwebsite/media/wpagephotos/75/2/',
-          'https://cldrsrcs.apilmx.com/v1/media/wpagephotos/76/1/',
-        ),
-      };
-    });
-    this.visitorPlayers = this.visitorPlayers.map(player => {
-      return {
-        ...player,
-        imgSrc: player.imgSrc.replace(
-          'https://s3.amazonaws.com/lmxwebsite/media/wpagephotos/75/2/',
-          'https://cldrsrcs.apilmx.com/v1/media/wpagephotos/76/1/',
-        ),
-      };
-    });
   }
 
-  render() {
+  override render() {
     if (!this.match) {
       return html`<p>Cargando detalles del partido</p>`;
     }
@@ -163,7 +144,6 @@ export class MatchDetailPage extends LitElement {
 
     const side = this.subTeamSelect?.value || 'local';
     const cardSide = this.cardTeamSelect?.value || 'local';
-    const goalSide = this.goalTeamSelect?.value || 'local';
 
     return html`
       <h2>
@@ -460,21 +440,22 @@ export class MatchDetailPage extends LitElement {
       </div>
     `;
   }
-  private _getPlayerName(playerId: string): unknown {
+  private _getPlayerName(playerId: number): unknown {
     throw new Error('Method not implemented.');
   }
 
-  private updateLineupVisitor(lineupVisitor: string[]) {
+  private updateLineupVisitor(lineupVisitor: number[]) {
     throw new Error('Method not implemented.');
   }
-  private updateLineupLocal(lineupLocal: string[]) {
+  private updateLineupLocal(lineupLocal: number[]) {
     throw new Error('Method not implemented.');
   }
 
-  private _onLineupChange(e, side, playerId) {
+  private _onLineupChange(e: Event, side: 'local' | 'visitor', playerId: number) {
+    if (!this.match) return;
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
     const lineup = [...(this.match[key] || [])];
-    if (e.target.checked) {
+    if ((e.target as MdCheckbox).checked) {
       if (!lineup.includes(playerId)) lineup.push(playerId);
     } else {
       const idx = lineup.indexOf(playerId);
@@ -483,7 +464,7 @@ export class MatchDetailPage extends LitElement {
     this.match = { ...this.match, [key]: lineup };
     // Visual feedback: toggle selected class on the row containing the checkbox
     try {
-      const cb = e.target;
+      const cb = e.target as MdCheckbox;
       const row = cb && cb.closest ? cb.closest('.player-row') : null;
       if (row) {
         if (cb.checked) {
@@ -500,8 +481,9 @@ export class MatchDetailPage extends LitElement {
   }
 
   private _addGoal() {
+    if (!this.match) return;
     const team = this.goalTeamSelect.value as 'local' | 'visitor';
-    const player = this.newGoalPlayerSelect.value;
+    const player = Number(this.newGoalPlayerSelect.value);
     const minute = Number(this.newGoalMinuteInput.value);
     const ownGoal = this.newGoalOwnCheckbox.checked;
     const newGoal: Goal = { team, player, minute, ownGoal };
@@ -510,9 +492,10 @@ export class MatchDetailPage extends LitElement {
   }
 
   private _addSub() {
+    if (!this.match) return;
     const team = this.subTeamSelect.value as 'local' | 'visitor';
-    const playerOut = this.subOutSelect.value;
-    const playerIn = this.subInSelect.value;
+    const playerOut = Number(this.subOutSelect.value);
+    const playerIn = Number(this.subInSelect.value);
     const minute = Number(this.subMinuteInput.value);
     const newSubstitution: Substitution = {
       team,
@@ -528,8 +511,9 @@ export class MatchDetailPage extends LitElement {
   }
 
   private _addCard() {
+    if (!this.match) return;
     const team = this.cardTeamSelect.value as 'local' | 'visitor';
-    const player = this.cardPlayerSelect.value;
+    const player = Number(this.cardPlayerSelect.value);
     const minute = Number(this.cardMinuteInput.value);
     const cardType = this.cardTypeSelect.value as 'yellow' | 'red';
     const newCard: Card = { team, player, minute, cardType };
@@ -549,7 +533,7 @@ export class MatchDetailPage extends LitElement {
     throw new Error('Method not implemented.');
   }
 
-  private _toggleRow(side: 'local' | 'visitor', playerNumber: string) {
+  private _toggleRow(side: 'local' | 'visitor', playerNumber: number) {
     // Evita interferir si el click fue directamente en el checkbox
     const checkboxId =
       side === 'local'
@@ -559,10 +543,14 @@ export class MatchDetailPage extends LitElement {
     if (!cb) return;
     cb.checked = !cb.checked;
     // Generar un objeto de evento mínimo para reutilizar la lógica existente
-    this._onLineupChange({ target: cb }, side, playerNumber);
+    this._onLineupChange({ target: cb } as unknown as Event, side, playerNumber);
   }
 
-  private _onRowKeydown(e : KeyboardEvent, side: 'local' | 'visitor', playerNumber: string) {
+  private _onRowKeydown(
+    e: KeyboardEvent,
+    side: 'local' | 'visitor',
+    playerNumber: number,
+  ) {
     const key = e.key;
     if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
       e.preventDefault();

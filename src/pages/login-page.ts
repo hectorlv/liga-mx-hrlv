@@ -22,9 +22,9 @@ export class LoginPage extends LitElement {
   @query('#dialogLogin')
   private dialog!: MdDialog;
 
-  static styles = [styles];
+static override styles = [styles];
 
-  render() {
+  override render() {
     return html`
       <h1>Login</h1>
       <p>Por favor, inicia sesión para continuar</p>
@@ -67,7 +67,7 @@ export class LoginPage extends LitElement {
     const target = e.target as HTMLInputElement;
     this.password = target.value;
   }
-  firstUpdated() {
+  override firstUpdated() {
     if (!this.auth) return;
 
     onAuthStateChanged(this.auth, user => {

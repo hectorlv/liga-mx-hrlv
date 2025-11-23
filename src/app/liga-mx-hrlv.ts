@@ -3,8 +3,7 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 
 // Firebase imports
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Analytics, getAnalytics } from 'firebase/analytics';
-import { Database, getDatabase, Unsubscribe } from 'firebase/database';
+import { Unsubscribe } from 'firebase/database';
 import { Auth, getAuth, User } from 'firebase/auth';
 
 //Material Web imports
@@ -15,9 +14,9 @@ import '@material/web/dialog/dialog.js';
 
 // Styles and components
 import styles from '../styles/liga-mx-hrlv-styles.js';
-import '../components/matches-page.js';
-import '../components/table-page.js';
-import '../components/login-page.js';
+import '../pages/matches-page.js';
+import '../pages/table-page.js';
+import '../pages/login-page.js';
 
 // Utility imports
 import { FIREBASE_CONFIG } from '../utils/constants.js';
@@ -27,11 +26,11 @@ import {
   fetchTeams,
   saveUpdates,
   fetchPlayers,
-} from '../utils/firebaseService.js';
+} from '../services/firebaseService.js';
 import { calculateTable } from '../utils/tableCalculator.js';
 import { calculatePlayIn } from '../utils/playoffCalculator.js';
 import { APP_VERSION } from '../utils/version.js';
-import { Match, Player, PlayerTeam, Stadium, TableEntry, Team } from './types/index.js';
+import { Match, PlayerTeam, Stadium, TableEntry, Team } from '../types/index.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 import { MdTabs } from '@material/web/tabs/tabs.js';
 
@@ -40,11 +39,9 @@ import { MdTabs } from '@material/web/tabs/tabs.js';
  */
 @customElement('liga-mx-hrlv')
 export class LigaMxHrlv extends LitElement {
-  static styles = [styles];
+  static override styles = [styles];
 
   private app: FirebaseApp;
-  private analytics: Analytics;
-  private database: Database;
 
   @property({ attribute: false }) auth: Auth;
 
@@ -68,12 +65,10 @@ export class LigaMxHrlv extends LitElement {
   constructor() {
     super();
     this.app = initializeApp(FIREBASE_CONFIG);
-    this.analytics = getAnalytics(this.app);
-    this.database = getDatabase(this.app);
     this.auth = getAuth(this.app);
   }
 
-  render() {
+  override render() {
     return html`
       ${this.selectedTab === 'Login'
         ? html``
@@ -102,7 +97,7 @@ export class LigaMxHrlv extends LitElement {
     `;
   }
 
-  updated(changedProperties: PropertyValues) {
+  override updated(changedProperties: PropertyValues) {
     if (changedProperties.has('matchesList') || changedProperties.has('teams')) {
       if (this.matchesList.length > 0 && this.teams.length > 0) {
         this.table = calculateTable(this.teams, this.matchesList);
@@ -161,7 +156,7 @@ export class LigaMxHrlv extends LitElement {
     });
   }
 
-  disconnectedCallback() {
+  override disconnectedCallback() {
     super.disconnectedCallback();
     this._unsubscribeMatches?.();
     this._unsubscribeTeams?.();

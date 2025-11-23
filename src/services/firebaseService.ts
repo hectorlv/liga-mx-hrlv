@@ -3,20 +3,31 @@ import {
   ref,
   onValue,
   update,
-  type DatabaseReference,
   type Unsubscribe,
 } from 'firebase/database';
-import { formatDate } from './dateUtils';
-import { Match, Player, PlayerTeam, Stadium, Team } from '../app/types';
+import { formatDate } from '../utils/dateUtils';
+import { FirebaseUpdates, Match, Player, PlayerTeam, Stadium, Team } from '../types';
 
 export type MatchesCallBack = (matches: Match[]) => void;
 export type SimpleCallBack<T> = (data: T[]) => void;
-export type PlayersCallBack = (players: Map<string, Player[]>) => void;
+export type PlayersCallBack = (players: PlayerTeam) => void;
 
 function snapshotToArray<T>(val: unknown): T[] {
   if (!val) return [];
   if (Array.isArray(val)) return val;
-  return Object.values(val) as T[];
+  if (typeof val === 'object') return Object.values(val) as T[];
+  return [];
+}
+
+function snapshotToMap<K extends string, V>(val: unknown): Map<K, V> {
+  const map = new Map<K, V>();
+  if (!val || typeof val !== 'object') return map;
+
+  for (const [key, value] of Object.entries(val as Record<string, unknown>)) {
+    map.set(key as K, value as V);
+  }
+  
+  return map;
 }
 
 export function fetchMatches(callback: MatchesCallBack): Unsubscribe {
@@ -30,12 +41,13 @@ export function fetchMatches(callback: MatchesCallBack): Unsubscribe {
       }
 
       const raw = snapshot.val();
-      const matches = snapshotToArray<Match>(raw);
-      matches.forEach((match, i) => {
-        match.editMatch = false;
-        match.idMatch = i;
-        match.fecha = formatDate(match.fecha, match.hora);
-      });
+      const rawArray = snapshotToArray<Match>(raw);
+      const matches = rawArray.map((match, index) => ({
+        ...match,
+        editMatch: false,
+        idMatch: index,
+        fecha: formatDate(match.fecha, match.hora),
+      }));
       matches.sort((a, b) => {
         if (a.jornada === b.jornada) {
           return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0;
@@ -103,7 +115,7 @@ export function fetchPlayers(callback: PlayersCallBack): Unsubscribe {
 }
 
 export async function saveUpdates(
-  updates: Record<string, unknown>,
+  updates: FirebaseUpdates,
 ): Promise<void> {
   const db = getDatabase();
   return update(ref(db), updates)
@@ -113,14 +125,3 @@ export async function saveUpdates(
       throw error;
     });
 }
-function snapshotToMap<K extends string, V>(val: unknown): Map<K, V> {
-  const map = new Map<K, V>();
-  if (!val || typeof val !== 'object') return map;
-  
-  Object.entries(val).forEach(([key, value]) => {
-    map.set(key as K, value as V);
-  });
-  
-  return map;
-}
-

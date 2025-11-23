@@ -25,7 +25,7 @@ import {
   replaceDateSeparator,
 } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { Match, PlayerTeam, Stadium, Team } from '../app/types/index.js';
+import { FirebaseUpdates, Match, PlayerTeam, Stadium, Team } from '../types/index.js';
 import { MdIconButton } from '@material/web/iconbutton/icon-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
@@ -34,8 +34,8 @@ import { MdFilledButton } from '@material/web/button/filled-button.js';
  * Page for show the fixture
  */
 @customElement('matches-page')
-class MatchesPage extends LitElement {
-  static styles = [
+export class MatchesPage extends LitElement {
+  static override styles = [
     styles,
     css`
       .filters-card {
@@ -124,9 +124,9 @@ class MatchesPage extends LitElement {
   private isMobile: boolean = window.innerWidth < 600;
   private openRowMenuId: number | null = null;
 
-  private _boundOnResize: () => void;
-  private _boundOnDocClick: () => void;
-  private _boundOnGlobalKey: (e: KeyboardEvent) => void;
+  private _boundOnResize: (() => void) | undefined;
+  private _boundOnDocClick: (() => void) | undefined;
+  private _boundOnGlobalKey: ((e: KeyboardEvent) => void) | undefined;
 
   @query('.row-menu') rowMenu!: HTMLElement;
   @query('button, [role="menuitem"]') firstMenuItem!: HTMLElement;
@@ -137,7 +137,7 @@ class MatchesPage extends LitElement {
   menuFocusableElements!: MdFilledButton[];
   @query('#onlyPlayOffSwitch') onlyPlayOffSwitch!: MdSwitch;
 
-  connectedCallback() {
+  override connectedCallback() {
     super.connectedCallback();
     this._boundOnResize = this._onResize.bind(this);
     window.addEventListener('resize', this._boundOnResize);
@@ -147,14 +147,20 @@ class MatchesPage extends LitElement {
     window.addEventListener('keydown', this._boundOnGlobalKey);
   }
 
-  disconnectedCallback() {
-    window.removeEventListener('resize', this._boundOnResize);
-    window.removeEventListener('click', this._boundOnDocClick);
-    window.removeEventListener('keydown', this._boundOnGlobalKey);
+  override disconnectedCallback() {
+    if (this._boundOnResize) {
+      window.removeEventListener('resize', this._boundOnResize);
+    }
+    if (this._boundOnDocClick) {
+      window.removeEventListener('click', this._boundOnDocClick);
+    }
+    if (this._boundOnGlobalKey) {
+      window.removeEventListener('keydown', this._boundOnGlobalKey);
+    }
     super.disconnectedCallback();
   }
 
-  firstUpdated() {
+  override firstUpdated() {
     this._onResize();
   }
 
@@ -162,7 +168,7 @@ class MatchesPage extends LitElement {
    *
    * @param changed
    */
-  updated(changed: PropertyValues) {
+  override updated(changed: PropertyValues) {
     if (changed.has('matchesList')) {
       this._filtersChanged();
     }
@@ -190,7 +196,7 @@ class MatchesPage extends LitElement {
         }
       } else {
         // closed, restore focus to the trigger button
-        const btn = this.shadowRoot.querySelector(
+        const btn = this.shadowRoot?.querySelector(
           `md-icon-button[data-id="${id}"]`,
         ) as MdIconButton;
         if (btn && typeof btn.focus === 'function') btn.focus();
@@ -214,7 +220,7 @@ class MatchesPage extends LitElement {
     this.openRowMenuId = null;
     // restore focus to trigger button
     this.updateComplete.then(() => {
-      const btn = this.shadowRoot.querySelector(
+      const btn = this.shadowRoot?.querySelector(
         `md-icon-button[data-id="${id}"]`,
       ) as MdIconButton;
       if (btn && typeof btn.focus === 'function') btn.focus();
@@ -231,7 +237,7 @@ class MatchesPage extends LitElement {
     } as unknown as Event);
     this.openRowMenuId = null;
     this.updateComplete.then(() => {
-      const btn = this.shadowRoot.querySelector(
+      const btn = this.shadowRoot?.querySelector(
         `md-icon-button[data-id="${id}"]`,
       ) as MdIconButton;
       if (btn && typeof btn.focus === 'function') btn.focus();
@@ -246,7 +252,7 @@ class MatchesPage extends LitElement {
         this.openRowMenuId = null;
         this.requestUpdate();
         this.updateComplete.then(() => {
-          const btn = this.shadowRoot.querySelector(
+          const btn = this.shadowRoot?.querySelector(
             `md-icon-button[data-id="${id}"]`,
           ) as MdIconButton;
           if (btn && typeof btn.focus === 'function') btn.focus();
@@ -288,7 +294,7 @@ class MatchesPage extends LitElement {
       this.requestUpdate();
       this.updateComplete.then(() => {
         if (id !== null) {
-          const btn = this.shadowRoot.querySelector(
+          const btn = this.shadowRoot?.querySelector(
             `md-icon-button[data-id="${id}"]`,
           ) as MdIconButton;
           if (btn && typeof btn.focus === 'function') btn.focus();
@@ -299,7 +305,7 @@ class MatchesPage extends LitElement {
     }
   }
 
-  render() {
+  override render() {
     if (this.showDetails && this.selectedMatch) {
       return html` <main>
         <match-detail-page
@@ -586,6 +592,7 @@ class MatchesPage extends LitElement {
   private _editMatch(e: Event) {
     const index = (e.target as HTMLElement).getAttribute('index');
     const match = this.matchesList.find(m => m.idMatch === Number(index));
+    if (!match) return;
     if (!match.editMatch) {
       // Edit
       match.editMatch = true;
@@ -593,24 +600,24 @@ class MatchesPage extends LitElement {
     } else {
       // Update
       const golLocal = (
-        this.shadowRoot.querySelector(`#golLocal${index}`) as HTMLInputElement
+        this.shadowRoot?.querySelector(`#golLocal${index}`) as HTMLInputElement
       ).value;
       const golVisitante = (
-        this.shadowRoot.querySelector(
+        this.shadowRoot?.querySelector(
           `#golVisitante${index}`,
         ) as HTMLInputElement
       ).value;
       const fecha = replaceDateSeparator(
-        (this.shadowRoot.querySelector(`#fecha${index}`) as HTMLInputElement)
+        (this.shadowRoot?.querySelector(`#fecha${index}`) as HTMLInputElement)
           .value,
       );
       const hora = (
-        this.shadowRoot.querySelector(`#hora${index}`) as HTMLInputElement
+        this.shadowRoot?.querySelector(`#hora${index}`) as HTMLInputElement
       ).value;
       const estadio = (
-        this.shadowRoot.querySelector(`#estadio${index}`) as HTMLInputElement
+        this.shadowRoot?.querySelector(`#estadio${index}`) as HTMLInputElement
       ).value;
-      const updates = {};
+      const updates: FirebaseUpdates = {};
       updates[`/matches/${match.idMatch}/golLocal`] =
         golLocal !== '' ? Number(golLocal) : '';
       updates[`/matches/${match.idMatch}/golVisitante`] =
@@ -645,7 +652,7 @@ class MatchesPage extends LitElement {
       this.matchDaySelect.value = '';
     }
     const team =
-      this.teamsSelect.value === '' ? '' : this.teams[this.teamsSelect.value];
+      this.teamsSelect.value === '' ? '' : this.teams[Number(this.teamsSelect.value)];
     const matchDay = this.matchDaySelect.value as number | '';
     this.matchesRender = this.matchesList.filter(match => {
       const findTeam =
@@ -657,7 +664,6 @@ class MatchesPage extends LitElement {
       const todayDate =
         !this.todayDateSelected ||
         (this.todayDateSelected &&
-          !match.fecha &&
           match.fecha instanceof Date &&
           match.fecha.getFullYear() === this.todayDate.getFullYear() &&
           match.fecha.getMonth() === this.todayDate.getMonth() &&

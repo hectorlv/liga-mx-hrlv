@@ -2,17 +2,17 @@ import { LitElement, html } from 'lit';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import { customElement, property } from 'lit/decorators.js';
-import { TableEntry } from '../app/types/index.js';
+import { TableEntry } from '../types/index.js';
 
 /**
  * Page for the table of positions
  */
 @customElement('table-page')
 export class TablePage extends LitElement {
-  static styles = [styles];
+  static override styles = [styles];
   @property({ type: Array }) table: TableEntry[] = [];
 
-  render() {
+  override render() {
     return html`
       <main>
         <table class="greyGridTable">
