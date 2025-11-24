@@ -3,7 +3,7 @@
   "description": "Web component liga-mx-hrlv following open-wc recommendations",
   "license": "MIT",
   "author": "liga-mx-hrlv",
-  "version": "3.0.1",
+  "version": "4.0.0-SNAPSHOT",
   "type": "module",
   "scripts": {
     "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
@@ -12,12 +12,11 @@
     "start:build:open": "npm run build && web-dev-server --root-dir dist --app-index index.html --open",
     "start:build": "npm run build && web-dev-server --root-dir dist --app-index index.html",
     "analyze": "cem analyze --litelement",
-    "start": "web-dev-server"
+    "start": "web-dev-server",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@material/web": "^2.4.1",
-    "@polymer/iron-icon": "^3.0.1",
-    "@polymer/iron-icons": "^3.0.1",
     "firebase": "^12.6.0",
     "lit": "^3.3.1"
   },
@@ -28,18 +27,23 @@
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
     "@web/dev-server": "^0.4.6",
     "@web/rollup-plugin-html": "^2.3.0",
     "@web/rollup-plugin-import-meta-assets": "^2.3.0",
+    "axe-core": "^4.11.0",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
+    "playwright": "^1.56.1",
     "prettier": "^3.6.2",
-    "rimraf": "^6.1.0",
-    "rollup": "^4.53.2",
+    "rimraf": "^6.1.2",
+    "rollup": "^4.53.3",
     "rollup-plugin-esbuild": "^6.2.1",
     "rollup-plugin-image": "^1.0.2",
-    "rollup-plugin-workbox": "^8.1.2"
+    "rollup-plugin-workbox": "^8.1.2",
+    "typescript": "^5.9.3"
   },
   "eslintConfig": {
     "extends": [
@@ -51,5 +55,8 @@
     "singleQuote": true,
     "arrowParens": "avoid"
   },
-  "customElements": "custom-elements.json"
+  "customElements": "custom-elements.json",
+  "overrides": {
+    "glob": "11.1.0"
+  }
 }

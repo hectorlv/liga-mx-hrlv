@@ -4,14 +4,14 @@ const todayDate = new Date();
  * Formats the date from a String
  * @param {String} fechaString
  * @param {String} hora
- * @returns
+ * @returns Date
  */
-export function formatDate(fechaString, hora) {
+export function formatDate(fechaString: string | Date, hora: string) {
     if (fechaString === '') {
         return '';
     }
     // Dividir la cadena en día, mes y año
-    const partesFecha = fechaString.split('/');
+    const partesFecha = (fechaString as string).split('/');
     const year = parseInt(partesFecha[0], 10);
     const month = parseInt(partesFecha[1], 10);
     const day = parseInt(partesFecha[2], 10);
@@ -24,8 +24,8 @@ export function formatDate(fechaString, hora) {
  * @param {Date} fecha
  * @returns String
  */
-export function formatDateDDMMYYYY(fecha) {
-    if (fecha == '') {
+export function formatDateDDMMYYYY(fecha: Date) {
+    if (!fecha) {
         return '';
     }
     const day = fecha.getDate();
@@ -36,8 +36,8 @@ export function formatDateDDMMYYYY(fecha) {
     return fechaFormateada;
 }
 
-export function formatDateYYYYMMDD(fecha) {
-    if (fecha === '') {
+export function formatDateYYYYMMDD(fecha: Date) {
+    if (!fecha) {
         return '';
     }
     const day = fecha.getDate();
@@ -48,12 +48,12 @@ export function formatDateYYYYMMDD(fecha) {
     return fechaFormateada;
 }
 
-export function replaceDateSeparator(date) {
+export function replaceDateSeparator(date: string) {
     return date.replaceAll('-', '/');
 }
 
-export function getMatchRowClass(fecha) {
-    return fecha != '' &&
+export function getMatchRowClass(fecha : Date) {
+    return fecha &&
       fecha.getFullYear() === todayDate.getFullYear() &&
       fecha.getMonth() === todayDate.getMonth() &&
       fecha.getDate() === todayDate.getDate()
