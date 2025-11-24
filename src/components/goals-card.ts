@@ -1,12 +1,15 @@
 import '@material/web/button/filled-button.js';
 import '@material/web/checkbox/checkbox.js';
+import '@material/web/icon/icon.js';
 import '@material/web/select/outlined-select.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
 import '@material/web/select/select-option.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
+import '../components/player-info.js';
 import { FirebaseUpdates, Goal, Match, Player } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
+
 
 @customElement('goals-card')
 export class GoalsCard extends LitElement {
@@ -65,7 +68,7 @@ export class GoalsCard extends LitElement {
                       )}
                     ></player-info>
                     <span>${g.ownGoal ? html`<em>(Gol en propia)</em>` : ''}</span>
-                    <span>Minuto ${g.minute}</span>
+                    <md-icon>sports_soccer</md-icon><span>Minuto ${g.minute}</span>
                   </div>
                 `,
               )}
@@ -86,7 +89,7 @@ export class GoalsCard extends LitElement {
                       )}
                     ></player-info>
                     <span>${g.ownGoal ? html`<em>(Gol en propia)</em>` : ''}</span>
-                    <span>Minuto ${g.minute}</span>
+                    <md-icon>sports_soccer</md-icon><span>Minuto ${g.minute}</span>
                   </div>
                 `,
               )}

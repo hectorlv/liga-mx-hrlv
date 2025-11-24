@@ -1,6 +1,8 @@
+import '@material/web/icon/icon.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
+import '../components/player-info.js';
 import { FirebaseUpdates, Match, Player, Substitution } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 
@@ -22,6 +24,17 @@ export class SubstitutionsCard extends LitElement {
       }
       .lineup > div {
         width: 100%;
+      }
+      .substitution-entry {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .out {
+        color: orange;
+      }
+      .in {
+        color: green;
       }
     `,
   ];
@@ -48,19 +61,19 @@ export class SubstitutionsCard extends LitElement {
               .filter(sub => sub.team === 'local')
               .map(
                 sub => html`
-                  <div>
+                  <div class="substitution-entry">
                     <player-info
                       .player=${this.localPlayers.find(
                         p => p.number === sub.playerOut,
                       )}
                     ></player-info>
-                    &rarr;
+                    <md-icon class="out">arrow_outward</md-icon>
                     <player-info
                       .player=${this.localPlayers.find(
                         p => p.number === sub.playerIn,
                       )}
                     ></player-info>
-                    &mdash; Minuto ${sub.minute}
+                    <md-icon class="in">arrow_insert</md-icon><span>Minuto ${sub.minute}</span>
                   </div>
                 `,
               )}
@@ -71,19 +84,19 @@ export class SubstitutionsCard extends LitElement {
               .filter(sub => sub.team === 'visitor')
               .map(
                 sub =>
-                  html`<div>
+                  html`<div class="substitution-entry">
                     <player-info
                       .player=${this.visitorPlayers.find(
                         p => p.number === sub.playerOut,
                       )}
                     ></player-info>
-                    &rarr;
+                    <md-icon class="out">arrow_outward</md-icon>
                     <player-info
                       .player=${this.visitorPlayers.find(
                         p => p.number === sub.playerIn,
                       )}
                     ></player-info>
-                    &mdash; Minuto ${sub.minute}
+                    <md-icon class="in">arrow_insert</md-icon><span>Minuto ${sub.minute}</span>
                   </div>`
               )}
           </div>

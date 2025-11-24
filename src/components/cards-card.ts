@@ -1,6 +1,8 @@
+import '@material/web/icon/icon.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
+import '../components/player-info.js';
 import { Card, FirebaseUpdates, Match, Player } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 
@@ -23,6 +25,19 @@ export class CardsCard extends LitElement {
       .lineup > div {
         width: 100%;
       }
+      .card-entry {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .yellow-card {
+        color: yellow;
+        font-variation-settings: 'FILL' 1;
+      }
+      .red-card {
+        color: red;
+        font-variation-settings: 'FILL' 1;
+      }
     `,
   ];
   @property({ type: Array }) localPlayers: Player[] = [];
@@ -42,46 +57,47 @@ export class CardsCard extends LitElement {
         <h3>Tarjetas (${cards.length || 0})</h3>
         <div class="lineup">
           <div id="cardsCountLocal">
-            <h4>
-              Local: ${cards.filter(c => c.team === 'local').length || 0}
-            </h4>
+            <h4>Local: ${cards.filter(c => c.team === 'local').length || 0}</h4>
             ${cards
               .filter(c => c.team === 'local')
               .map(
                 c => html`
-                  <div>
+                  <div class="card-entry">
                     <player-info
                       .player=${this.localPlayers.find(
                         p => p.number === c.player,
                       )}
                     ></player-info>
-                    <span>
-                      - ${c.cardType === 'yellow' ? 'Amarilla' : 'Roja'} -
-                      Minuto: ${c.minute}</span
-                    >
+                    <md-icon
+                      class="${c.cardType === 'yellow'
+                        ? 'yellow-card'
+                        : 'red-card'}"
+                      >crop_portrait</md-icon
+                    ><span>Minuto: ${c.minute}</span>
                   </div>
                 `,
               )}
           </div>
           <div id="cardsCountVisitor">
             <h4>
-              Visitante:
-              ${cards.filter(c => c.team === 'visitor').length || 0}
+              Visitante: ${cards.filter(c => c.team === 'visitor').length || 0}
             </h4>
             ${cards
               .filter(c => c.team === 'visitor')
               .map(
                 c => html`
-                  <div>
+                  <div class="card-entry">
                     <player-info
                       .player=${this.visitorPlayers.find(
                         p => p.number === c.player,
                       )}
                     ></player-info>
-                    <span>
-                      - ${c.cardType === 'yellow' ? 'Amarilla' : 'Roja'} -
-                      Minuto: ${c.minute}</span
-                    >
+                    <md-icon
+                      class="${c.cardType === 'yellow'
+                        ? 'yellow-card'
+                        : 'red-card'}"
+                      >crop_portrait</md-icon
+                    ><span>Minuto: ${c.minute}</span>
                   </div>
                 `,
               )}
