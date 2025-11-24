@@ -1,6 +1,10 @@
-/* eslint-disable class-methods-use-this */
-/* eslint-disable no-console */
-import { LitElement, html, css, PropertyValues } from 'lit';
+import '@material/web/button/filled-button.js';
+import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/select/filled-select.js';
+import '@material/web/select/select-option.js';
+import '@material/web/switch/switch.js';
+import { css, html, LitElement, PropertyValues } from 'lit';
 import {
   customElement,
   property,
@@ -9,14 +13,19 @@ import {
   state,
 } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
-import '@material/web/select/filled-select.js';
-import '@material/web/select/select-option.js';
-import '@material/web/switch/switch.js';
-import '@material/web/icon/icon.js';
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/button/filled-button.js';
 import './match-detail-page.js';
 
+import { MdFilledButton } from '@material/web/button/filled-button.js';
+import { MdIconButton } from '@material/web/iconbutton/icon-button.js';
+import { MdFilledSelect } from '@material/web/select/filled-select.js';
+import { MdSwitch } from '@material/web/switch/switch.js';
+import {
+  FirebaseUpdates,
+  Match,
+  PlayerTeam,
+  Stadium,
+  Team,
+} from '../types/index.js';
 import { JORNADA_LIGUILLA } from '../utils/constants.js';
 import {
   formatDateDDMMYYYY,
@@ -24,12 +33,8 @@ import {
   getMatchRowClass,
   replaceDateSeparator,
 } from '../utils/dateUtils.js';
+import { dispatchEventMatchUpdated } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { FirebaseUpdates, Match, PlayerTeam, Stadium, Team } from '../types/index.js';
-import { MdIconButton } from '@material/web/iconbutton/icon-button.js';
-import { MdFilledSelect } from '@material/web/select/filled-select.js';
-import { MdSwitch } from '@material/web/switch/switch.js';
-import { MdFilledButton } from '@material/web/button/filled-button.js';
 /**
  * Page for show the fixture
  */
@@ -113,7 +118,7 @@ export class MatchesPage extends LitElement {
   @state() showDetails: boolean = false;
 
   private todayDate: Date = new Date();
-  private todayDateSelected: boolean = false
+  private todayDateSelected: boolean = false;
   private selectedMatch: Match | null = null;
   private savedFilters: {
     teamIndex: string;
@@ -170,7 +175,19 @@ export class MatchesPage extends LitElement {
    */
   override updated(changed: PropertyValues) {
     if (changed.has('matchesList')) {
-      this._filtersChanged();
+      if (!this.showDetails) {
+        this._filtersChanged();
+      } else {
+        // in details view, just update the selected match reference
+        if (this.selectedMatch) {
+          const updatedMatch = this.matchesList.find(
+            m => m.idMatch === this.selectedMatch?.idMatch,
+          );
+          if (updatedMatch) {
+            this.selectedMatch = updatedMatch;
+          }
+        }
+      }
     }
   }
 
@@ -625,19 +642,7 @@ export class MatchesPage extends LitElement {
       updates[`/matches/${match.idMatch}/fecha`] = fecha;
       updates[`/matches/${match.idMatch}/hora`] = hora;
       updates[`/matches/${match.idMatch}/estadio`] = estadio;
-      /**
-       * Fired when a match is edited
-       * @event edit-match
-       * @type: {Object}
-       * @property: {Object} detail Contains the new values
-       */
-      this.dispatchEvent(
-        new CustomEvent('edit-match', {
-          bubbles: true,
-          composed: true,
-          detail: updates,
-        }),
-      );
+      this.dispatchEvent(dispatchEventMatchUpdated(updates));
       match.editMatch = true;
       this.requestUpdate();
     }
@@ -652,7 +657,9 @@ export class MatchesPage extends LitElement {
       this.matchDaySelect.value = '';
     }
     const team =
-      this.teamsSelect.value === '' ? '' : this.teams[Number(this.teamsSelect.value)];
+      this.teamsSelect.value === ''
+        ? ''
+        : this.teams[Number(this.teamsSelect.value)];
     const matchDay = this.matchDaySelect.value as number | '';
     this.matchesRender = this.matchesList.filter(match => {
       const findTeam =

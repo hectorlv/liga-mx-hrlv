@@ -1,8 +1,8 @@
 import { LitElement, html } from 'lit';
-import styles from '../styles/liga-mx-hrlv-styles.js';
-import { getTeamImage } from '../utils/imageUtils.js';
 import { customElement, property } from 'lit/decorators.js';
+import styles from '../styles/liga-mx-hrlv-styles.js';
 import { TableEntry } from '../types/index.js';
+import { getTeamImage } from '../utils/imageUtils.js';
 
 /**
  * Page for the table of positions

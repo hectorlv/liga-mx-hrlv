@@ -1,38 +1,38 @@
-import { LitElement, PropertyValues, html } from 'lit';
+import { html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 // Firebase imports
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Unsubscribe } from 'firebase/database';
 import { Auth, getAuth, User } from 'firebase/auth';
+import { Unsubscribe } from 'firebase/database';
 
 //Material Web imports
-import '@material/web/icon/icon.js';
-import '@material/web/tabs/tabs.js';
-import '@material/web/tabs/primary-tab.js';
 import '@material/web/dialog/dialog.js';
+import '@material/web/icon/icon.js';
+import '@material/web/tabs/primary-tab.js';
+import '@material/web/tabs/tabs.js';
 
 // Styles and components
-import styles from '../styles/liga-mx-hrlv-styles.js';
+import '../pages/login-page.js';
 import '../pages/matches-page.js';
 import '../pages/table-page.js';
-import '../pages/login-page.js';
+import styles from '../styles/liga-mx-hrlv-styles.js';
 
 // Utility imports
-import { FIREBASE_CONFIG } from '../utils/constants.js';
+import { MdDialog } from '@material/web/dialog/dialog.js';
+import { MdTabs } from '@material/web/tabs/tabs.js';
 import {
   fetchMatches,
+  fetchPlayers,
   fetchStadiums,
   fetchTeams,
   saveUpdates,
-  fetchPlayers,
 } from '../services/firebaseService.js';
-import { calculateTable } from '../utils/tableCalculator.js';
-import { calculatePlayIn } from '../utils/playoffCalculator.js';
-import { APP_VERSION } from '../utils/version.js';
 import { Match, PlayerTeam, Stadium, TableEntry, Team } from '../types/index.js';
-import { MdDialog } from '@material/web/dialog/dialog.js';
-import { MdTabs } from '@material/web/tabs/tabs.js';
+import { FIREBASE_CONFIG } from '../utils/constants.js';
+import { calculatePlayIn } from '../utils/playoffCalculator.js';
+import { calculateTable } from '../utils/tableCalculator.js';
+import { APP_VERSION } from '../utils/version.js';
 
 /**
  * Main class for LigaMX
@@ -45,11 +45,11 @@ export class LigaMxHrlv extends LitElement {
 
   @property({ attribute: false }) auth: Auth;
 
-  @property({ type: Array, attribute: false }) matchesList: Match[] = [];
-  @property({ type: Array, attribute: false }) teams: Team[] = [];
-  @property({ type: Array, attribute: false }) stadiums: Stadium[] = [];
-  @property({ type: Object, attribute: false }) players: PlayerTeam = new Map();
-  @property({ type: Array, attribute: false }) table: TableEntry[] = [];
+  @state() matchesList: Match[] = [];
+  @state() teams: Team[] = [];
+  @state() stadiums: Stadium[] = [];
+  @state() players: PlayerTeam = new Map();
+  @state() table: TableEntry[] = [];
   @state() selectedTab: string = 'Login';
   @state() titleError: string = '';
   @state() contentError: string = '';

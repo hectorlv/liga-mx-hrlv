@@ -1,10 +1,10 @@
-import { LitElement, html } from 'lit';
-import { customElement, property, state, query } from 'lit/decorators.js';
-import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
-import type { Auth, User, UserCredential } from 'firebase/auth';
 import '@material/web/dialog/dialog.js';
-import styles from '../styles/liga-mx-hrlv-styles.js';
 import type { MdDialog } from '@material/web/dialog/dialog.js';
+import type { Auth, User, UserCredential } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { LitElement, html } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
+import styles from '../styles/liga-mx-hrlv-styles.js';
 
 @customElement('login-page')
 export class LoginPage extends LitElement {

@@ -12,7 +12,15 @@ export default css`
     text-align: center;
 
     /* Tipografía base */
-    font-family: var(--font-family, Roboto, system-ui, -apple-system, Segoe UI, Arial, sans-serif);
+    font-family: var(
+      --font-family,
+      Roboto,
+      system-ui,
+      -apple-system,
+      Segoe UI,
+      Arial,
+      sans-serif
+    );
     font-size: 14px;
 
     /* Design tokens (mezcla marca + M3) */
@@ -39,7 +47,7 @@ export default css`
     --md-sys-color-primary: var(--color-primary);
     --md-sys-color-on-primary: var(--color-on-primary);
     /* RGB helper for translucent accents (use as: rgba(var(--color-primary-rgb), .06)) */
-    --color-primary-rgb: 76,175,80;
+    --color-primary-rgb: 76, 175, 80;
     --md-sys-color-surface: var(--color-surface);
     --md-sys-color-on-surface: var(--color-on-surface);
     --md-sys-color-surface-container-highest: var(--color-surface-variant);
@@ -138,7 +146,7 @@ export default css`
     background: var(--md-sys-color-surface-container-highest);
     border-radius: 8px;
     padding: 6px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -156,7 +164,7 @@ export default css`
     background: var(--md-sys-color-surface-container-highest);
     border-radius: var(--radius-m);
     padding: var(--space-12);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     margin-bottom: var(--space-12);
     text-align: left;
   }
@@ -188,11 +196,17 @@ export default css`
   }
 
   /* Heading and list normalization for consistency */
-  h2, h3, h4 {
+  h2,
+  h3,
+  h4 {
     margin: 0;
   }
-  ul { padding-left: 20px; }
-  li { margin-bottom: 4px; }
+  ul {
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
 
   /* Avatar utility */
   .avatar--60 {
