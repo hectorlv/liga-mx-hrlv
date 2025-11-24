@@ -35,6 +35,16 @@ export class GoalsCard extends LitElement {
         align-items: center;
         gap: 8px;
       }
+      @media (max-width: 600px) {
+        .lineup {
+          grid-template-columns: 1fr;
+        }
+      }
+      player-info {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+      }
     `,
   ];
 
