@@ -1,4 +1,4 @@
-import '@material/web/button/filled-button.js';
+himport '@material/web/button/filled-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/select/filled-select.js';
@@ -116,10 +116,11 @@ export class MatchesPage extends LitElement {
 
   @state() matchesRender: Match[] = [];
   @state() showDetails: boolean = false;
+  @state() selectedMatch: Match | null = null;
 
   private todayDate: Date = new Date();
   private todayDateSelected: boolean = false;
-  private selectedMatch: Match | null = null;
+
   private savedFilters: {
     teamIndex: string;
     matchDayValue: string;
