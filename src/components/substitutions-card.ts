@@ -40,6 +40,21 @@ export class SubstitutionsCard extends LitElement {
         .lineup {
           grid-template-columns: 1fr;
         }
+        .substitution-entry {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .substitution-entry > *:nth-child(1),
+        .substitution-entry > *:nth-child(2) {
+          display: inline-block;
+        }
+
+        .substitution-entry > *:nth-child(3),
+        .substitution-entry > *:nth-child(4),
+        .substitution-entry > *:nth-child(5) {
+          display: inline-block;
+        }
       }
       player-info {
         flex: 1 1 auto;
