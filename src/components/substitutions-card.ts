@@ -1,4 +1,4 @@
-import '@material/web/icon/icon.js';
+limport '@material/web/icon/icon.js';
 import '@material/web/textfield/filled-text-field.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
@@ -276,7 +276,7 @@ export class SubstitutionsCard extends LitElement {
         : this.match?.lineupVisitor || [];
     return teamPlayers.filter(
       player =>
-        lineup.some(p => p.number === player.number && !p.titular && !p.entroDeCambio),
+        !lineup.some(p => p.number === player.number && (p.titular || p.entroDeCambio),
     );
   }
 }
