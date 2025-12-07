@@ -84,7 +84,8 @@ export class GoalsCard extends LitElement {
                 g => html`
                   <div class="goal-entry">
                     <player-info
-                      .player=${this.localPlayers.find(
+                      .player=${g.ownGoal ? this.visitorPlayers.find(p => p.number === g.player,
+                      ) : this.localPlayers.find(
                         p => p.number === g.player,
                       )}
                     ></player-info>
@@ -105,7 +106,9 @@ export class GoalsCard extends LitElement {
                 g => html`
                   <div class="goal-entry">
                     <player-info
-                      .player=${this.visitorPlayers.find(
+                      .player=${g.ownGoal ? this.localPlayers.find(
+                        p => p.number === g.player,
+                      ) : this.visitorPlayers.find(
                         p => p.number === g.player,
                       )}
                     ></player-info>
