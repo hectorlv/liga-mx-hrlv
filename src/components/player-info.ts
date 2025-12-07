@@ -12,6 +12,7 @@ export class PlayerInfo extends LitElement {
         flex: 1 1 auto;
         min-width: 0;
         height: auto;
+        --md-icon-size: 60px;
       }
       .player-card {
         display: flex;
