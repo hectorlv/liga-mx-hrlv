@@ -1,5 +1,4 @@
 export interface Match {
-  editMatch: boolean;
   idMatch: number;
   estadio: string;
   fecha: string | Date;
@@ -9,11 +8,18 @@ export interface Match {
   visitante: string;
   golLocal: number;
   golVisitante: number;
-  lineupLocal: number[];
-  lineupVisitor: number[];
+  lineupLocal: PlayerGame[];
+  lineupVisitor: PlayerGame[];
   goals: Goal[];
   substitutions: Substitution[];
   cards: Card[];
+}
+
+export interface PlayerGame {
+  number: number;
+  titular?: boolean;
+  entroDeCambio?: boolean;
+  salioDeCambio?: boolean;
 }
 
 export interface TableEntry {
@@ -28,6 +34,7 @@ export interface TableEntry {
   pts: number;
   eliminado?: boolean;
 }
+
 
 export type Stadium = string;
 export type Team = string;

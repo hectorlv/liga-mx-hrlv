@@ -313,7 +313,8 @@ export default css`
   @media (prefers-color-scheme: dark) {
     :host {
       --color-surface: #0f1115;
-      --color-surface-variant: #1c1f26;
+      
+      --color-surface-variant: #1a2028;
       --color-on-surface: #e6e6e6;
       --table-row-alt: #19202a;
       background-color: var(--color-surface);

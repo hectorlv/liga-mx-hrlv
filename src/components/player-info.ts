@@ -6,13 +6,13 @@ import { Player } from '../types';
 export class PlayerInfo extends LitElement {
   static override styles = [
     css`
-    :host{
+      :host {
         display: flex;
         align-items: center;
         flex: 1 1 auto;
         min-width: 0;
         height: auto;
-    }
+      }
       .player-card {
         display: flex;
         align-items: center;
@@ -40,7 +40,7 @@ export class PlayerInfo extends LitElement {
         padding: 0;
         font-size: 1em;
         font-weight: 500;
-        color: var(--md-sys-color-on-surface, #1a2b42);
+        color: var(--md-sys-color-on-surface);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -48,12 +48,12 @@ export class PlayerInfo extends LitElement {
       }
 
       .player-position,
-      .player-number{
+      .player-number {
         margin: 0;
         padding: 0;
         font-size: 0.875em;
         line-height: 1.2;
-        color: var(--md-sys-color-on-surface-variant, #666);
+        color: var(--md-sys-color-on-surface);
       }
     `,
   ];
@@ -62,17 +62,20 @@ export class PlayerInfo extends LitElement {
   override render() {
     return html`
       <div class="player-card">
-        <img
-          class="player-photo"
-          src="${this.player.imgSrc}"
-          alt="Photo of ${this.player.name}"
-        />
+        ${!this.player.imgSrc
+          ? html`
+          <md-icon>person</md-icon>`
+          : html`
+              <img
+                class="player-photo"
+                src="${this.player.imgSrc}"
+                alt="Photo of ${this.player.name}"
+              />
+            `}
         <div class="player-details">
           <h3 class="player-name">${this.player.name}</h3>
           <p class="player-position">Posición: ${this.player.position}</p>
-          <p class="player-number">
-            Número de Jersey: ${this.player.number}
-          </p>
+          <p class="player-number">Número de Jersey: ${this.player.number}</p>
         </div>
       </div>
     `;

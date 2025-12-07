@@ -1,5 +1,7 @@
 import '@material/web/icon/icon.js';
+import '@material/web/textfield/filled-text-field.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
+import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import '../components/player-info.js';
@@ -15,6 +17,7 @@ export class SubstitutionsCard extends LitElement {
         width: 100%;
         box-sizing: border-box;
         contain: content;
+        --md-icon-button-icon-color: var;
       }
       .lineup {
         display: grid;
@@ -61,6 +64,13 @@ export class SubstitutionsCard extends LitElement {
         min-width: 0;
         margin: 0;
       }
+      .add-substitution-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 16px;
+      }
     `,
   ];
 
@@ -71,7 +81,7 @@ export class SubstitutionsCard extends LitElement {
   @query('#subTeam') subTeamSelect!: MdOutlinedSelect;
   @query('#subOut') subOutSelect!: MdOutlinedSelect;
   @query('#subIn') subInSelect!: MdOutlinedSelect;
-  @query('#subMinute') subMinuteInput!: HTMLInputElement;
+  @query('#subMinute') subMinuteInput!: MdFilledTextField;
 
   override render() {
     const substitutions = this.match?.substitutions || [];
@@ -98,7 +108,8 @@ export class SubstitutionsCard extends LitElement {
                         p => p.number === sub.playerIn,
                       )}
                     ></player-info>
-                    <md-icon class="in">arrow_insert</md-icon><span>Minuto ${sub.minute}</span>
+                    <md-icon class="in">arrow_insert</md-icon
+                    ><span>Minuto ${sub.minute}</span>
                   </div>
                 `,
               )}
@@ -121,13 +132,19 @@ export class SubstitutionsCard extends LitElement {
                         p => p.number === sub.playerIn,
                       )}
                     ></player-info>
-                    <md-icon class="in">arrow_insert</md-icon><span>Minuto ${sub.minute}</span>
-                  </div>`
+                    <md-icon class="in">arrow_insert</md-icon
+                    ><span>Minuto ${sub.minute}</span>
+                  </div>`,
               )}
           </div>
         </div>
-        <div>
-          <md-outlined-select @change=${() => this.requestUpdate()} id="subTeam" aria-label="Equipo del cambio" title="Equipo del cambio">
+        <div class="add-substitution-form">
+          <md-outlined-select
+            @change=${() => this.requestUpdate()}
+            id="subTeam"
+            aria-label="Equipo del cambio"
+            title="Equipo del cambio"
+          >
             <md-select-option value="local">Local</md-select-option>
             <md-select-option value="visitor">Visitante</md-select-option>
           </md-outlined-select>
@@ -136,7 +153,10 @@ export class SubstitutionsCard extends LitElement {
             aria-label="Jugador que sale"
             title="Jugador que sale"
           >
-            ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
+            <md-select-option value="" disabled selected
+              >Selecciona jugador</md-select-option
+            >
+            ${this._getActivePlayers(side as 'local' | 'visitor').map(
               p =>
                 html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
@@ -148,23 +168,26 @@ export class SubstitutionsCard extends LitElement {
             aria-label="Jugador que entra"
             title="Jugador que entra"
           >
-            ${(side === 'local' ? this.localPlayers : this.visitorPlayers).map(
+            <md-select-option value="" disabled selected
+              >Selecciona jugador</md-select-option
+            >
+            ${this._getSubstitutePlayers(side as 'local' | 'visitor').map(
               p =>
                 html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
                 >`,
             )}
           </md-outlined-select>
-          <input
+          <md-filled-text-field
             aria-label="Minuto del cambio"
+            label="Minuto"
             type="number"
             inputmode="numeric"
             id="subMinute"
             class="minute-input"
-            placeholder="Minuto"
             min="0"
             max="90"
-          />
+          ></md-filled-text-field>
           <md-filled-button
             class="action-btn"
             aria-label="Agregar cambio"
@@ -194,15 +217,66 @@ export class SubstitutionsCard extends LitElement {
       ...(this.match.substitutions || []),
       newSubstitution,
     ];
-    this._updateSubstitutions(substitutions);
+    const lineupKey = team === 'local' ? 'lineupLocal' : 'lineupVisitor';
+    const lineup = [...(this.match[lineupKey] || [])];
+    // Actualizar el lineup: marcar el jugador que sale y el que entra
+    const outIdx = lineup.findIndex(p => p.number === playerOut);
+    if (outIdx !== -1) {
+      lineup[outIdx] = {
+        ...lineup[outIdx],
+        salioDeCambio: true,
+      };
+    }
+
+    lineup.push({ number: playerIn, entroDeCambio: true });
+
+
+    this._updateSubstitutions(substitutions, lineupKey, lineup);
+    this.subTeamSelect.value = 'local';
+    this.subOutSelect.value = '';
+    this.subInSelect.value = '';
+    this.subMinuteInput.value = '';
   }
 
-  private _updateSubstitutions(substitutions: Substitution[]) {
+  private _updateSubstitutions(substitutions: Substitution[], lineupKey: 'lineupLocal' | 'lineupVisitor', lineup: any[]) {
     if (!this.match) return;
     const updatedMatch: FirebaseUpdates = {};
     updatedMatch['/matches/' + this.match.idMatch + '/substitutions'] =
       substitutions;
+    updatedMatch['/matches/' + this.match.idMatch + '/' + lineupKey] = lineup;
     this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
     this.requestUpdate();
+  }
+
+  // Obtener los jugadores activos considerando los cambios realizados
+  private _getActivePlayers(side: 'local' | 'visitor'): Player[] {
+    const teamPlayers =
+      side === 'local' ? this.localPlayers : this.visitorPlayers;
+    const lineup =
+      side === 'local'
+        ? this.match?.lineupLocal || []
+        : this.match?.lineupVisitor || [];
+
+    return teamPlayers.filter(player =>
+      lineup.some(
+        p =>
+          p.number === player.number &&
+          ((p.titular && !p.salioDeCambio) || p.entroDeCambio),
+      ),
+    );
+  }
+
+  // Obtener los jugadores que pueden entrar como sustitutos
+  private _getSubstitutePlayers(side: 'local' | 'visitor'): Player[] {
+    const teamPlayers =
+      side === 'local' ? this.localPlayers : this.visitorPlayers;
+    const lineup =
+      side === 'local'
+        ? this.match?.lineupLocal || []
+        : this.match?.lineupVisitor || [];
+    return teamPlayers.filter(
+      player =>
+        !lineup.some(p => p.number === player.number && !p.entroDeCambio),
+    );
   }
 }

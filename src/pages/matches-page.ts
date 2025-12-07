@@ -4,6 +4,7 @@ import '@material/web/iconbutton/icon-button.js';
 import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
 import '@material/web/switch/switch.js';
+import '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import {
   customElement,
@@ -20,20 +21,16 @@ import { MdIconButton } from '@material/web/iconbutton/icon-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
 import {
-  FirebaseUpdates,
   Match,
   PlayerTeam,
   Stadium,
-  Team,
+  Team
 } from '../types/index.js';
 import { JORNADA_LIGUILLA } from '../utils/constants.js';
 import {
   formatDateDDMMYYYY,
-  formatDateYYYYMMDD,
-  getMatchRowClass,
-  replaceDateSeparator,
+  getMatchRowClass
 } from '../utils/dateUtils.js';
-import { dispatchEventMatchUpdated } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 /**
  * Page for show the fixture
@@ -229,22 +226,6 @@ export class MatchesPage extends LitElement {
     }
   }
 
-  private _onEditFromMenu(e: Event) {
-    e.stopPropagation();
-    const id = Number((e.currentTarget as HTMLElement).getAttribute('data-id'));
-    // reuse existing handler by synthesizing expected event structure
-
-    this._editMatch({ target: { getAttribute: () => id } } as unknown as Event);
-    this.openRowMenuId = null;
-    // restore focus to trigger button
-    this.updateComplete.then(() => {
-      const btn = this.shadowRoot?.querySelector(
-        `md-icon-button[data-id="${id}"]`,
-      ) as MdIconButton;
-      if (btn && typeof btn.focus === 'function') btn.focus();
-    });
-  }
-
   private _onDetailsFromMenu(e: Event) {
     e.stopPropagation();
     const id = Number(
@@ -330,6 +311,7 @@ export class MatchesPage extends LitElement {
           .match="${this.selectedMatch}"
           .teams="${this.teams}"
           .players="${this.players}"
+          .stadiums="${this.stadiums}"
           @back-to-calendar="${this._backToCalendar}"
         ></match-detail-page>
       </main>`;
@@ -423,80 +405,18 @@ export class MatchesPage extends LitElement {
                             : html``}
                         </td>
                         <td>${match.local}</td>
-                        ${match.editMatch
-                          ? html` <td>
-                              <input
-                                aria-label="Goles local"
-                                type="number"
-                                inputmode="numeric"
-                                min="0"
-                                .value="${match.golLocal}"
-                                id="golLocal${match.idMatch}"
-                              />
-                            </td>`
-                          : html` <td>${match.golLocal}</td> `}
+                        <td>${match.golLocal}</td>
                         <td>
                           ${match.visitante.trim() !== ''
                             ? html` ${getTeamImage(match.visitante)} `
                             : html``}
                         </td>
                         <td>${match.visitante}</td>
-                        ${match.editMatch
-                          ? html` <td>
-                              <input
-                                aria-label="Goles visitante"
-                                type="number"
-                                inputmode="numeric"
-                                min="0"
-                                .value="${match.golVisitante}"
-                                id="golVisitante${match.idMatch}"
-                              />
-                            </td>`
-                          : html` <td>${match.golVisitante}</td> `}
+                        <td>${match.golVisitante}</td>
                         <td><span class="chip">${match.jornada}</span></td>
-                        ${match.editMatch
-                          ? html` <td>
-                              <input
-                                aria-label="Fecha del partido"
-                                type="date"
-                                .value="${formatDateYYYYMMDD(
-                                  match.fecha as Date,
-                                )}"
-                                id="fecha${match.idMatch}"
-                              />
-                            </td>`
-                          : html`<td>
-                              ${formatDateDDMMYYYY(match.fecha as Date)}
-                            </td> `}
-                        ${match.editMatch
-                          ? html` <td>
-                              <input
-                                aria-label="Hora del partido"
-                                type="time"
-                                .value="${match.hora}"
-                                id="hora${match.idMatch}"
-                              />
-                            </td>`
-                          : html` <td>${match.hora}</td> `}
-                        ${match.editMatch
-                          ? html` <td>
-                              <md-filled-select
-                                aria-label="Estadio"
-                                id="estadio${match.idMatch}"
-                              >
-                                ${this.stadiums.map(
-                                  stadium =>
-                                    html`<md-select-option
-                                      value="${stadium}"
-                                      ?selected=${stadium === match.estadio}
-                                      ><div slot="headline">
-                                        ${stadium}
-                                      </div></md-select-option
-                                    >`,
-                                )}
-                              </md-filled-select>
-                            </td>`
-                          : html`<td>${match.estadio}</td>`}
+                        <td>${formatDateDDMMYYYY(match.fecha as Date)}</td>
+                        <td>${match.hora}</td>
+                        <td>${match.estadio}</td>
                         <td class="actions-cell">
                           <md-icon-button
                             data-id="${match.idMatch}"
@@ -512,13 +432,6 @@ export class MatchesPage extends LitElement {
                                 role="menu"
                                 aria-label="Menú de acciones"
                               >
-                                <md-filled-button
-                                  role="menuitem"
-                                  @click="${this._onEditFromMenu}"
-                                  data-id="${match.idMatch}"
-                                  ><md-icon>edit</md-icon
-                                  >Editar</md-filled-button
-                                >
                                 <md-filled-button
                                   role="menuitem"
                                   @click="${this._onDetailsFromMenu}"
@@ -574,19 +487,6 @@ export class MatchesPage extends LitElement {
                         <md-filled-button
                           class="action-btn"
                           index="${match.idMatch}"
-                          aria-label="${match.editMatch ? 'Guardar' : 'Editar'}"
-                          @click="${this._editMatch}"
-                        >
-                          <md-icon
-                            >${match.editMatch ? 'check' : 'edit'}</md-icon
-                          >
-                          <span class="btn-label"
-                            >${match.editMatch ? 'Guardar' : 'Editar'}</span
-                          >
-                        </md-filled-button>
-                        <md-filled-button
-                          class="action-btn"
-                          index="${match.idMatch}"
                           aria-label="Detalles"
                           @click="${this._showMatchDetails}"
                         >
@@ -601,52 +501,6 @@ export class MatchesPage extends LitElement {
             `}
       </main>
     `;
-  }
-
-  /**
-   * Fires event edit-match when a match is changed
-   * @param {Event} e
-   */
-  private _editMatch(e: Event) {
-    const index = (e.target as HTMLElement).getAttribute('index');
-    const match = this.matchesList.find(m => m.idMatch === Number(index));
-    if (!match) return;
-    if (!match.editMatch) {
-      // Edit
-      match.editMatch = true;
-      this.requestUpdate();
-    } else {
-      // Update
-      const golLocal = (
-        this.shadowRoot?.querySelector(`#golLocal${index}`) as HTMLInputElement
-      ).value;
-      const golVisitante = (
-        this.shadowRoot?.querySelector(
-          `#golVisitante${index}`,
-        ) as HTMLInputElement
-      ).value;
-      const fecha = replaceDateSeparator(
-        (this.shadowRoot?.querySelector(`#fecha${index}`) as HTMLInputElement)
-          .value,
-      );
-      const hora = (
-        this.shadowRoot?.querySelector(`#hora${index}`) as HTMLInputElement
-      ).value;
-      const estadio = (
-        this.shadowRoot?.querySelector(`#estadio${index}`) as HTMLInputElement
-      ).value;
-      const updates: FirebaseUpdates = {};
-      updates[`/matches/${match.idMatch}/golLocal`] =
-        golLocal !== '' ? Number(golLocal) : '';
-      updates[`/matches/${match.idMatch}/golVisitante`] =
-        golVisitante !== '' ? Number(golVisitante) : '';
-      updates[`/matches/${match.idMatch}/fecha`] = fecha;
-      updates[`/matches/${match.idMatch}/hora`] = hora;
-      updates[`/matches/${match.idMatch}/estadio`] = estadio;
-      this.dispatchEvent(dispatchEventMatchUpdated(updates));
-      match.editMatch = true;
-      this.requestUpdate();
-    }
   }
 
   /**

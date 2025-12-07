@@ -1,5 +1,7 @@
 import '@material/web/icon/icon.js';
+import '@material/web/textfield/filled-text-field.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
+import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import '../components/player-info.js';
@@ -48,6 +50,13 @@ export class CardsCard extends LitElement {
         min-width: 0;
         margin: 0;
       }
+      .add-card-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 16px;
+      }
     `,
   ];
   @property({ type: Array }) localPlayers: Player[] = [];
@@ -56,7 +65,7 @@ export class CardsCard extends LitElement {
 
   @query('#cardTeam') cardTeamSelect!: MdOutlinedSelect;
   @query('#cardPlayer') cardPlayerSelect!: MdOutlinedSelect;
-  @query('#cardMinute') cardMinuteInput!: HTMLInputElement;
+  @query('#cardMinute') cardMinuteInput!: MdFilledTextField;
   @query('#cardType') cardTypeSelect!: MdOutlinedSelect;
 
   override render() {
@@ -114,7 +123,7 @@ export class CardsCard extends LitElement {
           </div>
         </div>
 
-        <div>
+        <div class="add-card-form">
           <md-outlined-select
             id="cardTeam"
             aria-label="Equipo tarjeta"
@@ -129,6 +138,7 @@ export class CardsCard extends LitElement {
             aria-label="Jugador tarjeta"
             title="Jugador tarjeta"
           >
+            <md-select-option value="" disabled selected>Selecciona jugador</md-select-option>
             ${(cardSide === 'local'
               ? this.localPlayers
               : this.visitorPlayers
@@ -139,21 +149,22 @@ export class CardsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
-          <input
+          <md-filled-text-field
             aria-label="Minuto de la tarjeta"
+            label="Minuto"
             type="number"
             inputmode="numeric"
             id="cardMinute"
             class="minute-input"
-            placeholder="Minuto"
             min="0"
             max="90"
-          />
+          ></md-filled-text-field>
           <md-filled-select
             id="cardType"
             aria-label="Tipo de tarjeta"
             title="Tipo de tarjeta"
           >
+            <md-select-option value="" disabled selected>Selecciona tipo de tarjeta</md-select-option>
             <md-select-option value="yellow">Amarilla</md-select-option>
             <md-select-option value="red">Roja</md-select-option>
           </md-filled-select>
@@ -178,6 +189,10 @@ export class CardsCard extends LitElement {
     const newCard: Card = { team, player, minute, cardType };
     const cards = [...(this.match.cards || []), newCard];
     this._updateCards(cards);
+    this.cardTeamSelect.value = 'local';
+    this.cardPlayerSelect.value = '';
+    this.cardMinuteInput.value = '';
+    this.cardTypeSelect.value = '';
   }
 
   private _updateCards(cards: Card[]) {

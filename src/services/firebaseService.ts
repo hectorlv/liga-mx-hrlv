@@ -41,10 +41,11 @@ export function fetchMatches(callback: MatchesCallBack): Unsubscribe {
       }
 
       const raw = snapshot.val();
-      const rawArray = snapshotToArray<Match>(raw);
+      const rawArray = snapshotToArray<any>(raw);
       const matches = rawArray.map((match, index) => ({
         ...match,
-        editMatch: false,
+        golLocal: match.golLocal === '' ? null : match.golLocal,
+        golVisitante: match.golVisitante === '' ? null : match.golVisitante,
         idMatch: index,
         fecha: formatDate(match.fecha, match.hora),
       }));

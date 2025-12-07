@@ -1,10 +1,12 @@
 import '@material/web/dialog/dialog.js';
 import type { MdDialog } from '@material/web/dialog/dialog.js';
+import '@material/web/textfield/filled-text-field.js';
 import type { Auth, User, UserCredential } from 'firebase/auth';
 import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { LitElement, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
+import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 
 @customElement('login-page')
 export class LoginPage extends LitElement {
@@ -29,26 +31,26 @@ static override styles = [styles];
       <h1>Login</h1>
       <p>Por favor, inicia sesión para continuar</p>
       <form id="loginForm" @submit="${this.loginWithEmail}">
-        <input
+        <md-filled-text-field
           id="email"
+          label="Email"
           type="email"
           inputmode="email"
           .value=${this.email}
-          placeholder="Email"
           aria-label="Email"
           required
           @input="${this.onEmailInput}"
-        />
-        <input
+        ></md-filled-text-field>
+        <md-filled-text-field
           id="password"
+          label="Password"
           type="password"
           inputmode="text"
-          placeholder="Password"
           aria-label="Password"
           .value=${this.password}
           required
           @input="${this.onPasswordInput}"
-        />
+        ></md-filled-text-field>
         <button type="submit" aria-label="Iniciar sesión">Login</button>
       </form>
         <md-dialog id="dialogLogin" type="alert">
@@ -59,12 +61,12 @@ static override styles = [styles];
   }
 
   private onEmailInput(e: InputEvent) {
-    const target = e.target as HTMLInputElement;
+    const target = e.target as MdFilledTextField;
     this.email = target.value;
   }
 
   private onPasswordInput(e: InputEvent) {
-    const target = e.target as HTMLInputElement;
+    const target = e.target as MdFilledTextField;
     this.password = target.value;
   }
   override firstUpdated() {
