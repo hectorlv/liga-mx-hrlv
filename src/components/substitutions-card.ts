@@ -276,7 +276,7 @@ export class SubstitutionsCard extends LitElement {
         : this.match?.lineupVisitor || [];
     return teamPlayers.filter(
       player =>
-        !lineup.some(p => p.number === player.number && (p.titular || p.entroDeCambio),
+        !lineup.some(p => p.number === player.number && (p.titular || p.entroDeCambio))
     );
   }
 }
