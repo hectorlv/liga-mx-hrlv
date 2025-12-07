@@ -1,4 +1,4 @@
-limport '@material/web/icon/icon.js';
+import '@material/web/icon/icon.js';
 import '@material/web/textfield/filled-text-field.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
