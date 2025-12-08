@@ -70,7 +70,6 @@ export class GoalsCard extends LitElement {
       }
       .assist {
         font-size: 0.9em;
-        color: var(--md-sys-color-on-surface-variant, #49454f);
       }
       @media (max-width: 600px) {
         .lineup {

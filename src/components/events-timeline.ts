@@ -55,6 +55,7 @@ export class EventsTimeline extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        align-items: flex-start;
       }
       .title-line {
         display: flex;
