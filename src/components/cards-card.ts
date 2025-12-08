@@ -384,7 +384,7 @@ export class CardsCard extends LitElement {
       player,
       minute,
       cardType,
-      foulType,
+      foulType || null,
     };
     const cards = [...(this.match.cards || []), newCard];
     this._updateCards(cards);
@@ -474,7 +474,7 @@ export class CardsCard extends LitElement {
       player,
       minute,
       cardType,
-      foulType: foulType || undefined,
+      foulType: foulType || null,
     };
     const cards = [...(this.match.cards || [])];
     cards[this.editingCardIndex] = updatedCard;
