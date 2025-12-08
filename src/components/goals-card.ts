@@ -471,7 +471,7 @@ export class GoalsCard extends LitElement {
     const goalType = this.newGoalTypeSelect.value as GoalType;
     const assistValue = this.newGoalAssistSelect.value;
     const assist =
-      ownGoal || !assistValue ? undefined : Number(this.newGoalAssistSelect.value);
+      ownGoal || !assistValue ? null : Number(this.newGoalAssistSelect.value);
     const newGoal: Goal = { team, player, minute, ownGoal, goalType, assist };
     const goals = [...(this.match.goals || []), newGoal];
     this._updateGoals(goals);
@@ -665,7 +665,7 @@ export class GoalsCard extends LitElement {
     const goalType = this.editGoalTypeSelect.value as GoalType;
     const assistValue = this.editGoalAssistSelect.value;
     const assist =
-      ownGoal || !assistValue ? undefined : Number(this.editGoalAssistSelect.value);
+      ownGoal || !assistValue ? null : Number(this.editGoalAssistSelect.value);
     const updatedGoal: Goal = {
       team,
       player,
