@@ -570,6 +570,8 @@ export class MatchesPage extends LitElement {
     };
     this.selectedMatch = match;
     this.showDetails = true;
+    // Reset scroll to top
+    window.scrollTo(0, 0);
     this.requestUpdate();
   }
 

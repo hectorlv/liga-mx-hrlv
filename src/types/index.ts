@@ -53,6 +53,8 @@ export interface Goal {
     player: number;
     team: 'local' | 'visitor';
     ownGoal?: boolean;
+    goalType?: GoalType;
+    assist?: number;
 }
 
 export interface Substitution {
@@ -67,6 +69,29 @@ export interface Card {
     player: number;
     cardType: 'yellow' | 'red';
     team: 'local' | 'visitor';
+    foulType?: FoulType;
 }
 
 export type FirebaseUpdates = Record<string, unknown>;
+
+export type GoalType =
+  | 'penal'
+  | 'area'
+  | 'fueraArea'
+  | 'tiroLibre'
+  | 'cabeza'
+  | 'otro';
+
+export type FoulType =
+  | 'mano'
+  | 'entrada'
+  | 'empujon'
+  | 'táctica'
+  | 'protesta'
+  | 'tiempo'
+  | 'otro';
+
+export type TimelineItem =
+  | { kind: 'goal'; minute: number; team: 'local' | 'visitor'; goal: Goal }
+  | { kind: 'card'; minute: number; team: 'local' | 'visitor'; card: Card }
+  | { kind: 'sub'; minute: number; team: 'local' | 'visitor'; sub: Substitution };

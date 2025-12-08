@@ -203,6 +203,7 @@ export class LineupsCard extends LitElement {
         class="action-btn"
         aria-label="Guardar alineaciones"
         title="Guardar alineaciones"
+        ?disabled=${!this._lineupsReady()}
         @click=${this.updateLineups}
       >
         <md-icon>save</md-icon>
@@ -409,5 +410,14 @@ export class LineupsCard extends LitElement {
     this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
     this.requestUpdate();
     this.dialogLineups.show();
+  }
+
+  private _lineupsReady(): boolean {
+    if (!this.match) return false;
+    const localCount =
+      (this.match.lineupLocal || []).filter(p => p.titular).length;
+    const visitorCount =
+      (this.match.lineupVisitor || []).filter(p => p.titular).length;
+    return localCount >= 11 && visitorCount >= 11;
   }
 }

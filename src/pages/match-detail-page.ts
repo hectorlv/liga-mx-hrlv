@@ -3,6 +3,7 @@ import '@material/web/iconbutton/icon-button.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import '../components/cards-card.js';
+import '../components/events-timeline.js';
 import '../components/goals-card.js';
 import '../components/lineups-card.js';
 import '../components/substitutions-card.js';
@@ -171,6 +172,11 @@ export class MatchDetailPage extends LitElement {
             `}
       </section>
 
+      <events-timeline
+        .match=${this.match}
+        .localPlayers=${this.localPlayers}
+        .visitorPlayers=${this.visitorPlayers}
+      ></events-timeline>
       <goals-card
         .match=${this.match}
         .localPlayers=${this.localPlayers}
