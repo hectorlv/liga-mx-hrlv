@@ -384,7 +384,7 @@ export class CardsCard extends LitElement {
       player,
       minute,
       cardType,
-      foulType || null,
+      foulType: foulType || null,
     };
     const cards = [...(this.match.cards || []), newCard];
     this._updateCards(cards);
@@ -466,8 +466,7 @@ export class CardsCard extends LitElement {
     const player = Number(this.editCardPlayerSelect.value);
     const minute = Number(this.editCardMinuteInput.value);
     const cardType = this.editCardTypeSelect.value as 'yellow' | 'red';
-    const foulType = this.editCardFoulTypeSelect?.value as
-      | ''
+    const foulType = this.editCardFoulTypeSelect?.value as ''
       | typeof FOUL_TYPES[number]['value'];
     const updatedCard: Card = {
       team,
