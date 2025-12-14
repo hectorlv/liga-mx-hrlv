@@ -16,6 +16,7 @@ import '@material/web/tabs/tabs.js';
 import '../pages/login-page.js';
 import '../pages/matches-page.js';
 import '../pages/table-page.js';
+import '../pages/stats-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 
 // Utility imports
@@ -83,7 +84,9 @@ export class LigaMxHrlv extends LitElement {
               <md-primary-tab aria-label="Tabla General"
                 >Tabla General</md-primary-tab
               >
-              <md-primary-tab aria-label="Liguilla">Liguilla</md-primary-tab>
+              <md-primary-tab aria-label="Estadísticas"
+                >Estadísticas</md-primary-tab
+              >
             </md-tabs>
           `}
       <main>${this._getTab()}</main>
@@ -132,8 +135,14 @@ export class LigaMxHrlv extends LitElement {
             .table="${this.table}"
           ></table-page>
         `;
-      case 'Liguilla':
-        return html` <playoff-page .table="${this.table}"></playoff-page> `;
+      case 'Estadísticas':
+        return html`
+          <stats-page
+            .matchesList=${this.matchesList}
+            .teams=${this.teams}
+            .players=${this.players}
+          ></stats-page>
+        `;
       default:
         return html``;
     }
@@ -178,7 +187,7 @@ export class LigaMxHrlv extends LitElement {
         return 0;
       case 'Tabla General':
         return 1;
-      case 'Liguilla':
+      case 'Estadísticas':
         return 2;
       default:
         return 0;
@@ -188,7 +197,7 @@ export class LigaMxHrlv extends LitElement {
   private _onTabsChange(e: Event) {
     const tabs = e.target as MdTabs;
     const index = tabs.activeTabIndex ?? 0;
-    const tabNames = ['Calendario', 'Tabla General', 'Liguilla'];
+    const tabNames = ['Calendario', 'Tabla General', 'Estadísticas'];
     const next = tabNames[index] || 'Calendario';
     if (this.selectedTab !== next) {
       // Scroll al inicio para mantener UX consistente

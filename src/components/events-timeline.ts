@@ -154,7 +154,8 @@ export class EventsTimeline extends LitElement {
                 </span>
                 ${item.card.foulType
                   ? html`<span class="badge"
-                      >${FOUL_TYPE_LABELS[item.card.foulType]}</span
+                      >${FOUL_TYPE_LABELS[item.card.foulType] ||
+                      item.card.foulType}</span
                     >`
                   : null}
               </div>

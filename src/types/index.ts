@@ -83,13 +83,19 @@ export type GoalType =
   | 'otro';
 
 export type FoulType =
-  | 'mano'
-  | 'entrada'
-  | 'empujon'
-  | 'táctica'
+  | 'conductaAntideportiva'
   | 'protesta'
-  | 'tiempo'
-  | 'otro';
+  | 'reiteracion'
+  | 'retrasoReanudacion'
+  | 'distancia'
+  | 'ingresoSinPermiso'
+  | 'antideportivaCuerpoTecnico'
+  | 'juegoBruscoGrave'
+  | 'conductaViolenta'
+  | 'escupir'
+  | 'dogso'
+  | 'lenguajeOfensivo'
+  | 'dobleAmarilla';
 
 export type TimelineItem =
   | { kind: 'goal'; minute: number; team: 'local' | 'visitor'; goal: Goal }
