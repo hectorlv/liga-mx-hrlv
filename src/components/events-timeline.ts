@@ -1,7 +1,7 @@
 import '@material/web/icon/icon.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, Player, TimelineItem } from '../types';
+import { Match, PhaseEvent, Player, TimelineItem } from '../types';
 import { FOUL_TYPE_LABELS, GOAL_TYPE_LABELS } from '../constants';
 import '../components/player-info.js';
 
@@ -25,6 +25,10 @@ export class EventsTimeline extends LitElement {
         gap: 12px;
         padding: 4px 0;
         flex-wrap: wrap;
+      }
+      .item.phase .badge {
+        background: var(--md-sys-color-primary-container, #eaddff);
+        color: var(--md-sys-color-on-primary-container, #21005d);
       }
       .time {
         font-weight: 600;
@@ -189,6 +193,18 @@ export class EventsTimeline extends LitElement {
             </div>
           </div>
         `;
+      case 'phase':
+        return html`
+          <div class="item phase">
+            <span class="time">${item.minute}'</span>
+            <div class="details">
+              <span class="badge">
+                <md-icon>schedule</md-icon>
+                ${this._phaseLabel(item.phase)}
+              </span>
+            </div>
+          </div>
+        `;
       default:
         return null;
     }
@@ -196,7 +212,8 @@ export class EventsTimeline extends LitElement {
 
   private _buildTimelineItems(): TimelineItem[] {
     if (!this.match) return [];
-    const { goals = [], cards = [], substitutions = [] } = this.match;
+    const { goals = [], cards = [], substitutions = [], phaseEvents } = this.match;
+    const phaseItems: TimelineItem[] = this._phaseTimeline(phaseEvents);
     const goalItems: TimelineItem[] = goals.map(goal => ({
       kind: 'goal',
       minute: goal.minute,
@@ -215,13 +232,47 @@ export class EventsTimeline extends LitElement {
       team: sub.team,
       sub,
     }));
-    return [...goalItems, ...cardItems, ...subItems].sort(
+    return [...phaseItems, ...goalItems, ...cardItems, ...subItems].sort(
       (a, b) => a.minute - b.minute,
     );
+  }
+
+  private _phaseLabel(phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime') {
+    switch (phase) {
+      case 'start':
+        return 'Inicio del partido';
+      case 'halftime':
+        return 'Medio tiempo';
+      case 'secondHalf':
+        return 'Inicio del segundo tiempo';
+      case 'fulltime':
+        return 'Fin del partido';
+      default:
+        return '';
+    }
   }
 
   private _playerName(team: 'local' | 'visitor', number: number) {
     const list = team === 'local' ? this.localPlayers : this.visitorPlayers;
     return list.find(p => p.number === number)?.name || `#${number}`;
+  }
+
+  private _phaseTimeline(phaseEvents?: PhaseEvent[]): TimelineItem[] {
+    const defaults: PhaseEvent[] = [
+      { phase: 'start', minute: 0 },
+      { phase: 'halftime', minute: 45 },
+      { phase: 'secondHalf', minute: 46 },
+      { phase: 'fulltime', minute: 90 },
+    ];
+    const overrides = phaseEvents || [];
+    const merged = defaults.map(defaultEvent => {
+      const override = overrides.find(e => e.phase === defaultEvent.phase);
+      return override ?? defaultEvent;
+    });
+    return merged.map(event => ({
+      kind: 'phase',
+      minute: event.minute,
+      phase: event.phase,
+    }));
   }
 }

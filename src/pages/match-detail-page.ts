@@ -1,5 +1,6 @@
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
+import '@material/web/button/filled-button.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import '../components/cards-card.js';
@@ -11,6 +12,7 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
   Match,
+  PhaseEvent,
   Player,
   PlayerTeam,
   Stadium,
@@ -37,6 +39,16 @@ export class MatchDetailPage extends LitElement {
         --md-icon-button-icon-color: #e0e0e0;
         --md-icon-button-hover-icon-color: #a5d6a7;
       }
+      .phase-events {
+        margin: 16px 0 24px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+        align-items: end;
+      }
+      .phase-actions h3 {
+        margin: 0 0 8px;
+      }
     `,
   ];
 
@@ -60,10 +72,6 @@ export class MatchDetailPage extends LitElement {
     if (_changedProperties.has('match')) {
       this.requestUpdate();
     }
-  }
-
-   protected override firstUpdated(_changedProperties: PropertyValues): void {
-    console.log({match: this.match});
   }
 
   override render() {
@@ -172,6 +180,16 @@ export class MatchDetailPage extends LitElement {
             `}
       </section>
 
+      <section class="phase-actions">
+        <h3>Eventos del partido</h3>
+        <div class="phase-events">
+          ${this._renderPhaseControl('start', 'Inicio del partido')}
+          ${this._renderPhaseControl('halftime', 'Medio tiempo')}
+          ${this._renderPhaseControl('secondHalf', 'Segundo tiempo')}
+          ${this._renderPhaseControl('fulltime', 'Fin del partido')}
+        </div>
+      </section>
+
       <events-timeline
         .match=${this.match}
         .localPlayers=${this.localPlayers}
@@ -233,6 +251,89 @@ export class MatchDetailPage extends LitElement {
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/golLocal`] = 0;
     updates[`/matches/${this.match.idMatch}/golVisitante`] = 0;
+    const startMinute = this._phaseMinuteFromInput('start');
+    if (startMinute !== null) {
+      updates[`/matches/${this.match.idMatch}/phaseEvents`] = this._phaseEventsWithUpdate(
+        'start',
+        startMinute,
+      );
+    }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
+  }
+
+  private _renderPhaseControl(
+    phase: PhaseEvent['phase'],
+    label: string,
+  ) {
+    return html`
+      <md-filled-text-field
+        label="${label} (minuto)"
+        aria-label="${label}"
+        id="${phase}MinuteInput"
+        type="number"
+        min="0"
+        .value=${this._phaseMinuteValue(phase)}
+      ></md-filled-text-field>
+      <md-filled-button
+        @click=${() => this._savePhaseEvent(phase)}
+        aria-label="Registrar ${label.toLowerCase()}"
+      >
+        Registrar ${label}
+      </md-filled-button>
+    `;
+  }
+
+  private _savePhaseEvent(phase: PhaseEvent['phase']) {
+    if (!this.match) return;
+    const minute = this._phaseMinuteFromInput(phase);
+    if (minute === null) return;
+    const updates: FirebaseUpdates = {};
+    updates[`/matches/${this.match.idMatch}/phaseEvents`] = this._phaseEventsWithUpdate(
+      phase,
+      minute,
+    );
+    this.dispatchEvent(dispatchEventMatchUpdated(updates));
+  }
+
+  private _phaseEventsWithUpdate(phase: PhaseEvent['phase'], minute: number) {
+    const order: PhaseEvent['phase'][] = [
+      'start',
+      'halftime',
+      'secondHalf',
+      'fulltime',
+    ];
+    const events = this.match?.phaseEvents || [];
+    const filtered = events.filter(event => event.phase !== phase);
+    const next = [...filtered, { phase, minute }];
+    return next.sort(
+      (a, b) => order.indexOf(a.phase) - order.indexOf(b.phase),
+    );
+  }
+
+  private _phaseMinuteFromInput(phase: PhaseEvent['phase']) {
+    const input = this.renderRoot.querySelector(
+      `#${phase}MinuteInput`,
+    ) as MdFilledTextField | null;
+    const raw = input?.value?.trim();
+    if (!raw) return null;
+    const value = Number(raw);
+    return Number.isNaN(value) || value < 0 ? null : value;
+  }
+
+  private _phaseMinuteValue(phase: PhaseEvent['phase']) {
+    const existing = this.match?.phaseEvents?.find(event => event.phase === phase);
+    if (existing) return `${existing.minute}`;
+    switch (phase) {
+      case 'start':
+        return '0';
+      case 'halftime':
+        return '45';
+      case 'secondHalf':
+        return '46';
+      case 'fulltime':
+        return '90';
+      default:
+        return '0';
+    }
   }
 }
