@@ -165,7 +165,6 @@ export class GoalsCard extends LitElement {
                         ? html`<span class="assist"
                             >Asistencia:
                             ${this.localPlayers.find(p => p.number === goal.assist)?.name ||
-                            this.visitorPlayers.find(p => p.number === goal.assist)?.name ||
                             goal.assist}</span
                           >`
                         : null}
@@ -220,8 +219,7 @@ export class GoalsCard extends LitElement {
                       ${goal.assist
                         ? html`<span class="assist"
                             >Asistencia:
-                            ${this.localPlayers.find(p => p.number === goal.assist)?.name ||
-                            this.visitorPlayers.find(p => p.number === goal.assist)?.name ||
+                            ${this.visitorPlayers.find(p => p.number === goal.assist)?.name ||
                             goal.assist}</span
                           >`
                         : null}
