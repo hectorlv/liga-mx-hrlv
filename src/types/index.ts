@@ -13,6 +13,7 @@ export interface Match {
   goals: Goal[];
   substitutions: Substitution[];
   cards: Card[];
+  phaseEvents?: PhaseEvent[];
 }
 
 export interface PlayerGame {
@@ -72,6 +73,11 @@ export interface Card {
     foulType?: FoulType;
 }
 
+export interface PhaseEvent {
+  minute: number;
+  phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
+}
+
 export type FirebaseUpdates = Record<string, unknown>;
 
 export type GoalType =
@@ -100,4 +106,5 @@ export type FoulType =
 export type TimelineItem =
   | { kind: 'goal'; minute: number; team: 'local' | 'visitor'; goal: Goal }
   | { kind: 'card'; minute: number; team: 'local' | 'visitor'; card: Card }
-  | { kind: 'sub'; minute: number; team: 'local' | 'visitor'; sub: Substitution };
+  | { kind: 'sub'; minute: number; team: 'local' | 'visitor'; sub: Substitution }
+  | { kind: 'phase'; minute: number; phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime' };
