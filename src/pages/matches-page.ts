@@ -26,7 +26,7 @@ import {
   Stadium,
   Team
 } from '../types/index.js';
-import { JORNADA_LIGUILLA } from '../utils/constants.js';
+import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
 import {
   formatDateDDMMYYYY,
   getMatchRowClass
@@ -103,6 +103,19 @@ export class MatchesPage extends LitElement {
           margin-bottom: 10px;
         }
       }
+
+      .champion-legend {
+        max-width: 1100px;
+        margin: var(--space-8) auto var(--space-16);
+        padding: var(--space-12) var(--space-16);
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--radius-m);
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+        font-weight: 600;
+        justify-content: center;
+      }
     `,
   ];
 
@@ -130,6 +143,52 @@ export class MatchesPage extends LitElement {
   private _boundOnResize: (() => void) | undefined;
   private _boundOnDocClick: (() => void) | undefined;
   private _boundOnGlobalKey: ((e: KeyboardEvent) => void) | undefined;
+
+  private get championLegend(): string | null {
+    const finalIda = this.matchesList.find(
+      match => match.idMatch === LIGUILLA.final.ida.id,
+    );
+    const finalVuelta = this.matchesList.find(
+      match => match.idMatch === LIGUILLA.final.vuelta.id,
+    );
+
+    if (!finalIda || !finalVuelta) return null;
+
+    const hasTeams =
+      finalIda.local.trim() !== '' &&
+      finalIda.visitante.trim() !== '' &&
+      finalVuelta.local.trim() !== '' &&
+      finalVuelta.visitante.trim() !== '';
+    const hasScores =
+      finalIda.golLocal >= 0 &&
+      finalIda.golVisitante >= 0 &&
+      finalVuelta.golLocal >= 0 &&
+      finalVuelta.golVisitante >= 0;
+
+    if (!hasTeams || !hasScores) return null;
+
+    const teamA = finalIda.local;
+    const teamB = finalIda.visitante;
+    const aggregate: Record<string, number> = {
+      [teamA]: finalIda.golLocal,
+      [teamB]: finalIda.golVisitante,
+    };
+
+    if (finalVuelta.local === teamA) aggregate[teamA] += finalVuelta.golLocal;
+    else if (finalVuelta.visitante === teamA)
+      aggregate[teamA] += finalVuelta.golVisitante;
+    else return null;
+
+    if (finalVuelta.local === teamB) aggregate[teamB] += finalVuelta.golLocal;
+    else if (finalVuelta.visitante === teamB)
+      aggregate[teamB] += finalVuelta.golVisitante;
+    else return null;
+
+    if (aggregate[teamA] === aggregate[teamB]) return null;
+
+    const champion = aggregate[teamA] > aggregate[teamB] ? teamA : teamB;
+    return `🏆 Campeón: ${champion} (${aggregate[teamA]}-${aggregate[teamB]} marcador global)`;
+  }
 
   @query('.row-menu') rowMenu!: HTMLElement;
   @query('button, [role="menuitem"]') firstMenuItem!: HTMLElement;
@@ -499,6 +558,11 @@ export class MatchesPage extends LitElement {
                 )}
               </div>
             `}
+        ${this.championLegend
+          ? html`<div class="champion-legend" role="note">
+              ${this.championLegend}
+            </div>`
+          : ''}
       </main>
     `;
   }
