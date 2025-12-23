@@ -109,9 +109,9 @@ export class EventsTimeline extends LitElement {
   }
 
   private _renderItem(item: TimelineItem) {
-    const teamLabel = item.team === 'local' ? 'Local' : 'Visitante';
     switch (item.kind) {
-      case 'goal':
+      case 'goal': {
+        const goalTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
         return html`
           <div class="item">
             <span class="time">${item.minute}'</span>
@@ -119,7 +119,7 @@ export class EventsTimeline extends LitElement {
               <div class="title-line">
                 <span class="badge goal">
                   <md-icon>sports_soccer</md-icon>
-                  Gol ${teamLabel}
+                  Gol ${goalTeamLabel}
                 </span>
                 ${item.goal.goalType
                   ? html`<span class="badge"
@@ -141,7 +141,9 @@ export class EventsTimeline extends LitElement {
             </div>
           </div>
         `;
-      case 'card':
+      }
+      case 'card': {
+        const cardTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
         return html`
           <div class="item">
             <span class="time">${item.minute}'</span>
@@ -149,12 +151,12 @@ export class EventsTimeline extends LitElement {
               <div class="title-line">
                 <span
                   class="badge ${item.card.cardType === 'yellow'
-                    ? 'card-yellow'
-                    : 'card-red'}"
+                  ? 'card-yellow'
+                  : 'card-red'}"
                 >
                   <md-icon>crop_portrait</md-icon>
                   ${item.card.cardType === 'yellow' ? 'Amarilla' : 'Roja'}
-                  ${teamLabel}
+                  ${cardTeamLabel}
                 </span>
                 ${item.card.foulType
                   ? html`<span class="badge"
@@ -169,7 +171,9 @@ export class EventsTimeline extends LitElement {
             </div>
           </div>
         `;
-      case 'sub':
+      }
+      case 'sub': {
+        const subTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
         return html`
           <div class="item">
             <span class="time">${item.minute}'</span>
@@ -177,7 +181,7 @@ export class EventsTimeline extends LitElement {
               <div class="title-line">
                 <span class="badge">
                   <md-icon>swap_horiz</md-icon>
-                  Cambio ${teamLabel}
+                  Cambio ${subTeamLabel}
                 </span>
               </div>
               <div class="details-text">
@@ -193,6 +197,7 @@ export class EventsTimeline extends LitElement {
             </div>
           </div>
         `;
+      }
       case 'phase':
         return html`
           <div class="item phase">
