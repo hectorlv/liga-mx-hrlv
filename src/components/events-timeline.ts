@@ -1,13 +1,13 @@
 import '@material/web/icon/icon.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, PhaseEvent, Player, TimelineItem } from '../types';
+import { Match, Player, TimelineItem } from '../types';
 import { FOUL_TYPE_LABELS, GOAL_TYPE_LABELS } from '../constants';
 import '../components/player-info.js';
 
 @customElement('events-timeline')
 export class EventsTimeline extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: block;
@@ -110,115 +110,131 @@ export class EventsTimeline extends LitElement {
 
   private _renderItem(item: TimelineItem) {
     switch (item.kind) {
-      case 'goal': {
-        const goalTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
-        return html`
-          <div class="item">
-            <span class="time">${item.minute}'</span>
-            <div class="details">
-              <div class="title-line">
-                <span class="badge goal">
-                  <md-icon>sports_soccer</md-icon>
-                  Gol ${goalTeamLabel}
-                </span>
-                ${item.goal.goalType
-                  ? html`<span class="badge"
-                      >${GOAL_TYPE_LABELS[item.goal.goalType]}</span
-                    >`
-                  : null}
-                ${item.goal.ownGoal
-                  ? html`<span class="badge">Autogol</span>`
-                  : null}
-              </div>
-              <div class="details-text">
-                ${this._playerName(item.team, item.goal.player)}
-              </div>
-              ${item.goal.assist
-                ? html`<div class="assist">
-                    Asistencia: ${this._playerName(item.team, item.goal.assist)}
-                  </div>`
-                : null}
-            </div>
-          </div>
-        `;
-      }
-      case 'card': {
-        const cardTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
-        return html`
-          <div class="item">
-            <span class="time">${item.minute}'</span>
-            <div class="details">
-              <div class="title-line">
-                <span
-                  class="badge ${item.card.cardType === 'yellow'
-                  ? 'card-yellow'
-                  : 'card-red'}"
-                >
-                  <md-icon>crop_portrait</md-icon>
-                  ${item.card.cardType === 'yellow' ? 'Amarilla' : 'Roja'}
-                  ${cardTeamLabel}
-                </span>
-                ${item.card.foulType
-                  ? html`<span class="badge"
-                      >${FOUL_TYPE_LABELS[item.card.foulType] ||
-                      item.card.foulType}</span
-                    >`
-                  : null}
-              </div>
-              <div class="details-text">
-                ${this._playerName(item.team, item.card.player)}
-              </div>
-            </div>
-          </div>
-        `;
-      }
-      case 'sub': {
-        const subTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
-        return html`
-          <div class="item">
-            <span class="time">${item.minute}'</span>
-            <div class="details">
-              <div class="title-line">
-                <span class="badge">
-                  <md-icon>swap_horiz</md-icon>
-                  Cambio ${subTeamLabel}
-                </span>
-              </div>
-              <div class="details-text">
-                <strong>Sale:</strong> ${this._playerName(
-                  item.team,
-                  item.sub.playerOut,
-                )}
-                &nbsp; | &nbsp; <strong>Entra:</strong> ${this._playerName(
-                  item.team,
-                  item.sub.playerIn,
-                )}
-              </div>
-            </div>
-          </div>
-        `;
-      }
+      case 'goal':
+        return this._renderGoalItem(item);
+      case 'card':
+        return this._renderCardItem(item);
+      case 'sub':
+        return this._renderSubItem(item);
       case 'phase':
-        return html`
-          <div class="item phase">
-            <span class="time">${item.minute}'</span>
-            <div class="details">
-              <span class="badge">
-                <md-icon>schedule</md-icon>
-                ${this._phaseLabel(item.phase)}
-              </span>
-            </div>
-          </div>
-        `;
+        return this._renderPhaseItem(item);
       default:
         return null;
     }
   }
 
+  private _renderGoalItem(item: TimelineItem) {
+    if (item.kind !== 'goal') return null;
+    const goalTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
+    return html`
+      <div class="item">
+        <span class="time">${item.minute}'</span>
+        <div class="details">
+          <div class="title-line">
+            <span class="badge goal">
+              <md-icon>sports_soccer</md-icon>
+              Gol ${goalTeamLabel}
+            </span>
+            ${item.goal.goalType
+              ? html`<span class="badge"
+                  >${GOAL_TYPE_LABELS[item.goal.goalType]}</span
+                >`
+              : null}
+            ${item.goal.ownGoal
+              ? html`<span class="badge">Autogol</span>`
+              : null}
+          </div>
+          <div class="details-text">
+            ${this._playerName(item.team, item.goal.player)}
+          </div>
+          ${item.goal.assist
+            ? html`<div class="assist">
+                Asistencia: ${this._playerName(item.team, item.goal.assist)}
+              </div>`
+            : null}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderCardItem(item: TimelineItem) {
+    if (item.kind !== 'card') return null;
+    const cardTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
+    return html`
+      <div class="item">
+        <span class="time">${item.minute}'</span>
+        <div class="details">
+          <div class="title-line">
+            <span
+              class="badge ${item.card.cardType === 'yellow'
+              ? 'card-yellow'
+              : 'card-red'}"
+            >
+              <md-icon>crop_portrait</md-icon>
+              ${item.card.cardType === 'yellow' ? 'Amarilla' : 'Roja'}
+              ${cardTeamLabel}
+            </span>
+            ${item.card.foulType
+              ? html`<span class="badge"
+                  >${FOUL_TYPE_LABELS[item.card.foulType] ||
+                  item.card.foulType}</span
+                >`
+              : null}
+          </div>
+          <div class="details-text">
+            ${this._playerName(item.team, item.card.player)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderSubItem(item: TimelineItem) {
+    if (item.kind !== 'sub') return null;
+    const subTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
+    return html`
+      <div class="item">
+        <span class="time">${item.minute}'</span>
+        <div class="details">
+          <div class="title-line">
+            <span class="badge">
+              <md-icon>swap_horiz</md-icon>
+              Cambio ${subTeamLabel}
+            </span>
+          </div>
+          <div class="details-text">
+            <strong>Sale:</strong> ${this._playerName(
+              item.team,
+              item.sub.playerOut,
+            )}
+            &nbsp; | &nbsp; <strong>Entra:</strong> ${this._playerName(
+              item.team,
+              item.sub.playerIn,
+            )}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderPhaseItem(item: TimelineItem) {
+    if (item.kind !== 'phase') return null;
+    return html`
+      <div class="item phase">
+        <span class="time">${item.minute}'</span>
+        <div class="details">
+          <span class="badge">
+            <md-icon>schedule</md-icon>
+            ${this._phaseLabel(item.phase)}
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
   private _buildTimelineItems(): TimelineItem[] {
     if (!this.match) return [];
-    const { goals = [], cards = [], substitutions = [], phaseEvents } = this.match;
-    const phaseItems: TimelineItem[] = this._phaseTimeline(phaseEvents);
+    const { goals = [], cards = [], substitutions = [], phaseEvents = [] } = this.match;
     const goalItems: TimelineItem[] = goals.map(goal => ({
       kind: 'goal',
       minute: goal.minute,
@@ -237,8 +253,20 @@ export class EventsTimeline extends LitElement {
       team: sub.team,
       sub,
     }));
+    const phaseItems: TimelineItem[] = phaseEvents.map(phase => ({
+      kind: 'phase',
+      minute: phase.minute,
+      phase: phase.phase,
+    }));
     return [...phaseItems, ...goalItems, ...cardItems, ...subItems].sort(
-      (a, b) => a.minute - b.minute,
+      (a, b) => { 
+        if (a.minute === b.minute) {
+          if (a.kind === 'phase') return -1;
+          if (b.kind === 'phase') return 1;
+          return 0;
+        }
+        return a.minute - b.minute;
+      },
     );
   }
 
@@ -260,24 +288,5 @@ export class EventsTimeline extends LitElement {
   private _playerName(team: 'local' | 'visitor', number: number) {
     const list = team === 'local' ? this.localPlayers : this.visitorPlayers;
     return list.find(p => p.number === number)?.name || `#${number}`;
-  }
-
-  private _phaseTimeline(phaseEvents?: PhaseEvent[]): TimelineItem[] {
-    const defaults: PhaseEvent[] = [
-      { phase: 'start', minute: 0 },
-      { phase: 'halftime', minute: 45 },
-      { phase: 'secondHalf', minute: 46 },
-      { phase: 'fulltime', minute: 90 },
-    ];
-    const overrides = phaseEvents || [];
-    const merged = defaults.map(defaultEvent => {
-      const override = overrides.find(e => e.phase === defaultEvent.phase);
-      return override ?? defaultEvent;
-    });
-    return merged.map(event => ({
-      kind: 'phase',
-      minute: event.minute,
-      phase: event.phase,
-    }));
   }
 }

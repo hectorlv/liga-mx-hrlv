@@ -6,7 +6,7 @@ import {
   type Unsubscribe,
 } from 'firebase/database';
 import { formatDate } from '../utils/dateUtils';
-import { FirebaseUpdates, Match, Player, PlayerTeam, Stadium, Team } from '../types';
+import { FirebaseUpdates, Match, Player, PlayerTeam } from '../types';
 
 export type MatchesCallBack = (matches: Match[]) => void;
 export type SimpleCallBack<T> = (data: T[]) => void;
@@ -51,7 +51,10 @@ export function fetchMatches(callback: MatchesCallBack): Unsubscribe {
       }));
       matches.sort((a, b) => {
         if (a.jornada === b.jornada) {
-          return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0;
+          let fechaCompare = 0;
+          if(a.fecha < b.fecha) fechaCompare = -1;
+          else if(a.fecha > b.fecha) fechaCompare = 1;
+          return fechaCompare;
         }
         return a.jornada - b.jornada;
       });
@@ -64,13 +67,13 @@ export function fetchMatches(callback: MatchesCallBack): Unsubscribe {
   );
 }
 
-export function fetchTeams(callback: SimpleCallBack<Team>): Unsubscribe {
+export function fetchTeams(callback: SimpleCallBack<string>): Unsubscribe {
   const dbRef = ref(getDatabase(), '/teams');
   return onValue(
     dbRef,
     snapshot => {
       const data = snapshot.exists()
-        ? snapshotToArray<Team>(snapshot.val())
+        ? snapshotToArray<string>(snapshot.val())
         : [];
       callback(data);
     },
@@ -81,13 +84,13 @@ export function fetchTeams(callback: SimpleCallBack<Team>): Unsubscribe {
   );
 }
 
-export function fetchStadiums(callback: SimpleCallBack<Stadium>): Unsubscribe {
+export function fetchStadiums(callback: SimpleCallBack<string>): Unsubscribe {
   const dbRef = ref(getDatabase(), '/stadiums');
   return onValue(
     dbRef,
     snapshot => {
       const data = snapshot.exists()
-        ? snapshotToArray<Stadium>(snapshot.val())
+        ? snapshotToArray<string>(snapshot.val())
         : [];
       callback(data);
     },

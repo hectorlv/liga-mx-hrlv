@@ -4,7 +4,7 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 
 @customElement('team-page')
 export class TeamPage extends LitElement {
-  static override styles = [styles];
+  static override readonly styles = [styles];
 
   @property({ type: Object }) team: any = {};
 

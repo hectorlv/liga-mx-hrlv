@@ -36,10 +36,6 @@ export interface TableEntry {
   eliminado?: boolean;
 }
 
-
-export type Stadium = string;
-export type Team = string;
-
 export interface Player {
     imgSrc: string;
     name: string;
@@ -55,7 +51,7 @@ export interface Goal {
     team: 'local' | 'visitor';
     ownGoal?: boolean;
     goalType?: GoalType;
-    assist?: number;
+    assist?: number | null;
 }
 
 export interface Substitution {

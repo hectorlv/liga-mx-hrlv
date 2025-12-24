@@ -1,6 +1,6 @@
-import { Match, TableEntry, Team } from '../types';
+import { Match, TableEntry } from '../types';
 
-function calculateTeamStats(team: Team, matches: Match[]): TableEntry {
+function calculateTeamStats(team: string, matches: Match[]): TableEntry {
   let jg = 0;
   let je = 0;
   let jp = 0;
@@ -43,7 +43,7 @@ function calculateTeamStats(team: Team, matches: Match[]): TableEntry {
   };
 }
 
-export function calculateTable(teams: Team[], matches: Match[]): TableEntry[] {
+export function calculateTable(teams: string[], matches: Match[]): TableEntry[] {
   const table = teams.map(team => {
     const teamMatches = matches.filter(
       match =>

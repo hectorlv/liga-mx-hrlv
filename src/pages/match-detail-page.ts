@@ -15,8 +15,6 @@ import {
   PhaseEvent,
   Player,
   PlayerTeam,
-  Stadium,
-  Team,
 } from '../types/index.js';
 import {
   formatDateDDMMYYYY,
@@ -30,7 +28,7 @@ import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
 @customElement('match-detail-page')
 export class MatchDetailPage extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     styles,
     css`
       :host {
@@ -54,8 +52,8 @@ export class MatchDetailPage extends LitElement {
 
   @property({ type: Object }) match: Match | null = null;
   @property({ type: Object }) players: PlayerTeam = new Map();
-  @property({ type: Array }) teams: Team[] = [];
-  @property({ type: Array }) stadiums: Stadium[] = [];
+  @property({ type: Array }) teams: string[] = [];
+  @property({ type: Array }) stadiums: string[] = [];
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
@@ -128,18 +126,7 @@ export class MatchDetailPage extends LitElement {
                   <md-icon>edit</md-icon>
                 </md-icon-button>
               `}
-          ${golLocal == null && golVisitante == null
-            ? html`
-                <md-icon-button
-                  id="startMatchButton"
-                  @click=${this.startMatch}
-                  title="Iniciar partido en vivo"
-                  aria-label="Iniciar partido en vivo"
-                >
-                  <md-icon>play_circle</md-icon>
-                </md-icon-button>
-              `
-            : html``}
+              ${this.renderPhaseButton()}
         </div>
         ${this.isEditing
           ? html`
@@ -178,16 +165,6 @@ export class MatchDetailPage extends LitElement {
                 <strong>Estadio:</strong> ${estadio}
               </p>
             `}
-      </section>
-
-      <section class="phase-actions">
-        <h3>Eventos del partido</h3>
-        <div class="phase-events">
-          ${this._renderPhaseControl('start', 'Inicio del partido')}
-          ${this._renderPhaseControl('halftime', 'Medio tiempo')}
-          ${this._renderPhaseControl('secondHalf', 'Segundo tiempo')}
-          ${this._renderPhaseControl('fulltime', 'Fin del partido')}
-        </div>
       </section>
 
       <events-timeline
@@ -246,12 +223,65 @@ export class MatchDetailPage extends LitElement {
     this.isEditing = false;
   }
 
+  private renderPhaseButton() {
+    if (!this.match) return null;
+    if (this.match.phaseEvents?.length === 0 || !this.match.phaseEvents) {
+      return html`
+        <md-icon-button
+          id="startMatchButton"
+          @click=${this.startMatch}
+          title="Iniciar partido"
+          aria-label="Iniciar partido"
+        >
+          <md-icon>play_circle</md-icon>
+        </md-icon-button>
+      `;
+    } else if (this.match.phaseEvents?.some(event =>  event.phase === 'start') &&
+      !this.match.phaseEvents?.some(event => event.phase === 'halftime')) {
+      return html`
+        <md-icon-button
+          id="halftimeButton"
+          @click=${() => this._savePhaseEvent('halftime')}
+          title="Guardar medio tiempo"
+          aria-label="Guardar medio tiempo"
+        >
+          <md-icon>pause_circle</md-icon>
+        </md-icon-button>
+      `;
+    } else if (this.match.phaseEvents?.some(event => event.phase === 'halftime') &&
+      !this.match.phaseEvents?.some(event => event.phase === 'secondHalf')) {
+      return html`
+        <md-icon-button
+          id="secondHalfButton"
+          @click=${() => this._savePhaseEvent('secondHalf')}
+          title="Iniciar segunda mitad"
+          aria-label="Iniciar segunda mitad"
+        >
+          <md-icon>resume</md-icon>
+        </md-icon-button>
+      `;
+    } else if (this.match.phaseEvents?.some(event => event.phase === 'secondHalf') &&
+      !this.match.phaseEvents?.some(event => event.phase === 'fulltime')) {
+      return html`
+        <md-icon-button
+          id="fulltimeButton"
+          @click=${() => this._savePhaseEvent('fulltime')}
+          title="Guardar tiempo completo"
+          aria-label="Guardar tiempo completo"
+        >
+          <md-icon>stop_circle</md-icon>
+        </md-icon-button>
+      `;
+    }
+    return null;
+  }
+
   private startMatch() {
     if (!this.match) return;
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/golLocal`] = 0;
     updates[`/matches/${this.match.idMatch}/golVisitante`] = 0;
-    const startMinute = this._phaseMinuteFromInput('start');
+    const startMinute = this._phaseMinuteValue('start');
     if (startMinute !== null) {
       updates[`/matches/${this.match.idMatch}/phaseEvents`] = this._phaseEventsWithUpdate(
         'start',
@@ -261,31 +291,11 @@ export class MatchDetailPage extends LitElement {
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
-  private _renderPhaseControl(
-    phase: PhaseEvent['phase'],
-    label: string,
-  ) {
-    return html`
-      <md-filled-text-field
-        label="${label} (minuto)"
-        aria-label="${label}"
-        id="${phase}MinuteInput"
-        type="number"
-        min="0"
-        .value=${this._phaseMinuteValue(phase)}
-      ></md-filled-text-field>
-      <md-filled-button
-        @click=${() => this._savePhaseEvent(phase)}
-        aria-label="Registrar ${label.toLowerCase()}"
-      >
-        Registrar ${label}
-      </md-filled-button>
-    `;
-  }
+
 
   private _savePhaseEvent(phase: PhaseEvent['phase']) {
     if (!this.match) return;
-    const minute = this._phaseMinuteFromInput(phase);
+    const minute = this._phaseMinuteValue(phase);
     if (minute === null) return;
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/phaseEvents`] = this._phaseEventsWithUpdate(
@@ -310,30 +320,22 @@ export class MatchDetailPage extends LitElement {
     );
   }
 
-  private _phaseMinuteFromInput(phase: PhaseEvent['phase']) {
-    const input = this.renderRoot.querySelector(
-      `#${phase}MinuteInput`,
-    ) as MdFilledTextField | null;
-    const raw = input?.value?.trim();
-    if (!raw) return null;
-    const value = Number(raw);
-    return Number.isNaN(value) || value < 0 ? null : value;
-  }
 
-  private _phaseMinuteValue(phase: PhaseEvent['phase']) {
+
+  private _phaseMinuteValue(phase: PhaseEvent['phase']) : number {
     const existing = this.match?.phaseEvents?.find(event => event.phase === phase);
-    if (existing) return `${existing.minute}`;
+    if (existing) return existing.minute;
     switch (phase) {
       case 'start':
-        return '0';
+        return 0;
       case 'halftime':
-        return '45';
+        return 45;
       case 'secondHalf':
-        return '46';
+        return 46;
       case 'fulltime':
-        return '90';
+        return 90;
       default:
-        return '0';
+        return 0;
     }
   }
 }

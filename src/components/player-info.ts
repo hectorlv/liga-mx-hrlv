@@ -4,7 +4,7 @@ import { Player } from '../types';
 
 @customElement('player-info')
 export class PlayerInfo extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: flex;
@@ -63,16 +63,16 @@ export class PlayerInfo extends LitElement {
   override render() {
     return html`
       <div class="player-card">
-        ${!this.player.imgSrc
+        ${this.player.imgSrc
           ? html`
-          <md-icon>person</md-icon>`
-          : html`
               <img
                 class="player-photo"
                 src="${this.player.imgSrc}"
                 alt="Photo of ${this.player.name}"
               />
-            `}
+            `
+          : html`
+          <md-icon>person</md-icon>`}
         <div class="player-details">
           <h3 class="player-name">${this.player.name}</h3>
           <p class="player-position">Posición: ${this.player.position}</p>

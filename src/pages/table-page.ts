@@ -9,7 +9,7 @@ import { getTeamImage } from '../utils/imageUtils.js';
  */
 @customElement('table-page')
 export class TablePage extends LitElement {
-  static override styles = [styles];
+  static override readonly styles = [styles];
   @property({ type: Array }) table: TableEntry[] = [];
 
   override render() {

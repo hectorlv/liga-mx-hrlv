@@ -1,4 +1,3 @@
-import '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/textfield/filled-text-field.js';
@@ -12,9 +11,11 @@ import { FOUL_TYPE_LABELS, FOUL_TYPES_BY_CARD } from '../constants';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
+type CardType = 'yellow' | 'red' | '';
+
 @customElement('cards-card')
 export class CardsCard extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: block;
@@ -120,18 +121,12 @@ export class CardsCard extends LitElement {
   override render() {
     const cards = this.match?.cards || [];
     const cardSide = this.cardTeamSelect?.value || 'local';
-    const cardTypeSelected = this.cardTypeSelect?.value as
-      | 'yellow'
-      | 'red'
-      | '';
+    const cardTypeSelected = this.cardTypeSelect?.value as CardType;
     const addFoulOptions = this._getFoulOptions(
       cardTypeSelected,
       this.cardFoulTypeSelect?.value as any,
     );
-    const editCardTypeSelected = this.editCardTypeSelect?.value as
-      | 'yellow'
-      | 'red'
-      | '';
+    const editCardTypeSelected = this.editCardTypeSelect?.value as CardType;
     const editFoulOptions = this._getFoulOptions(
       editCardTypeSelected,
       this.editCardFoulTypeSelect?.value as any,
@@ -406,7 +401,7 @@ export class CardsCard extends LitElement {
     let foulType = this.cardFoulTypeSelect?.value as '' | FoulType;
     if (cardType === 'yellow' && this._hasPreviousYellow(team, player)) {
       cardType = 'red';
-      window.alert('Doble amarilla: se registra como tarjeta roja.');
+      globalThis.alert('Doble amarilla: se registra como tarjeta roja.');
       foulType = 'dobleAmarilla';
     }
     const newCard: Card = {
@@ -474,7 +469,7 @@ export class CardsCard extends LitElement {
     }
     const player = this.editCardPlayerSelect?.value;
     const minute = this.editCardMinuteInput?.value;
-    const type = this.editCardTypeSelect?.value as 'yellow' | 'red' | '';
+    const type = this.editCardTypeSelect?.value as CardType;
     const foulType = this.editCardFoulTypeSelect?.value;
     this.disableSaveEditedCard =
       !team ||
@@ -482,7 +477,7 @@ export class CardsCard extends LitElement {
       !minute ||
       !type ||
       !foulType ||
-      isNaN(Number(minute)) ||
+      Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
       Number(minute) > 90;
   }
@@ -504,7 +499,7 @@ export class CardsCard extends LitElement {
       this._hasPreviousYellow(team, player, this.editingCardIndex ?? undefined)
     ) {
       cardType = 'red';
-      window.alert('Doble amarilla: se registra como tarjeta roja.');
+      globalThis.alert('Doble amarilla: se registra como tarjeta roja.');
       foulType = 'dobleAmarilla';
     }
     const updatedCard: Card = {
@@ -522,7 +517,7 @@ export class CardsCard extends LitElement {
 
   private _deleteCard(index: number) {
     if (!this.match) return;
-    const confirmed = window.confirm(
+    const confirmed = globalThis.confirm(
       '¿Seguro que deseas eliminar esta tarjeta?',
     );
     if (!confirmed) return;
@@ -558,7 +553,7 @@ export class CardsCard extends LitElement {
       !minute ||
       !type ||
       !foulType ||
-      isNaN(Number(minute)) ||
+      Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
       Number(minute) > 90;
   }

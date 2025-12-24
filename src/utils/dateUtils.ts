@@ -12,9 +12,9 @@ export function formatDate(fechaString: string | Date, hora: string) {
     }
     // Dividir la cadena en día, mes y año
     const partesFecha = (fechaString as string).split('/');
-    const year = parseInt(partesFecha[0], 10);
-    const month = parseInt(partesFecha[1], 10);
-    const day = parseInt(partesFecha[2], 10);
+    const year = Number.parseInt(partesFecha[0], 10);
+    const month = Number.parseInt(partesFecha[1], 10);
+    const day = Number.parseInt(partesFecha[2], 10);
     const fecha = new Date(year, month - 1, day);
     return new Date(fecha.toISOString().substring(0, 11) + hora);
 }

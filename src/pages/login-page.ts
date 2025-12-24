@@ -22,9 +22,9 @@ export class LoginPage extends LitElement {
   private password: string = '';
 
   @query('#dialogLogin')
-  private dialog!: MdDialog;
+  private readonly dialog!: MdDialog;
 
-static override styles = [styles];
+static override readonly styles = [styles];
 
   override render() {
     return html`

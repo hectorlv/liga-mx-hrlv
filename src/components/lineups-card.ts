@@ -6,14 +6,12 @@ import { FirebaseUpdates, Match, Player } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import '@material/web/button/filled-button.js';
 import '@material/web/icon/icon.js';
-import '@material/web/dialog/dialog.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
-import '@material/web/textfield/filled-text-field.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 @customElement('lineups-card')
 export class LineupsCard extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: block;
@@ -290,7 +288,7 @@ export class LineupsCard extends LitElement {
     // Visual feedback: toggle selected class on the row containing the checkbox
     try {
       const cb = e.target as MdCheckbox;
-      const row = cb && cb.closest ? cb.closest('.player-row') : null;
+      const row = cb?.closest('.player-row') ?? null;
       if (row) {
         if (cb.checked) {
           row.classList.add('selected');
@@ -301,7 +299,7 @@ export class LineupsCard extends LitElement {
         }
       }
     } catch (err) {
-      // ignore if DOM operations fail
+      console.error('Error updating lineup row selection state', err);
     }
   }
   private _onRowKeydown(

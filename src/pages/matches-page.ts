@@ -1,9 +1,5 @@
-import '@material/web/button/filled-button.js';
 import '@material/web/icon/icon.js';
-import '@material/web/iconbutton/icon-button.js';
-import '@material/web/select/filled-select.js';
 import '@material/web/select/select-option.js';
-import '@material/web/switch/switch.js';
 import '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import {
@@ -20,24 +16,16 @@ import { MdFilledButton } from '@material/web/button/filled-button.js';
 import { MdIconButton } from '@material/web/iconbutton/icon-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
-import {
-  Match,
-  PlayerTeam,
-  Stadium,
-  Team
-} from '../types/index.js';
+import { Match, PlayerTeam } from '../types/index.js';
 import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
-import {
-  formatDateDDMMYYYY,
-  getMatchRowClass
-} from '../utils/dateUtils.js';
+import { formatDateDDMMYYYY, getMatchRowClass } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 /**
  * Page for show the fixture
  */
 @customElement('matches-page')
 export class MatchesPage extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     styles,
     css`
       .filters-card {
@@ -120,15 +108,15 @@ export class MatchesPage extends LitElement {
   ];
 
   @property({ type: Array }) matchesList: Match[] = [];
-  @property({ type: Array }) teams: Team[] = [];
-  @property({ type: Array }) stadiums: Stadium[] = [];
+  @property({ type: Array }) teams: string[] = [];
+  @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Array }) players: PlayerTeam[] = [];
 
   @state() matchesRender: Match[] = [];
   @state() showDetails: boolean = false;
   @state() selectedMatch: Match | null = null;
 
-  private todayDate: Date = new Date();
+  private readonly todayDate: Date = new Date();
   private todayDateSelected: boolean = false;
 
   private savedFilters: {
@@ -204,9 +192,9 @@ export class MatchesPage extends LitElement {
     this._boundOnResize = this._onResize.bind(this);
     window.addEventListener('resize', this._boundOnResize);
     this._boundOnDocClick = this._onDocumentClick.bind(this);
-    window.addEventListener('click', this._boundOnDocClick);
+    globalThis.addEventListener('click', this._boundOnDocClick);
     this._boundOnGlobalKey = this._onGlobalKeyDown.bind(this);
-    window.addEventListener('keydown', this._boundOnGlobalKey);
+    globalThis.addEventListener('keydown', this._boundOnGlobalKey);
   }
 
   override disconnectedCallback() {
@@ -214,10 +202,10 @@ export class MatchesPage extends LitElement {
       window.removeEventListener('resize', this._boundOnResize);
     }
     if (this._boundOnDocClick) {
-      window.removeEventListener('click', this._boundOnDocClick);
+      globalThis.removeEventListener('click', this._boundOnDocClick);
     }
     if (this._boundOnGlobalKey) {
-      window.removeEventListener('keydown', this._boundOnGlobalKey);
+      globalThis.removeEventListener('keydown', this._boundOnGlobalKey);
     }
     super.disconnectedCallback();
   }
@@ -232,9 +220,7 @@ export class MatchesPage extends LitElement {
    */
   override updated(changed: PropertyValues) {
     if (changed.has('matchesList')) {
-      if (!this.showDetails) {
-        this._filtersChanged();
-      } else {
+      if (this.showDetails) {
         // in details view, just update the selected match reference
         if (this.selectedMatch) {
           const updatedMatch = this.matchesList.find(
@@ -244,15 +230,15 @@ export class MatchesPage extends LitElement {
             this.selectedMatch = updatedMatch;
           }
         }
+      } else {
+        this._filtersChanged();
       }
     }
   }
 
   private _toggleRowMenu(e: CustomEvent) {
     e.stopPropagation();
-    const id = Number(
-      (e.currentTarget as MdIconButton).getAttribute('data-id'),
-    );
+    const id = Number((e.currentTarget as MdIconButton).dataset['id']);
     this.openRowMenuId = this.openRowMenuId === id ? null : id;
     this.requestUpdate();
     // After menu opens, focus first actionable item
@@ -287,9 +273,7 @@ export class MatchesPage extends LitElement {
 
   private _onDetailsFromMenu(e: Event) {
     e.stopPropagation();
-    const id = Number(
-      (e.currentTarget as MdFilledButton).getAttribute('data-id'),
-    );
+    const id = Number((e.currentTarget as MdFilledButton).dataset['id']);
     this._showMatchDetails({
       target: { getAttribute: () => id },
     } as unknown as Event);
@@ -336,17 +320,15 @@ export class MatchesPage extends LitElement {
           e.preventDefault();
           last.focus();
         }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     } else if (e.key === 'Escape' || e.key === 'Esc') {
       // close menu and restore focus
       const idAttr = (menu as HTMLElement).parentElement
         ?.querySelector('md-icon-button')
-        ?.getAttribute('data-id');
+        ?.dataset['id'];
       const id = idAttr ? Number(idAttr) : null;
       this.openRowMenuId = null;
       this.requestUpdate();
@@ -435,8 +417,59 @@ export class MatchesPage extends LitElement {
             <span>Solo partidos de Liguilla</span>
           </div>
         </div>
-        ${!this.isMobile
+        ${this.isMobile
           ? html`
+              <div class="match-cards">
+                ${this.matchesRender.map(
+                  match => html`
+                    <div class="match-card">
+                      <div class="teams">
+                        <div class="team-left">
+                          ${match.local.trim() == ''
+                            ? ''
+                            : getTeamImage(match.local)}
+                          <div>${match.local}</div>
+                        </div>
+                        <div class="score">
+                          <strong>${match.golLocal}</strong>
+                          <span> - </span>
+                          <strong>${match.golVisitante}</strong>
+                        </div>
+                        <div class="team-right">
+                          ${match.visitante.trim() == ''
+                            ? ''
+                            : getTeamImage(match.visitante)}
+                          <div>${match.visitante}</div>
+                        </div>
+                      </div>
+                      <div class="meta">
+                        <div>Jornada: ${match.jornada}</div>
+                        <div>
+                          ${formatDateDDMMYYYY(match.fecha as Date)}
+                          ${match.hora}
+                        </div>
+                        <div>${match.estadio}</div>
+                      </div>
+                      <div
+                        class="actions"
+                        style="margin-top:8px; display:flex; gap:8px;"
+                      >
+                        <md-filled-button
+                          class="action-btn"
+                          index="${match.idMatch}"
+                          aria-label="Detalles"
+                          @click="${this._showMatchDetails}"
+                        >
+                          <md-icon>info</md-icon>
+                          <span class="btn-label">Detalles</span>
+                        </md-filled-button>
+                      </div>
+                    </div>
+                  `,
+                )}
+              </div>
+            `
+          : html`
               <table class="greyGridTable">
                 <thead>
                   <tr>
@@ -459,16 +492,16 @@ export class MatchesPage extends LitElement {
                         class="${getMatchRowClass(match.fecha as Date)}"
                       >
                         <td>
-                          ${match.local.trim() !== ''
-                            ? html`${getTeamImage(match.local)}`
-                            : html``}
+                          ${match.local.trim() == ''
+                            ? ''
+                            : getTeamImage(match.local)}
                         </td>
                         <td>${match.local}</td>
                         <td>${match.golLocal}</td>
                         <td>
-                          ${match.visitante.trim() !== ''
-                            ? html` ${getTeamImage(match.visitante)} `
-                            : html``}
+                          ${match.visitante.trim() == ''
+                            ? ''
+                            : getTeamImage(match.visitante)}
                         </td>
                         <td>${match.visitante}</td>
                         <td>${match.golVisitante}</td>
@@ -506,57 +539,6 @@ export class MatchesPage extends LitElement {
                   )}
                 </tbody>
               </table>
-            `
-          : html`
-              <div class="match-cards">
-                ${this.matchesRender.map(
-                  match => html`
-                    <div class="match-card">
-                      <div class="teams">
-                        <div class="team-left">
-                          ${match.local.trim() !== ''
-                            ? getTeamImage(match.local)
-                            : ''}
-                          <div>${match.local}</div>
-                        </div>
-                        <div class="score">
-                          <strong>${match.golLocal}</strong>
-                          <span> - </span>
-                          <strong>${match.golVisitante}</strong>
-                        </div>
-                        <div class="team-right">
-                          ${match.visitante.trim() !== ''
-                            ? getTeamImage(match.visitante)
-                            : ''}
-                          <div>${match.visitante}</div>
-                        </div>
-                      </div>
-                      <div class="meta">
-                        <div>Jornada: ${match.jornada}</div>
-                        <div>
-                          ${formatDateDDMMYYYY(match.fecha as Date)}
-                          ${match.hora}
-                        </div>
-                        <div>${match.estadio}</div>
-                      </div>
-                      <div
-                        class="actions"
-                        style="margin-top:8px; display:flex; gap:8px;"
-                      >
-                        <md-filled-button
-                          class="action-btn"
-                          index="${match.idMatch}"
-                          aria-label="Detalles"
-                          @click="${this._showMatchDetails}"
-                        >
-                          <md-icon>info</md-icon>
-                          <span class="btn-label">Detalles</span>
-                        </md-filled-button>
-                      </div>
-                    </div>
-                  `,
-                )}
-              </div>
             `}
         ${this.championLegend
           ? html`<div class="champion-legend" role="note">

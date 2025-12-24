@@ -7,10 +7,8 @@ import { Auth, getAuth, User } from 'firebase/auth';
 import { Unsubscribe } from 'firebase/database';
 
 //Material Web imports
-import '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/tabs/primary-tab.js';
-import '@material/web/tabs/tabs.js';
 
 // Styles and components
 import '../pages/login-page.js';
@@ -29,26 +27,27 @@ import {
   fetchTeams,
   saveUpdates,
 } from '../services/firebaseService.js';
-import { Match, PlayerTeam, Stadium, TableEntry, Team } from '../types/index.js';
+import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { FIREBASE_CONFIG } from '../utils/constants.js';
 import { calculatePlayIn } from '../utils/playoffCalculator.js';
 import { calculateTable } from '../utils/tableCalculator.js';
 import { APP_VERSION } from '../utils/version.js';
+import '../utils/material.js';
 
 /**
  * Main class for LigaMX
  */
 @customElement('liga-mx-hrlv')
 export class LigaMxHrlv extends LitElement {
-  static override styles = [styles];
+  static override readonly styles = [styles];
 
-  private app: FirebaseApp;
+  private readonly app: FirebaseApp;
 
   @property({ attribute: false }) auth: Auth;
 
   @state() matchesList: Match[] = [];
-  @state() teams: Team[] = [];
-  @state() stadiums: Stadium[] = [];
+  @state() teams: string[] = [];
+  @state() stadiums: string[] = [];
   @state() players: PlayerTeam = new Map();
   @state() table: TableEntry[] = [];
   @state() selectedTab: string = 'Login';
@@ -101,7 +100,10 @@ export class LigaMxHrlv extends LitElement {
   }
 
   override updated(changedProperties: PropertyValues) {
-    if (changedProperties.has('matchesList') || changedProperties.has('teams')) {
+    if (
+      changedProperties.has('matchesList') ||
+      changedProperties.has('teams')
+    ) {
       if (this.matchesList.length > 0 && this.teams.length > 0) {
         this.table = calculateTable(this.teams, this.matchesList);
         calculatePlayIn(this.table, this.matchesList);
@@ -148,7 +150,7 @@ export class LigaMxHrlv extends LitElement {
     }
   }
 
-  private loginSuccess(e : CustomEvent<{ user: User }>) {
+  private loginSuccess(e: CustomEvent<{ user: User }>) {
     this.selectedTab = 'Calendario';
     this.user = e.detail.user;
     this._unsubscribeMatches = fetchMatches(matches => {
@@ -177,11 +179,11 @@ export class LigaMxHrlv extends LitElement {
    * Updates the selected match
    * @param {Event} e
    */
-  private _editMatch(e : CustomEvent<Record<string, unknown>>) {
+  private _editMatch(e: CustomEvent<Record<string, unknown>>) {
     saveUpdates(e.detail);
   }
 
-  private _getTabIndex(tab : string): number {
+  private _getTabIndex(tab: string): number {
     switch (tab) {
       case 'Calendario':
         return 0;

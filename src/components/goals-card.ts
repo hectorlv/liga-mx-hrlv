@@ -1,27 +1,25 @@
-import '@material/web/button/filled-button.js';
-import '@material/web/checkbox/checkbox.js';
-import '@material/web/dialog/dialog.js';
+import { MdFilledButton } from '@material/web/button/filled-button.js';
+import { MdCheckbox } from '@material/web/checkbox/checkbox.js';
+import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
-import '@material/web/select/outlined-select.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
 import '@material/web/select/select-option.js';
 import '@material/web/textfield/filled-text-field.js';
+import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
-import { FirebaseUpdates, Goal, GoalType, Match, Player } from '../types';
 import { GOAL_TYPE_LABELS, GOAL_TYPES } from '../constants';
+import { FirebaseUpdates, Goal, GoalType, Match, Player } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
-import { MdCheckbox } from '@material/web/checkbox/checkbox.js';
-import { MdFilledButton } from '@material/web/button/filled-button.js';
-import { MdDialog } from '@material/web/dialog/dialog.js';
+
+type TeamSide = '' | 'local' | 'visitor';
 
 
 @customElement('goals-card')
 export class GoalsCard extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: block;
@@ -103,7 +101,7 @@ export class GoalsCard extends LitElement {
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
 
-  @state() goalTeam: '' | 'local' | 'visitor' = '';
+  @state() goalTeam: TeamSide = '';
   @state() disableAddGoalButton = true;
   @state() activePlayers: Player[] = [];
   @state() assistPlayers: Player[] = [];
@@ -259,6 +257,15 @@ export class GoalsCard extends LitElement {
             <md-select-option value="local">Local</md-select-option>
             <md-select-option value="visitor">Visitante</md-select-option>
           </md-outlined-select>
+          <label
+            ><md-checkbox
+              id="newGoalOwn"
+              aria-label="Gol en propia puerta"
+              title="Gol en propia puerta"
+              @change=${this._validateForm}
+            ></md-checkbox>
+            Autogol
+          </label>
           <md-outlined-select
             id="newGoalPlayer"
             aria-label="Jugador que anotó"
@@ -320,15 +327,6 @@ export class GoalsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
-          <label
-            ><md-checkbox
-              id="newGoalOwn"
-              aria-label="Gol en propia puerta"
-              title="Gol en propia puerta"
-              @change=${this._validateForm}
-            ></md-checkbox>
-            Autogol
-          </label>
           <md-filled-button
             id="addGoalButton"
             class="action-btn"
@@ -442,7 +440,7 @@ export class GoalsCard extends LitElement {
     `;
   }
 
-  private _getActivePlayers(side: '' | 'local' | 'visitor'): Player[] {
+  private _getActivePlayers(side: TeamSide): Player[] {
     if (side === '') return [];
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
@@ -534,23 +532,23 @@ export class GoalsCard extends LitElement {
       !playerSelected ||
       !goalType ||
       !minuteValue ||
-      isNaN(Number(minuteValue)) ||
+      Number.isNaN(Number(minuteValue)) ||
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 90;
   }
 
   private _resolvePlayerTeam(
-    selectedTeam: '' | 'local' | 'visitor',
+    selectedTeam: TeamSide,
     ownGoal: boolean,
-  ): '' | 'local' | 'visitor' {
+  ): TeamSide {
     if (!selectedTeam) return '';
     if (!ownGoal) return selectedTeam;
     return selectedTeam === 'local' ? 'visitor' : 'local';
   }
 
   private _getPlayersForTeam(
-    side: '' | 'local' | 'visitor',
-    currentPlayerNumber?: number,
+    side: TeamSide,
+    currentPlayerNumber?: number | null,
   ): Player[] {
     const players = [...this._getActivePlayers(side)];
     if (currentPlayerNumber) {
@@ -604,10 +602,7 @@ export class GoalsCard extends LitElement {
   }
 
   private _validateEditForm() {
-    const selectedTeam = this.editGoalTeamSelect?.value as
-      | ''
-      | 'local'
-      | 'visitor';
+    const selectedTeam = this.editGoalTeamSelect?.value as TeamSide;
     const ownGoal = this.editGoalOwnCheckbox?.checked ?? false;
     const teamForPlayers = this._resolvePlayerTeam(selectedTeam, ownGoal);
     this.editActivePlayers = this._getPlayersForTeam(
@@ -644,7 +639,7 @@ export class GoalsCard extends LitElement {
       !playerSelected ||
       !goalType ||
       !minuteValue ||
-      isNaN(Number(minuteValue)) ||
+      Number.isNaN(Number(minuteValue)) ||
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 90;
   }
@@ -680,7 +675,7 @@ export class GoalsCard extends LitElement {
 
   private _deleteGoal(index: number) {
     if (!this.match) return;
-    const confirmed = window.confirm(
+    const confirmed = globalThis.confirm(
       '¿Seguro que deseas eliminar este gol?',
     );
     if (!confirmed) return;

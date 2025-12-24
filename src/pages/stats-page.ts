@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, Player, PlayerTeam, Team } from '../types';
+import { Match, Player, PlayerTeam } from '../types';
 
 interface PlayerStats {
   key: string;
@@ -22,7 +22,7 @@ interface TeamStats {
 
 @customElement('stats-page')
 export class StatsPage extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: block;
@@ -78,7 +78,7 @@ export class StatsPage extends LitElement {
   ];
 
   @property({ type: Array }) matchesList: Match[] = [];
-  @property({ type: Array }) teams: Team[] = [];
+  @property({ type: Array }) teams: string[] = [];
   @property({ type: Object }) players: PlayerTeam = new Map();
 
   override render() {

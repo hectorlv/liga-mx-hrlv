@@ -1,4 +1,3 @@
-import '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/textfield/filled-text-field.js';
@@ -19,7 +18,7 @@ import { MdDialog } from '@material/web/dialog/dialog.js';
 
 @customElement('substitutions-card')
 export class SubstitutionsCard extends LitElement {
-  static override styles = [
+  static override readonly styles = [
     css`
       :host {
         display: block;
@@ -228,6 +227,17 @@ export class SubstitutionsCard extends LitElement {
           </div>
         </div>
         <div class="add-substitution-form">
+          <md-filled-text-field
+            aria-label="Minuto del cambio"
+            label="Minuto"
+            type="number"
+            inputmode="numeric"
+            id="subMinute"
+            class="minute-input"
+            min="0"
+            max="90"
+            @change=${this._validateAddSub}
+          ></md-filled-text-field>
           <md-outlined-select
             @change=${this._onSubTeamChange}
             id="subTeam"
@@ -269,17 +279,6 @@ export class SubstitutionsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
-          <md-filled-text-field
-            aria-label="Minuto del cambio"
-            label="Minuto"
-            type="number"
-            inputmode="numeric"
-            id="subMinute"
-            class="minute-input"
-            min="0"
-            max="90"
-            @change=${this._validateAddSub}
-          ></md-filled-text-field>
           <md-filled-button
             class="action-btn"
             aria-label="Agregar cambio"
@@ -559,7 +558,7 @@ export class SubstitutionsCard extends LitElement {
       !playerOut ||
       !playerIn ||
       !minuteValue ||
-      isNaN(Number(minuteValue)) ||
+      Number.isNaN(Number(minuteValue)) ||
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 90 ||
       playerOut === playerIn;
@@ -585,7 +584,7 @@ export class SubstitutionsCard extends LitElement {
 
   private _deleteSub(index: number) {
     if (!this.match) return;
-    const confirmed = window.confirm(
+    const confirmed = globalThis.confirm(
       '¿Seguro que deseas eliminar este cambio?',
     );
     if (!confirmed) return;
@@ -605,7 +604,7 @@ export class SubstitutionsCard extends LitElement {
       !playerIn ||
       playerOut === playerIn ||
       !minute ||
-      isNaN(Number(minute)) ||
+      Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
       Number(minute) > 90;
   }
