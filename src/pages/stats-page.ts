@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, Player, PlayerTeam } from '../types';
+import { Match, Player, PlayerGame, PlayerTeam } from '../types';
 
 interface PlayerStats {
   key: string;
@@ -10,6 +10,7 @@ interface PlayerStats {
   assists: number;
   yellows: number;
   reds: number;
+  minutes: number;
 }
 
 interface TeamStats {
@@ -101,18 +102,21 @@ export class StatsPage extends LitElement {
                       <th>Asist</th>
                       <th>A</th>
                       <th>R</th>
+                      <th>Minutos jugados</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${playerStats.slice(0, 50).map(
-                      p => html`<tr>
-                        <td>${p.name}</td>
-                        <td>${p.team}</td>
-                        <td>${p.goals}</td>
-                        <td>${p.assists}</td>
-                        <td>${p.yellows}</td>
-                        <td>${p.reds}</td>
-                      </tr>`,
+                      p =>
+                        html`<tr>
+                          <td>${p.name}</td>
+                          <td>${p.team}</td>
+                          <td>${p.goals}</td>
+                          <td>${p.assists}</td>
+                          <td>${p.yellows}</td>
+                          <td>${p.reds}</td>
+                          <td>${p.minutes}</td>
+                        </tr>`,
                     )}
                   </tbody>
                 </table>
@@ -138,14 +142,15 @@ export class StatsPage extends LitElement {
                   </thead>
                   <tbody>
                     ${teamStats.map(
-                      t => html`<tr>
-                        <td>${t.team}</td>
-                        <td>${t.goalsFor}</td>
-                        <td>${t.goalsAgainst}</td>
-                        <td>${t.goalsFor - t.goalsAgainst}</td>
-                        <td>${t.yellows}</td>
-                        <td>${t.reds}</td>
-                      </tr>`,
+                      t =>
+                        html`<tr>
+                          <td>${t.team}</td>
+                          <td>${t.goalsFor}</td>
+                          <td>${t.goalsAgainst}</td>
+                          <td>${t.goalsFor - t.goalsAgainst}</td>
+                          <td>${t.yellows}</td>
+                          <td>${t.reds}</td>
+                        </tr>`,
                     )}
                   </tbody>
                 </table>
@@ -170,12 +175,13 @@ export class StatsPage extends LitElement {
                   </thead>
                   <tbody>
                     ${topScorers.map(
-                      p => html`<tr>
-                        <td>${p.name}</td>
-                        <td>${p.team}</td>
-                        <td>${p.goals}</td>
-                        <td>${p.assists}</td>
-                      </tr>`,
+                      p =>
+                        html`<tr>
+                          <td>${p.name}</td>
+                          <td>${p.team}</td>
+                          <td>${p.goals}</td>
+                          <td>${p.assists}</td>
+                        </tr>`,
                     )}
                   </tbody>
                 </table>
@@ -197,12 +203,13 @@ export class StatsPage extends LitElement {
                   </thead>
                   <tbody>
                     ${topAssists.map(
-                      p => html`<tr>
-                        <td>${p.name}</td>
-                        <td>${p.team}</td>
-                        <td>${p.assists}</td>
-                        <td>${p.goals}</td>
-                      </tr>`,
+                      p =>
+                        html`<tr>
+                          <td>${p.name}</td>
+                          <td>${p.team}</td>
+                          <td>${p.assists}</td>
+                          <td>${p.goals}</td>
+                        </tr>`,
                     )}
                   </tbody>
                 </table>
@@ -225,12 +232,13 @@ export class StatsPage extends LitElement {
                   </thead>
                   <tbody>
                     ${fairPlay.map(
-                      t => html`<tr>
-                        <td>${t.team}</td>
-                        <td>${t.yellows + t.reds * 2}</td>
-                        <td>${t.yellows}</td>
-                        <td>${t.reds}</td>
-                      </tr>`,
+                      t =>
+                        html`<tr>
+                          <td>${t.team}</td>
+                          <td>${t.yellows + t.reds * 2}</td>
+                          <td>${t.yellows}</td>
+                          <td>${t.reds}</td>
+                        </tr>`,
                     )}
                   </tbody>
                 </table>
@@ -244,47 +252,76 @@ export class StatsPage extends LitElement {
     const playerStats = new Map<string, PlayerStats>();
     const teamStats = new Map<string, TeamStats>();
 
+    const ensureTeam = (teamName: string) => {
+      if (!teamStats.has(teamName)) {
+        teamStats.set(teamName, {
+          team: teamName,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          yellows: 0,
+          reds: 0,
+        });
+      }
+      return teamStats.get(teamName)!;
+    };
+
+    const ensurePlayer = (
+      teamName: string,
+      number: number,
+      playerList: Player[],
+    ) => {
+      const key = `${teamName}-${number}`;
+      if (!playerStats.has(key)) {
+        const name =
+          playerList.find(p => p.number === number)?.name || `#${number}`;
+        playerStats.set(key, {
+          key,
+          name,
+          team: teamName,
+          goals: 0,
+          assists: 0,
+          yellows: 0,
+          reds: 0,
+          minutes: 0,
+        });
+      }
+      return playerStats.get(key)!;
+    };
+
+    const addLineupMinutes = (
+      match: Match,
+      lineup: PlayerGame[],
+      teamName: string,
+      teamTag: 'local' | 'visitor',
+      playerList: Player[],
+    ) => {
+      lineup.forEach(player => {
+        const stat = ensurePlayer(teamName, player.number, playerList);
+        if (player.titular) {
+          if (player.salioDeCambio) {
+            const outMinute =
+              match.substitutions?.find(
+                s => s.playerOut === player.number && s.team === teamTag,
+              )?.minute ?? 90;
+            stat.minutes += 90 - outMinute;
+          } else {
+            stat.minutes += 90;
+          }
+        } else if (player.entroDeCambio) {
+          const inMinute =
+            match.substitutions?.find(
+              s => s.playerIn === player.number && s.team === teamTag,
+            )?.minute ?? 0;
+          stat.minutes += 90 - inMinute;
+        }
+      });
+    };
+
     this.matchesList.forEach(match => {
       const localKey = this._teamKey(match.local);
       const visitorKey = this._teamKey(match.visitante);
       const localPlayers = this.players.get(localKey) || [];
       const visitorPlayers = this.players.get(visitorKey) || [];
-
-      const ensureTeam = (teamName: string) => {
-        if (!teamStats.has(teamName)) {
-          teamStats.set(teamName, {
-            team: teamName,
-            goalsFor: 0,
-            goalsAgainst: 0,
-            yellows: 0,
-            reds: 0,
-          });
-        }
-        return teamStats.get(teamName)!;
-      };
-
-      const ensurePlayer = (
-        teamName: string,
-        number: number,
-        playerList: Player[],
-      ) => {
-        const key = `${teamName}-${number}`;
-        if (!playerStats.has(key)) {
-          const name =
-            playerList.find(p => p.number === number)?.name ||
-            `#${number}`;
-          playerStats.set(key, {
-            key,
-            name,
-            team: teamName,
-            goals: 0,
-            assists: 0,
-            yellows: 0,
-            reds: 0,
-          });
-        }
-        return playerStats.get(key)!;
-      };
 
       // Goals and assists
       (match.goals || []).forEach(goal => {
@@ -324,6 +361,23 @@ export class StatsPage extends LitElement {
           ensureTeam(teamName).reds += 1;
         }
       });
+
+      // Minutes played
+
+      addLineupMinutes(
+        match,
+        match.lineupLocal || [],
+        match.local,
+        'local',
+        localPlayers,
+      );
+      addLineupMinutes(
+        match,
+        match.lineupVisitor || [],
+        match.visitante,
+        'visitor',
+        visitorPlayers,
+      );
     });
 
     const playerArray = Array.from(playerStats.values()).sort((a, b) => {
@@ -331,26 +385,36 @@ export class StatsPage extends LitElement {
       if (b.assists !== a.assists) return b.assists - a.assists;
       return a.name.localeCompare(b.name);
     });
-    const teamArray = Array.from(teamStats.values()).sort(
-      (a, b) => {
-        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-        if (b.goalsAgainst !== a.goalsAgainst)
-          return a.goalsAgainst - b.goalsAgainst;
-        return a.team.localeCompare(b.team);
-      });
-    const topScorers = playerArray.filter(p => p.goals > 0).slice(0, 10);
-    const topAssists = playerArray.filter(p => p.assists > 0).sort((a, b) => {
-      if (b.assists !== a.assists) return b.assists - a.assists;
-      return b.goals - a.goals;
-    }).slice(0, 10);
-    const fairPlay = [...teamArray].sort((a, b) => {
-      const ptsA = a.yellows + a.reds * 2;
-      const ptsB = b.yellows + b.reds * 2;
-      if (ptsA !== ptsB) return ptsA - ptsB;
+    const teamArray = Array.from(teamStats.values()).sort((a, b) => {
+      if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+      if (b.goalsAgainst !== a.goalsAgainst)
+        return a.goalsAgainst - b.goalsAgainst;
       return a.team.localeCompare(b.team);
-    }).slice(0, 10);
+    });
+    const topScorers = playerArray.filter(p => p.goals > 0).slice(0, 10);
+    const topAssists = playerArray
+      .filter(p => p.assists > 0)
+      .sort((a, b) => {
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        return b.goals - a.goals;
+      })
+      .slice(0, 10);
+    const fairPlay = [...teamArray]
+      .sort((a, b) => {
+        const ptsA = a.yellows + a.reds * 2;
+        const ptsB = b.yellows + b.reds * 2;
+        if (ptsA !== ptsB) return ptsA - ptsB;
+        return a.team.localeCompare(b.team);
+      })
+      .slice(0, 10);
 
-    return { playerStats: playerArray, teamStats: teamArray, topScorers, topAssists, fairPlay };
+    return {
+      playerStats: playerArray,
+      teamStats: teamArray,
+      topScorers,
+      topAssists,
+      fairPlay,
+    };
   }
 
   private _teamKey(name: string) {
