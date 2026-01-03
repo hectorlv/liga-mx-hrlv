@@ -1,35 +1,41 @@
 import { Match, TableEntry } from '../types';
 
+type TeamSide = 'home' | 'away';
+type MatchResult = 'win' | 'draw' | 'loss';
+type ResultCounters = {
+  jg: number;
+  je: number;
+  jp: number;
+};
+type MatchWithScore = Match & {
+  golLocal: number;
+  golVisitante: number;
+};
+
 function calculateTeamStats(team: string, matches: Match[]): TableEntry {
-  let jg = 0;
-  let je = 0;
-  let jp = 0;
+  const counters: ResultCounters = { jg: 0, je: 0, jp: 0 };
   let gf = 0;
   let gc = 0;
+
   for (const match of matches) {
-    const { golLocal, golVisitante, local, visitante } = match;
-    if (local === team) {
-      if (golLocal > golVisitante) {
-        jg += 1;
-      } else if (golLocal < golVisitante) {
-        jp += 1;
-      } else {
-        je += 1;
-      }
-      gf += Number(golLocal);
-      gc += Number(golVisitante);
-    } else if (visitante === team) {
-      if (golLocal < golVisitante) {
-        jg += 1;
-      } else if (golLocal > golVisitante) {
-        jp += 1;
-      } else {
-        je += 1;
-      }
-      gf += Number(match.golVisitante);
-      gc += Number(match.golLocal);
+    if (!hasFinalScore(match)) {
+      continue;
     }
+
+    const side = getTeamSide(match, team);
+    if (!side) {
+      continue;
+    }
+
+    const [goalsFor, goalsAgainst] = getPerspectiveGoals(match, side);
+    gf += goalsFor;
+    gc += goalsAgainst;
+
+    const result = resolveResult(goalsFor, goalsAgainst);
+    applyResult(counters, result);
   }
+
+  const { jg, je, jp } = counters;
   return {
     equipo: team,
     jj: jg + je + jp,
@@ -43,7 +49,10 @@ function calculateTeamStats(team: string, matches: Match[]): TableEntry {
   };
 }
 
-export function calculateTable(teams: string[], matches: Match[]): TableEntry[] {
+export function calculateTable(
+  teams: string[],
+  matches: Match[],
+): TableEntry[] {
   const table = teams.map(team => {
     const teamMatches = matches.filter(
       match =>
@@ -68,4 +77,49 @@ export function calculateTable(teams: string[], matches: Match[]): TableEntry[] 
     team.eliminado = index >= 10;
   });
   return table;
+}
+
+function hasFinalScore(match: Match): match is MatchWithScore {
+  return match.golLocal != null && match.golVisitante != null;
+}
+
+function getTeamSide(match: Match, team: string): TeamSide | null {
+  if (match.local === team) {
+    return 'home';
+  }
+  if (match.visitante === team) {
+    return 'away';
+  }
+  return null;
+}
+
+function getPerspectiveGoals(
+  match: MatchWithScore,
+  side: TeamSide,
+): [number, number] {
+  return side === 'home'
+    ? [match.golLocal, match.golVisitante]
+    : [match.golVisitante, match.golLocal];
+}
+
+function resolveResult(goalsFor: number, goalsAgainst: number): MatchResult {
+  if (goalsFor === goalsAgainst) {
+    return 'draw';
+  }
+  return goalsFor > goalsAgainst ? 'win' : 'loss';
+}
+
+function applyResult(
+  counters: ResultCounters,
+  result: MatchResult,
+): void {
+  if (result === 'win') {
+    counters.jg += 1;
+    return;
+  }
+  if (result === 'draw') {
+    counters.je += 1;
+    return;
+  }
+  counters.jp += 1;
 }

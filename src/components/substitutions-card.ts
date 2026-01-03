@@ -379,7 +379,10 @@ export class SubstitutionsCard extends LitElement {
       playerIn,
       minute,
     };
-    const substitutions = [...(this.match.substitutions || []), newSubstitution];
+    const substitutions = [
+      ...(this.match.substitutions || []),
+      newSubstitution,
+    ];
 
     this._updateSubstitutions(substitutions);
     this.subTeamSelect.value = 'local';
@@ -432,7 +435,9 @@ export class SubstitutionsCard extends LitElement {
         : this.match?.lineupVisitor || [];
     return teamPlayers.filter(
       player =>
-        !lineup.some(p => p.number === player.number && (p.titular || p.entroDeCambio))
+        !lineup.some(
+          p => p.number === player.number && (p.titular || p.entroDeCambio),
+        ),
     );
   }
 

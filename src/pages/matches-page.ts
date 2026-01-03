@@ -326,9 +326,9 @@ export class MatchesPage extends LitElement {
       }
     } else if (e.key === 'Escape' || e.key === 'Esc') {
       // close menu and restore focus
-      const idAttr = (menu as HTMLElement).parentElement
-        ?.querySelector('md-icon-button')
-        ?.dataset['id'];
+      const idAttr = (menu as HTMLElement).parentElement?.querySelector(
+        'md-icon-button',
+      )?.dataset['id'];
       const id = idAttr ? Number(idAttr) : null;
       this.openRowMenuId = null;
       this.requestUpdate();

@@ -7,16 +7,16 @@ const todayDate = new Date();
  * @returns Date
  */
 export function formatDate(fechaString: string | Date, hora: string) {
-    if (fechaString === '') {
-        return '';
-    }
-    // Dividir la cadena en día, mes y año
-    const partesFecha = (fechaString as string).split('/');
-    const year = Number.parseInt(partesFecha[0], 10);
-    const month = Number.parseInt(partesFecha[1], 10);
-    const day = Number.parseInt(partesFecha[2], 10);
-    const fecha = new Date(year, month - 1, day);
-    return new Date(fecha.toISOString().substring(0, 11) + hora);
+  if (fechaString === '') {
+    return '';
+  }
+  // Dividir la cadena en día, mes y año
+  const partesFecha = (fechaString as string).split('/');
+  const year = Number.parseInt(partesFecha[0], 10);
+  const month = Number.parseInt(partesFecha[1], 10);
+  const day = Number.parseInt(partesFecha[2], 10);
+  const fecha = new Date(year, month - 1, day);
+  return new Date(fecha.toISOString().substring(0, 11) + hora);
 }
 
 /**
@@ -25,38 +25,40 @@ export function formatDate(fechaString: string | Date, hora: string) {
  * @returns String
  */
 export function formatDateDDMMYYYY(fecha: Date) {
-    if (!fecha) {
-        return '';
-    }
-    const day = fecha.getDate();
-    const month = fecha.getMonth() + 1;
-    const year = fecha.getFullYear();
-    const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${month < 10 ? '0' : ''
-        }${month}/${year}`;
-    return fechaFormateada;
+  if (!fecha) {
+    return '';
+  }
+  const day = fecha.getDate();
+  const month = fecha.getMonth() + 1;
+  const year = fecha.getFullYear();
+  const fechaFormateada = `${(day < 10 ? '0' : '') + day}/${
+    month < 10 ? '0' : ''
+  }${month}/${year}`;
+  return fechaFormateada;
 }
 
 export function formatDateYYYYMMDD(fecha: Date) {
-    if (!fecha) {
-        return '';
-    }
-    const day = fecha.getDate();
-    const month = fecha.getMonth() + 1;
-    const year = fecha.getFullYear();
-    const fechaFormateada = `${year}-${(month < 10 ? '0' : '') + month}-${day < 10 ? '0' : ''
-        }${day}`;
-    return fechaFormateada;
+  if (!fecha) {
+    return '';
+  }
+  const day = fecha.getDate();
+  const month = fecha.getMonth() + 1;
+  const year = fecha.getFullYear();
+  const fechaFormateada = `${year}-${(month < 10 ? '0' : '') + month}-${
+    day < 10 ? '0' : ''
+  }${day}`;
+  return fechaFormateada;
 }
 
 export function replaceDateSeparator(date: string) {
-    return date.replaceAll('-', '/');
+  return date.replaceAll('-', '/');
 }
 
-export function getMatchRowClass(fecha : Date) {
-    return fecha &&
-      fecha.getFullYear() === todayDate.getFullYear() &&
-      fecha.getMonth() === todayDate.getMonth() &&
-      fecha.getDate() === todayDate.getDate()
-      ? 'todayMatch'
-      : '';
-  }
+export function getMatchRowClass(fecha: Date) {
+  return fecha &&
+    fecha.getFullYear() === todayDate.getFullYear() &&
+    fecha.getMonth() === todayDate.getMonth() &&
+    fecha.getDate() === todayDate.getDate()
+    ? 'todayMatch'
+    : '';
+}

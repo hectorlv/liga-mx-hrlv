@@ -47,12 +47,13 @@ export class StatsPage extends LitElement {
       }
       table {
         width: 100%;
+        text-align: center;
         border-collapse: collapse;
-        border-spacing: 0;
+        overflow-x: auto;
       }
       th,
       td {
-        padding: 6px 8px;
+        padding: 3px 4px;
         text-align: center;
         border: 1px solid #ffffff;
       }
@@ -64,7 +65,32 @@ export class StatsPage extends LitElement {
         z-index: 1;
       }
       tr:nth-child(even) {
-        background: var(--table-row-alt, #d0e4f5);
+        background: var(--table-row-alt);
+      }
+      thead {
+        background: #ffffff;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      thead th {
+        font-size: 15px;
+        font-weight: bold;
+        color: #333333;
+        text-align: center;
+        border-left: 2px solid #333333;
+        position: sticky;
+        top: 0;
+      }
+      tfoot td {
+        font-size: 14px;
+      }
+      /* Row hover and chips */
+      tr:hover {
+        background: rgba(var(--color-primary-rgb), 0.06);
+      }
+      tr.selected-row {
+        background: rgba(var(--color-primary-rgb), 0.12);
       }
       .meta {
         font-size: 0.9em;

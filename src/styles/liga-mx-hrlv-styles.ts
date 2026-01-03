@@ -106,9 +106,6 @@ export default css`
     position: sticky;
     top: 0;
   }
-  table.greyGridTable thead th:first-child {
-    border-left: none;
-  }
 
   table.greyGridTable tfoot td {
     font-size: 14px;
@@ -313,7 +310,7 @@ export default css`
   @media (prefers-color-scheme: dark) {
     :host {
       --color-surface: #0f1115;
-      
+
       --color-surface-variant: #1a2028;
       --color-on-surface: #e6e6e6;
       --table-row-alt: #19202a;

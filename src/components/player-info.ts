@@ -71,8 +71,7 @@ export class PlayerInfo extends LitElement {
                 alt="Photo of ${this.player.name}"
               />
             `
-          : html`
-          <md-icon>person</md-icon>`}
+          : html` <md-icon>person</md-icon>`}
         <div class="player-details">
           <h3 class="player-name">${this.player.name}</h3>
           <p class="player-position">Posición: ${this.player.position}</p>

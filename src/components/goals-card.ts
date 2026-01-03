@@ -16,7 +16,6 @@ import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 
 type TeamSide = '' | 'local' | 'visitor';
 
-
 @customElement('goals-card')
 export class GoalsCard extends LitElement {
   static override readonly styles = [
@@ -144,8 +143,12 @@ export class GoalsCard extends LitElement {
                     <div class="goal-details">
                       <player-info
                         .player=${goal.ownGoal
-                          ? this.visitorPlayers.find(p => p.number === goal.player)
-                          : this.localPlayers.find(p => p.number === goal.player)}
+                          ? this.visitorPlayers.find(
+                              p => p.number === goal.player,
+                            )
+                          : this.localPlayers.find(
+                              p => p.number === goal.player,
+                            )}
                       ></player-info>
                       <span
                         >${goal.ownGoal
@@ -162,8 +165,9 @@ export class GoalsCard extends LitElement {
                       ${goal.assist
                         ? html`<span class="assist"
                             >Asistencia:
-                            ${this.localPlayers.find(p => p.number === goal.assist)?.name ||
-                            goal.assist}</span
+                            ${this.localPlayers.find(
+                              p => p.number === goal.assist,
+                            )?.name || goal.assist}</span
                           >`
                         : null}
                     </div>
@@ -199,8 +203,12 @@ export class GoalsCard extends LitElement {
                     <div class="goal-details">
                       <player-info
                         .player=${goal.ownGoal
-                          ? this.localPlayers.find(p => p.number === goal.player)
-                          : this.visitorPlayers.find(p => p.number === goal.player)}
+                          ? this.localPlayers.find(
+                              p => p.number === goal.player,
+                            )
+                          : this.visitorPlayers.find(
+                              p => p.number === goal.player,
+                            )}
                       ></player-info>
                       <span
                         >${goal.ownGoal
@@ -217,8 +225,9 @@ export class GoalsCard extends LitElement {
                       ${goal.assist
                         ? html`<span class="assist"
                             >Asistencia:
-                            ${this.visitorPlayers.find(p => p.number === goal.assist)?.name ||
-                            goal.assist}</span
+                            ${this.visitorPlayers.find(
+                              p => p.number === goal.assist,
+                            )?.name || goal.assist}</span
                           >`
                         : null}
                     </div>
@@ -319,7 +328,9 @@ export class GoalsCard extends LitElement {
             ?disabled=${this.newGoalOwnCheckbox?.checked}
             @change=${this._validateForm}
           >
-            <md-select-option value="" selected>Sin asistencia</md-select-option>
+            <md-select-option value="" selected
+              >Sin asistencia</md-select-option
+            >
             ${this.assistPlayers.map(
               p =>
                 html`<md-select-option value=${p.number}
@@ -552,8 +563,7 @@ export class GoalsCard extends LitElement {
   ): Player[] {
     const players = [...this._getActivePlayers(side)];
     if (currentPlayerNumber) {
-      const list =
-        side === 'local' ? this.localPlayers : this.visitorPlayers;
+      const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
       const existing = list.find(p => p.number === currentPlayerNumber);
       if (existing && !players.some(p => p.number === existing.number)) {
         players.push(existing);
@@ -564,10 +574,7 @@ export class GoalsCard extends LitElement {
 
   private async _openEditGoal(goal: Goal, index: number) {
     this.editingGoalIndex = index;
-    const teamForPlayers = this._resolvePlayerTeam(
-      goal.team,
-      !!goal.ownGoal,
-    );
+    const teamForPlayers = this._resolvePlayerTeam(goal.team, !!goal.ownGoal);
     this.editActivePlayers = this._getPlayersForTeam(
       teamForPlayers,
       goal.player,
@@ -586,9 +593,7 @@ export class GoalsCard extends LitElement {
     if (this.editGoalTypeSelect && goal.goalType)
       this.editGoalTypeSelect.value = goal.goalType;
     if (this.editGoalAssistSelect)
-      this.editGoalAssistSelect.value = goal.assist
-        ? String(goal.assist)
-        : '';
+      this.editGoalAssistSelect.value = goal.assist ? String(goal.assist) : '';
     this._validateEditForm();
     this.editGoalDialog?.show();
   }

@@ -125,18 +125,17 @@ export class LineupsCard extends LitElement {
                 >
               </md-icon-button>
             </div>
-            ${this.localPlayers.map(
-              player => {
-                const isTitular = lineupLocal?.some(p => p.number === player.number && p.titular);
+            ${this.localPlayers.map(player => {
+              const isTitular = lineupLocal?.some(
+                p => p.number === player.number && p.titular,
+              );
               return html`
                 <div
                   class="${`player-row ${isTitular ? 'selected' : ''}`}"
                   role="button"
                   tabindex="0"
                   aria-label="Jugador ${player.number} ${player.name} — alternar alineación local"
-                  aria-pressed="${isTitular
-                    ? 'true'
-                    : 'false'}"
+                  aria-pressed="${isTitular ? 'true' : 'false'}"
                   @click=${() => this._toggleRow('local', player.number)}
                   @keydown=${(e: KeyboardEvent) =>
                     this._onRowKeydown(e, 'local', player.number)}
@@ -150,8 +149,8 @@ export class LineupsCard extends LitElement {
                   ></md-checkbox>
                   <player-info .player=${player}></player-info>
                 </div>
-              `},
-            )}
+              `;
+            })}
           </div>
           <div>
             <div class="lineup-header">
@@ -167,18 +166,17 @@ export class LineupsCard extends LitElement {
                 >
               </md-icon-button>
             </div>
-            ${this.visitorPlayers.map(
-              player => {
-                const isTitular = lineupVisitor?.some(p => p.number === player.number && p.titular);
-                return html`
+            ${this.visitorPlayers.map(player => {
+              const isTitular = lineupVisitor?.some(
+                p => p.number === player.number && p.titular,
+              );
+              return html`
                 <div
                   class="${`player-row ${isTitular ? 'selected' : ''}`}"
                   role="button"
                   tabindex="0"
                   aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
-                  aria-pressed="${isTitular
-                    ? 'true'
-                    : 'false'}"
+                  aria-pressed="${isTitular ? 'true' : 'false'}"
                   @click=${() => this._toggleRow('visitor', player.number)}
                   @keydown=${(e: KeyboardEvent) =>
                     this._onRowKeydown(e, 'visitor', player.number)}
@@ -192,8 +190,8 @@ export class LineupsCard extends LitElement {
                   ></md-checkbox>
                   <player-info .player=${player}></player-info>
                 </div>
-              `},
-            )}
+              `;
+            })}
           </div>
         </div>
       </div>
@@ -217,7 +215,7 @@ export class LineupsCard extends LitElement {
         <div slot="headline">
           ${this.addPlayerSide === 'local'
             ? 'Agregar jugador local'
-            :  'Agregar jugador visitante'}
+            : 'Agregar jugador visitante'}
         </div>
         <div
           slot="content"
@@ -279,7 +277,8 @@ export class LineupsCard extends LitElement {
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
     const lineup = [...(this.match[key] || [])];
     if ((e.target as MdCheckbox).checked) {
-      if (!lineup.some(p => p.number === playerId)) lineup.push({ number: playerId, titular: true });
+      if (!lineup.some(p => p.number === playerId))
+        lineup.push({ number: playerId, titular: true });
     } else {
       const idx = lineup.findIndex(p => p.number === playerId);
       if (idx !== -1) lineup.splice(idx, 1);
@@ -412,10 +411,12 @@ export class LineupsCard extends LitElement {
 
   private _lineupsReady(): boolean {
     if (!this.match) return false;
-    const localCount =
-      (this.match.lineupLocal || []).filter(p => p.titular).length;
-    const visitorCount =
-      (this.match.lineupVisitor || []).filter(p => p.titular).length;
+    const localCount = (this.match.lineupLocal || []).filter(
+      p => p.titular,
+    ).length;
+    const visitorCount = (this.match.lineupVisitor || []).filter(
+      p => p.titular,
+    ).length;
     return localCount >= 11 && visitorCount >= 11;
   }
 }

@@ -124,12 +124,12 @@ export class CardsCard extends LitElement {
     const cardTypeSelected = this.cardTypeSelect?.value as CardType;
     const addFoulOptions = this._getFoulOptions(
       cardTypeSelected,
-      this.cardFoulTypeSelect?.value as any,
+      this.cardFoulTypeSelect?.value as FoulType,
     );
     const editCardTypeSelected = this.editCardTypeSelect?.value as CardType;
     const editFoulOptions = this._getFoulOptions(
       editCardTypeSelected,
-      this.editCardFoulTypeSelect?.value as any,
+      this.editCardFoulTypeSelect?.value as FoulType,
     );
     const cardsWithIndex = cards.map((card, index) => ({ card, index }));
     return html`
@@ -156,8 +156,10 @@ export class CardsCard extends LitElement {
                         >crop_portrait</md-icon
                       ><span>Minuto: ${card.minute}</span>
                       ${card.foulType
-                        ? html`<span class="badge">${FOUL_TYPE_LABELS[card.foulType] ||
-                            card.foulType}</span>`
+                        ? html`<span class="badge"
+                            >${FOUL_TYPE_LABELS[card.foulType] ||
+                            card.foulType}</span
+                          >`
                         : null}
                     </div>
                     <div class="card-actions">
@@ -203,8 +205,10 @@ export class CardsCard extends LitElement {
                         >crop_portrait</md-icon
                       ><span>Minuto: ${card.minute}</span>
                       ${card.foulType
-                        ? html`<span class="badge">${FOUL_TYPE_LABELS[card.foulType] ||
-                            card.foulType}</span>`
+                        ? html`<span class="badge"
+                            >${FOUL_TYPE_LABELS[card.foulType] ||
+                            card.foulType}</span
+                          >`
                         : null}
                     </div>
                     <div class="card-actions">
@@ -246,7 +250,9 @@ export class CardsCard extends LitElement {
             title="Jugador tarjeta"
             @change=${this._validateAddCard}
           >
-            <md-select-option value="" disabled selected>Selecciona jugador</md-select-option>
+            <md-select-option value="" disabled selected
+              >Selecciona jugador</md-select-option
+            >
             ${(cardSide === 'local'
               ? this.localPlayers
               : this.visitorPlayers
@@ -274,7 +280,9 @@ export class CardsCard extends LitElement {
             title="Tipo de tarjeta"
             @change=${this._onCardTypeChange}
           >
-            <md-select-option value="" disabled selected>Selecciona tipo de tarjeta</md-select-option>
+            <md-select-option value="" disabled selected
+              >Selecciona tipo de tarjeta</md-select-option
+            >
             <md-select-option value="yellow">Amarilla</md-select-option>
             <md-select-option value="red">Roja</md-select-option>
           </md-filled-select>
@@ -438,7 +446,8 @@ export class CardsCard extends LitElement {
         this.editCardPlayerSelect.value = String(card.player);
       if (this.editCardMinuteInput)
         this.editCardMinuteInput.value = String(card.minute);
-      if (this.editCardTypeSelect) this.editCardTypeSelect.value = card.cardType;
+      if (this.editCardTypeSelect)
+        this.editCardTypeSelect.value = card.cardType;
       if (this.editCardFoulTypeSelect)
         this.editCardFoulTypeSelect.value = card.foulType || '';
       this._validateEditForm();

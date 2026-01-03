@@ -91,7 +91,7 @@ const LIGUILLA = {
       id: 169,
     },
     local: 0,
-    visitante: 1
+    visitante: 1,
   },
 };
 
@@ -117,11 +117,11 @@ const LOGOS = [
 ];
 
 const JORNADA_LIGUILLA = [
-  { id: 18, descripcion: "Playin 1" },
-  { id: 19, descripcion: "Playin 2" },
-  { id: 20, descripcion: "Cuartos de final" },
-  { id: 21, descripcion: "Semifinal" },
-  { id: 22, descripcion: "Final" },
-]
+  { id: 18, descripcion: 'Playin 1' },
+  { id: 19, descripcion: 'Playin 2' },
+  { id: 20, descripcion: 'Cuartos de final' },
+  { id: 21, descripcion: 'Semifinal' },
+  { id: 22, descripcion: 'Final' },
+];
 
 export { FIREBASE_CONFIG, LIGUILLA, LOGOS, JORNADA_LIGUILLA };

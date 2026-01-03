@@ -35,5 +35,5 @@ export {
   santosLaguna,
   tijuana,
   toluca,
-  tigresDeLaUanl
+  tigresDeLaUanl,
 };

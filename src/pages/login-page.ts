@@ -24,7 +24,7 @@ export class LoginPage extends LitElement {
   @query('#dialogLogin')
   private readonly dialog!: MdDialog;
 
-static override readonly styles = [styles];
+  static override readonly styles = [styles];
 
   override render() {
     return html`
@@ -53,10 +53,10 @@ static override readonly styles = [styles];
         ></md-filled-text-field>
         <button type="submit" aria-label="Iniciar sesión">Login</button>
       </form>
-        <md-dialog id="dialogLogin" type="alert">
-          <div slot="headline">${this.titleError}</div>
-          <div slot="content">${this.contentError}</div>
-        </md-dialog>
+      <md-dialog id="dialogLogin" type="alert">
+        <div slot="headline">${this.titleError}</div>
+        <div slot="content">${this.contentError}</div>
+      </md-dialog>
     `;
   }
 
@@ -96,7 +96,7 @@ static override readonly styles = [styles];
       return;
     }
     signInWithEmailAndPassword(this.auth, this.email, this.password)
-      .then((result : UserCredential) => {
+      .then((result: UserCredential) => {
         this.dispatchSucess(result.user);
       })
       .catch(error => {

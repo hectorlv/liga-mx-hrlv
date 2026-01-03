@@ -51,7 +51,9 @@ export const FOUL_TYPES_BY_CARD: Record<
 
 export const FOUL_TYPE_LABELS: Record<FoulType, string> = Object.values(
   FOUL_TYPES_BY_CARD,
-).flat().reduce(
-  (acc, t) => ({ ...acc, [t.value]: t.label }),
-  {} as Record<FoulType, string>,
-);
+)
+  .flat()
+  .reduce(
+    (acc, t) => ({ ...acc, [t.value]: t.label }),
+    {} as Record<FoulType, string>,
+  );

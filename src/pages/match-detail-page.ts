@@ -126,7 +126,7 @@ export class MatchDetailPage extends LitElement {
                   <md-icon>edit</md-icon>
                 </md-icon-button>
               `}
-              ${this.renderPhaseButton()}
+          ${this.renderPhaseButton()}
         </div>
         ${this.isEditing
           ? html`
@@ -236,8 +236,10 @@ export class MatchDetailPage extends LitElement {
           <md-icon>play_circle</md-icon>
         </md-icon-button>
       `;
-    } else if (this.match.phaseEvents?.some(event =>  event.phase === 'start') &&
-      !this.match.phaseEvents?.some(event => event.phase === 'halftime')) {
+    } else if (
+      this.match.phaseEvents?.some(event => event.phase === 'start') &&
+      !this.match.phaseEvents?.some(event => event.phase === 'halftime')
+    ) {
       return html`
         <md-icon-button
           id="halftimeButton"
@@ -248,8 +250,10 @@ export class MatchDetailPage extends LitElement {
           <md-icon>pause_circle</md-icon>
         </md-icon-button>
       `;
-    } else if (this.match.phaseEvents?.some(event => event.phase === 'halftime') &&
-      !this.match.phaseEvents?.some(event => event.phase === 'secondHalf')) {
+    } else if (
+      this.match.phaseEvents?.some(event => event.phase === 'halftime') &&
+      !this.match.phaseEvents?.some(event => event.phase === 'secondHalf')
+    ) {
       return html`
         <md-icon-button
           id="secondHalfButton"
@@ -260,8 +264,10 @@ export class MatchDetailPage extends LitElement {
           <md-icon>resume</md-icon>
         </md-icon-button>
       `;
-    } else if (this.match.phaseEvents?.some(event => event.phase === 'secondHalf') &&
-      !this.match.phaseEvents?.some(event => event.phase === 'fulltime')) {
+    } else if (
+      this.match.phaseEvents?.some(event => event.phase === 'secondHalf') &&
+      !this.match.phaseEvents?.some(event => event.phase === 'fulltime')
+    ) {
       return html`
         <md-icon-button
           id="fulltimeButton"
@@ -283,25 +289,19 @@ export class MatchDetailPage extends LitElement {
     updates[`/matches/${this.match.idMatch}/golVisitante`] = 0;
     const startMinute = this._phaseMinuteValue('start');
     if (startMinute !== null) {
-      updates[`/matches/${this.match.idMatch}/phaseEvents`] = this._phaseEventsWithUpdate(
-        'start',
-        startMinute,
-      );
+      updates[`/matches/${this.match.idMatch}/phaseEvents`] =
+        this._phaseEventsWithUpdate('start', startMinute);
     }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
-
-
 
   private _savePhaseEvent(phase: PhaseEvent['phase']) {
     if (!this.match) return;
     const minute = this._phaseMinuteValue(phase);
     if (minute === null) return;
     const updates: FirebaseUpdates = {};
-    updates[`/matches/${this.match.idMatch}/phaseEvents`] = this._phaseEventsWithUpdate(
-      phase,
-      minute,
-    );
+    updates[`/matches/${this.match.idMatch}/phaseEvents`] =
+      this._phaseEventsWithUpdate(phase, minute);
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
@@ -315,15 +315,13 @@ export class MatchDetailPage extends LitElement {
     const events = this.match?.phaseEvents || [];
     const filtered = events.filter(event => event.phase !== phase);
     const next = [...filtered, { phase, minute }];
-    return next.sort(
-      (a, b) => order.indexOf(a.phase) - order.indexOf(b.phase),
-    );
+    return next.sort((a, b) => order.indexOf(a.phase) - order.indexOf(b.phase));
   }
 
-
-
-  private _phaseMinuteValue(phase: PhaseEvent['phase']) : number {
-    const existing = this.match?.phaseEvents?.find(event => event.phase === phase);
+  private _phaseMinuteValue(phase: PhaseEvent['phase']): number {
+    const existing = this.match?.phaseEvents?.find(
+      event => event.phase === phase,
+    );
     if (existing) return existing.minute;
     switch (phase) {
       case 'start':

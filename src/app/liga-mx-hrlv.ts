@@ -153,16 +153,16 @@ export class LigaMxHrlv extends LitElement {
   private loginSuccess(e: CustomEvent<{ user: User }>) {
     this.selectedTab = 'Calendario';
     this.user = e.detail.user;
-    this._unsubscribeMatches = fetchMatches(matches => {
+    this._unsubscribeMatches = fetchMatches((matches: Match[]) => {
       this.matchesList = matches;
     });
-    this._unsubscribeTeams = fetchTeams(teams => {
+    this._unsubscribeTeams = fetchTeams((teams: string[]) => {
       this.teams = teams;
     });
-    this._unsubscribeStadiums = fetchStadiums(stadiums => {
+    this._unsubscribeStadiums = fetchStadiums((stadiums: string[]) => {
       this.stadiums = stadiums;
     });
-    this._unsubscribePlayers = fetchPlayers(players => {
+    this._unsubscribePlayers = fetchPlayers((players: PlayerTeam) => {
       this.players = players;
     });
   }

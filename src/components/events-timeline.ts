@@ -167,8 +167,8 @@ export class EventsTimeline extends LitElement {
           <div class="title-line">
             <span
               class="badge ${item.card.cardType === 'yellow'
-              ? 'card-yellow'
-              : 'card-red'}"
+                ? 'card-yellow'
+                : 'card-red'}"
             >
               <md-icon>crop_portrait</md-icon>
               ${item.card.cardType === 'yellow' ? 'Amarilla' : 'Roja'}
@@ -234,7 +234,12 @@ export class EventsTimeline extends LitElement {
 
   private _buildTimelineItems(): TimelineItem[] {
     if (!this.match) return [];
-    const { goals = [], cards = [], substitutions = [], phaseEvents = [] } = this.match;
+    const {
+      goals = [],
+      cards = [],
+      substitutions = [],
+      phaseEvents = [],
+    } = this.match;
     const goalItems: TimelineItem[] = goals.map(goal => ({
       kind: 'goal',
       minute: goal.minute,
@@ -259,7 +264,7 @@ export class EventsTimeline extends LitElement {
       phase: phase.phase,
     }));
     return [...phaseItems, ...goalItems, ...cardItems, ...subItems].sort(
-      (a, b) => { 
+      (a, b) => {
         if (a.minute === b.minute) {
           if (a.kind === 'phase') return -1;
           if (b.kind === 'phase') return 1;

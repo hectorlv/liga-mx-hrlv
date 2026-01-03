@@ -37,36 +37,36 @@ export interface TableEntry {
 }
 
 export interface Player {
-    imgSrc: string;
-    name: string;
-    number: number;
-    position: string;
+  imgSrc: string;
+  name: string;
+  number: number;
+  position: string;
 }
 
 export type PlayerTeam = Map<string, Player[]>;
 
 export interface Goal {
-    minute: number;
-    player: number;
-    team: 'local' | 'visitor';
-    ownGoal?: boolean;
-    goalType?: GoalType;
-    assist?: number | null;
+  minute: number;
+  player: number;
+  team: 'local' | 'visitor';
+  ownGoal?: boolean;
+  goalType?: GoalType;
+  assist?: number | null;
 }
 
 export interface Substitution {
-    minute: number;
-    playerIn: number;
-    playerOut: number;
-    team: 'local' | 'visitor';
+  minute: number;
+  playerIn: number;
+  playerOut: number;
+  team: 'local' | 'visitor';
 }
 
 export interface Card {
-    minute: number;
-    player: number;
-    cardType: 'yellow' | 'red';
-    team: 'local' | 'visitor';
-    foulType?: FoulType;
+  minute: number;
+  player: number;
+  cardType: 'yellow' | 'red';
+  team: 'local' | 'visitor';
+  foulType?: FoulType;
 }
 
 export interface PhaseEvent {
@@ -102,5 +102,14 @@ export type FoulType =
 export type TimelineItem =
   | { kind: 'goal'; minute: number; team: 'local' | 'visitor'; goal: Goal }
   | { kind: 'card'; minute: number; team: 'local' | 'visitor'; card: Card }
-  | { kind: 'sub'; minute: number; team: 'local' | 'visitor'; sub: Substitution }
-  | { kind: 'phase'; minute: number; phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime' };
+  | {
+      kind: 'sub';
+      minute: number;
+      team: 'local' | 'visitor';
+      sub: Substitution;
+    }
+  | {
+      kind: 'phase';
+      minute: number;
+      phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
+    };

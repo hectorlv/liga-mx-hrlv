@@ -6,17 +6,15 @@ import {
   type Unsubscribe,
 } from 'firebase/database';
 import { formatDate } from '../utils/dateUtils';
-import { FirebaseUpdates, Match, Player, PlayerTeam } from '../types';
+import { FirebaseUpdates, Match, PlayerTeam } from '../types';
 
-export type MatchesCallBack = (matches: Match[]) => void;
-export type SimpleCallBack<T> = (data: T[]) => void;
-export type PlayersCallBack = (players: PlayerTeam) => void;
+type SimpleCallback<T> = (data: T) => void;
 
-function snapshotToArray<T>(val: unknown): T[] {
-  if (!val) return [];
-  if (Array.isArray(val)) return val;
-  if (typeof val === 'object') return Object.values(val) as T[];
-  return [];
+function snapshotToArray<T>(snapshotData: Record<string, unknown>): T {
+  if (!snapshotData) return [] as T;
+  if (Array.isArray(snapshotData)) return snapshotData as T;
+  if (typeof snapshotData === 'object') return Object.values(snapshotData) as T;
+  return [] as T;
 }
 
 function snapshotToMap<K extends string, V>(val: unknown): Map<K, V> {
@@ -26,101 +24,78 @@ function snapshotToMap<K extends string, V>(val: unknown): Map<K, V> {
   for (const [key, value] of Object.entries(val as Record<string, unknown>)) {
     map.set(key as K, value as V);
   }
-  
+
   return map;
 }
 
-export function fetchMatches(callback: MatchesCallBack): Unsubscribe {
-  const dbRef = ref(getDatabase(), '/matches');
-  return onValue(
+function subscribeToFirebasePath<T>(
+  path: string,
+  callback: SimpleCallback<T>,
+  isArray: boolean = true,
+): Unsubscribe {
+  const db = getDatabase();
+  const dbRef = ref(db, path);
+  const unsubscribe = onValue(
     dbRef,
     snapshot => {
-      if (!snapshot.exists()) {
-        callback([]);
-        return;
-      }
-
-      const raw = snapshot.val();
-      const rawArray = snapshotToArray<any>(raw);
-      const matches = rawArray.map((match, index) => ({
-        ...match,
-        golLocal: match.golLocal === '' ? null : match.golLocal,
-        golVisitante: match.golVisitante === '' ? null : match.golVisitante,
-        idMatch: index,
-        fecha: formatDate(match.fecha, match.hora),
-      }));
-      matches.sort((a, b) => {
-        if (a.jornada === b.jornada) {
-          let fechaCompare = 0;
-          if(a.fecha < b.fecha) fechaCompare = -1;
-          else if(a.fecha > b.fecha) fechaCompare = 1;
-          return fechaCompare;
+      let data: T;
+      if (snapshot.exists()) {
+        if (isArray) {
+          data = snapshotToArray<T>(snapshot.val());
+        } else {
+          data = snapshotToMap<string, unknown>(snapshot.val()) as unknown as T;
         }
-        return a.jornada - b.jornada;
-      });
-      callback(matches);
-    },
-    error => {
-      console.error('Error fetching matches:', error);
-      callback([]);
-    },
-  );
-}
-
-export function fetchTeams(callback: SimpleCallBack<string>): Unsubscribe {
-  const dbRef = ref(getDatabase(), '/teams');
-  return onValue(
-    dbRef,
-    snapshot => {
-      const data = snapshot.exists()
-        ? snapshotToArray<string>(snapshot.val())
-        : [];
+      } else {
+        data = isArray ? ([] as unknown as T) : (new Map() as unknown as T);
+      }
       callback(data);
     },
     error => {
-      console.error('Error fetching teams:', error);
-      callback([]);
+      console.error('Firebase subscription error at path:', path, error);
+      callback([] as unknown as T);
     },
   );
+  return unsubscribe;
 }
 
-export function fetchStadiums(callback: SimpleCallBack<string>): Unsubscribe {
-  const dbRef = ref(getDatabase(), '/stadiums');
-  return onValue(
-    dbRef,
-    snapshot => {
-      const data = snapshot.exists()
-        ? snapshotToArray<string>(snapshot.val())
-        : [];
-      callback(data);
-    },
-    error => {
-      console.error('Error fetching stadiums:', error);
-      callback([]);
-    },
-  );
+export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
+  const callbackWrapper = (matches: Match[]) => {
+    const formattedMatches = matches.map((match, index) => ({
+      ...match,
+      golLocal: typeof match.golLocal === 'number' ? match.golLocal : null,
+      golVisitante: typeof match.golVisitante === 'number' ? match.golVisitante : null,
+      idMatch: index,
+      fecha: formatDate(match.fecha, match.hora),
+    }));
+    formattedMatches.sort((a, b) => {
+      if (a.jornada === b.jornada) {
+        let fechaCompare = 0;
+        if (a.fecha < b.fecha) fechaCompare = -1;
+        else if (a.fecha > b.fecha) fechaCompare = 1;
+        return fechaCompare;
+      }
+      return a.jornada - b.jornada;
+    });
+    callback(formattedMatches as Match[]);
+  };
+  return subscribeToFirebasePath<Match[]>('/matches', callbackWrapper);
 }
 
-export function fetchPlayers(callback: PlayersCallBack): Unsubscribe {
-  const dbRef = ref(getDatabase(), '/players');
-  return onValue(
-    dbRef,
-    snapshot => {
-      const data = snapshot.exists()
-        ? snapshotToMap<string, Player[]>(snapshot.val())
-        : new Map<string, Player[]>();
-      callback(data);
-    },
-    error => {
-      console.error('Error fetching players:', error);
-      callback(new Map<string, Player[]>());
-    },
-  );
+export function fetchTeams(callback: SimpleCallback<string[]>): Unsubscribe {
+  return subscribeToFirebasePath<string[]>('/teams', callback);
 }
 
-export async function saveUpdates(
-  updates: FirebaseUpdates,
-): Promise<void> {
+export function fetchStadiums(callback: SimpleCallback<string[]>): Unsubscribe {
+  return subscribeToFirebasePath<string[]>('/stadiums', callback);
+}
+
+export function fetchPlayers(
+  callback: SimpleCallback<PlayerTeam>,
+): Unsubscribe {
+  return subscribeToFirebasePath<PlayerTeam>('/players', callback, false);
+}
+
+export async function saveUpdates(updates: FirebaseUpdates): Promise<void> {
   const db = getDatabase();
   return update(ref(db), updates)
     .then(() => {})
