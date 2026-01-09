@@ -3,7 +3,7 @@
   "description": "Web component liga-mx-hrlv following open-wc recommendations",
   "license": "MIT",
   "author": "liga-mx-hrlv",
-  "version": "4.0.1-SNAPSHOT",
+  "version": "4.0.0",
   "type": "module",
   "scripts": {
     "lint": "eslint \"src/**/*.{ts,js,html}\"",
@@ -18,7 +18,7 @@
   "dependencies": {
     "@material/web": "^2.4.1",
     "firebase": "^12.7.0",
-    "lit": "^3.3.1"
+    "lit": "^3.3.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.5",
@@ -28,12 +28,12 @@
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.50.1",
-    "@typescript-eslint/parser": "^8.50.1",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
     "@web/dev-server": "^0.4.6",
-    "@web/rollup-plugin-html": "^2.4.1",
+    "@web/rollup-plugin-html": "^3.0.0",
     "@web/rollup-plugin-import-meta-assets": "^2.3.0",
-    "axe-core": "^4.11.0",
+    "axe-core": "^4.11.1",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
@@ -41,12 +41,12 @@
     "playwright": "^1.57.0",
     "prettier": "^3.7.4",
     "rimraf": "^6.1.2",
-    "rollup": "^4.54.0",
+    "rollup": "^4.55.1",
     "rollup-plugin-esbuild": "^6.2.1",
     "rollup-plugin-image": "^1.0.2",
     "rollup-plugin-workbox": "^8.1.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.51.0"
+    "typescript-eslint": "^8.52.0"
   },
   "eslintConfig": {
     "extends": [

@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="200" src="https://open-wc.org/hero.png"></img>
+  <img width="200" src="./src/assets/images/favicon.png"></img>
 </p>
 
 ## Open-wc Starter App
@@ -9,6 +9,9 @@
 ## Resumen rápido
 
 Proyecto LitElement (starter basado en open-wc). Este repositorio contiene una pequeña PWA que muestra información de la liga —la app usa Web Components con Lit y algunas partes de Material Web Components—.
+
+## Versiones
+- 4.0.0 Clausura 2026 
 
 ## Estructura del proyecto
 
