@@ -329,7 +329,7 @@ export class StatsPage extends LitElement {
               match.substitutions?.find(
                 s => s.playerOut === player.number && s.team === teamTag,
               )?.minute ?? 90;
-            stat.minutes += 90 - outMinute;
+            stat.minutes += outMinute;
           } else {
             stat.minutes += 90;
           }

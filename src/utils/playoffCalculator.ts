@@ -28,7 +28,7 @@ function handlePlayInMatch(
   playIn3: FirebaseUpdates,
   isFirstMatch: boolean,
 ): void {
-  if (!match || match.golLocal < 0 || match.golVisitante < 0) return;
+  if (match?.golLocal == null || match?.golVisitante == null) return;
 
   const winner =
     match.golLocal >= match.golVisitante ? match.local : match.visitante;
@@ -175,9 +175,9 @@ function handlePlayOffMatch(
     golLocal: (idaMatch.golVisitante || 0) + (vueltaMatch.golLocal || 0),
     golVisitante: (idaMatch.golLocal || 0) + (vueltaMatch.golVisitante || 0),
   };
-  const losser =
+  const loser =
     match.golLocal >= match.golVisitante ? match.visitante : match.local;
-  const team = table.find(t => t.equipo === losser);
+  const team = table.find(t => t.equipo === loser);
   if (team) team.eliminado = true;
 }
 
