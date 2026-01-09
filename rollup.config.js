@@ -4,7 +4,7 @@ import { rollupPluginHTML as html } from "@web/rollup-plugin-html";
 import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 import _esbuild from 'rollup-plugin-esbuild';
 import { generateSW } from 'rollup-plugin-workbox';
-import path from 'path';
+import path from 'node:path';
 import image from 'rollup-plugin-image';
 import json from '@rollup/plugin-json';
 
@@ -34,7 +34,9 @@ export default {
     /** Minify JS, compile JS to a lower language target */
     esbuild({
       minify: true,
-      target: 'esnext',
+      target: 'es2020',
+      tsconfig: 'tsconfig.json',
+      include: /\.[jt]s?$/,
     }),
     /** Bundle assets references via import.meta.url */
     importMetaAssets(),
@@ -57,6 +59,7 @@ export default {
           },
         ],
       ],
+      exclude: ['node_modules/**'],
       babelHelpers: 'bundled',
     }),
     /** Create and inject a service worker */
