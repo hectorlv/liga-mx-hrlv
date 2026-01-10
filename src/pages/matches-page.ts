@@ -561,7 +561,7 @@ export class MatchesPage extends LitElement {
       this.teamsSelect.value === ''
         ? ''
         : this.teams[Number(this.teamsSelect.value)];
-    const matchDay = this.matchDaySelect.value as number | '';
+    const matchDay = this.matchDaySelect.value === '' ? '' : Number(this.matchDaySelect.value);
     this.matchesRender = this.matchesList.filter(match => {
       const findTeam =
         team === '' ? true : match.local === team || match.visitante === team;
@@ -621,20 +621,21 @@ export class MatchesPage extends LitElement {
     this.requestUpdate();
   }
 
-  private _backToCalendar() {
+  private async _backToCalendar() {
     this.showDetails = false;
     //Restaurar filtros
-    this.updateComplete.then(() => {
-      if (this.savedFilters) {
-        this.teamsSelect.value = this.savedFilters.teamIndex;
-        this.matchDaySelect.value = this.savedFilters.matchDayValue;
-        this.todayDateSelected = this.savedFilters.todayDateSelected;
-        if (this.todayDateCheckbox)
-          this.todayDateCheckbox.selected = this.todayDateSelected;
-        this.onlyPlayOffSwitch.selected = this.savedFilters.onlyPlayOffSelected;
-        this.savedFilters = null;
-        this._filtersChanged();
-      }
-    });
+    await this.updateComplete;
+    if (this.savedFilters) {
+      this.teamsSelect.value = this.savedFilters.teamIndex;
+      this.matchDaySelect.value = this.savedFilters.matchDayValue;
+      this.todayDateSelected = this.savedFilters.todayDateSelected;
+      if (this.todayDateCheckbox)
+        this.todayDateCheckbox.selected = this.todayDateSelected;
+      this.onlyPlayOffSwitch.selected = this.savedFilters.onlyPlayOffSelected;
+      this.savedFilters = null;
+      this.requestUpdate();
+      await this.updateComplete;
+      this._filtersChanged();
+    }
   }
 }

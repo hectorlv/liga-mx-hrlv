@@ -66,6 +66,7 @@ export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
       golVisitante: typeof match.golVisitante === 'number' ? match.golVisitante : null,
       idMatch: index,
       fecha: formatDate(match.fecha, match.hora),
+      jornada: Number(match.jornada),
     }));
     formattedMatches.sort((a, b) => {
       if (a.jornada === b.jornada) {
