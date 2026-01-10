@@ -323,23 +323,17 @@ export class StatsPage extends LitElement {
     ) => {
       lineup.forEach(player => {
         const stat = ensurePlayer(teamName, player.number, playerList);
-        if (player.titular) {
-          if (player.salioDeCambio) {
-            const outMinute =
-              match.substitutions?.find(
-                s => s.playerOut === player.number && s.team === teamTag,
-              )?.minute ?? 90;
-            stat.minutes += outMinute;
-          } else {
-            stat.minutes += 90;
-          }
-        } else if (player.entroDeCambio) {
-          const inMinute =
-            match.substitutions?.find(
+        const inMinute = player.entroDeCambio
+          ? (match.substitutions?.find(
               s => s.playerIn === player.number && s.team === teamTag,
-            )?.minute ?? 0;
-          stat.minutes += 90 - inMinute;
-        }
+            )?.minute ?? 0)
+          : 0;
+        const outMinute = player.salioDeCambio
+          ? (match.substitutions?.find(
+              s => s.playerOut === player.number && s.team === teamTag,
+            )?.minute ?? 90)
+          : 90;
+        stat.minutes += outMinute - inMinute;
       });
     };
 
@@ -389,21 +383,22 @@ export class StatsPage extends LitElement {
       });
 
       // Minutes played
-
-      addLineupMinutes(
-        match,
-        match.lineupLocal || [],
-        match.local,
-        'local',
-        localPlayers,
-      );
-      addLineupMinutes(
-        match,
-        match.lineupVisitor || [],
-        match.visitante,
-        'visitor',
-        visitorPlayers,
-      );
+      if (match.phaseEvents?.some(e => e.phase === 'fulltime')) {
+        addLineupMinutes(
+          match,
+          match.lineupLocal || [],
+          match.local,
+          'local',
+          localPlayers,
+        );
+        addLineupMinutes(
+          match,
+          match.lineupVisitor || [],
+          match.visitante,
+          'visitor',
+          visitorPlayers,
+        );
+      }
     });
 
     const playerArray = Array.from(playerStats.values()).sort((a, b) => {
