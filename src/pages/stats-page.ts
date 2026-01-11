@@ -328,11 +328,20 @@ export class StatsPage extends LitElement {
               s => s.playerIn === player.number && s.team === teamTag,
             )?.minute ?? 0)
           : 0;
-        const outMinute = player.salioDeCambio
-          ? (match.substitutions?.find(
-              s => s.playerOut === player.number && s.team === teamTag,
-            )?.minute ?? 90)
-          : 90;
+        let outMinute = 90;
+        if (player.salioDeCambio) {
+          outMinute = match.substitutions?.find(
+            s => s.playerOut === player.number && s.team === teamTag,
+          )?.minute ?? 90;
+        } else if (
+          match.cards?.some(
+            c => c.player === player.number && c.team === teamTag && c.cardType === 'red',
+          )
+        ) {
+          outMinute = match.cards?.find(
+            c => c.player === player.number && c.team === teamTag && c.cardType === 'red',
+          )?.minute ?? 90;
+        }
         stat.minutes += outMinute - inMinute;
       });
     };
