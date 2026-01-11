@@ -404,6 +404,7 @@ export class StatsPage extends LitElement {
     const playerArray = Array.from(playerStats.values()).sort((a, b) => {
       if (b.goals !== a.goals) return b.goals - a.goals;
       if (b.assists !== a.assists) return b.assists - a.assists;
+      if (a.minutes !== b.minutes) return b.minutes - a.minutes;
       return a.name.localeCompare(b.name);
     });
     const teamArray = Array.from(teamStats.values()).sort((a, b) => {
