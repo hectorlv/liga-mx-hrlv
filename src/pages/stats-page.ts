@@ -42,6 +42,10 @@ export class StatsPage extends LitElement {
         padding: 12px 14px;
         box-shadow: var(--md-sys-elevation-1, 0 1px 3px rgba(0, 0, 0, 0.15));
       }
+      .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+      }
       h3 {
         margin: 0 0 8px 0;
       }
@@ -119,33 +123,35 @@ export class StatsPage extends LitElement {
           ${playerStats.length === 0
             ? html`<p>No hay datos de jugadores.</p>`
             : html`
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Jugador</th>
-                      <th>Equipo</th>
-                      <th>G</th>
-                      <th>Asist</th>
-                      <th>A</th>
-                      <th>R</th>
-                      <th>Minutos jugados</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${playerStats.slice(0, 50).map(
-                      p =>
-                        html`<tr>
-                          <td>${p.name}</td>
-                          <td>${p.team}</td>
-                          <td>${p.goals}</td>
-                          <td>${p.assists}</td>
-                          <td>${p.yellows}</td>
-                          <td>${p.reds}</td>
-                          <td>${p.minutes}</td>
-                        </tr>`,
-                    )}
-                  </tbody>
-                </table>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Jugador</th>
+                        <th>Equipo</th>
+                        <th>G</th>
+                        <th>Asist</th>
+                        <th>A</th>
+                        <th>R</th>
+                        <th>Minutos jugados</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${playerStats.slice(0, 50).map(
+                        p =>
+                          html`<tr>
+                            <td>${p.name}</td>
+                            <td>${p.team}</td>
+                            <td>${p.goals}</td>
+                            <td>${p.assists}</td>
+                            <td>${p.yellows}</td>
+                            <td>${p.reds}</td>
+                            <td>${p.minutes}</td>
+                          </tr>`,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               `}
         </div>
 
@@ -155,31 +161,33 @@ export class StatsPage extends LitElement {
           ${teamStats.length === 0
             ? html`<p>No hay datos de equipos.</p>`
             : html`
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Equipo</th>
-                      <th>GF</th>
-                      <th>GC</th>
-                      <th>Dif</th>
-                      <th>A</th>
-                      <th>R</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${teamStats.map(
-                      t =>
-                        html`<tr>
-                          <td>${t.team}</td>
-                          <td>${t.goalsFor}</td>
-                          <td>${t.goalsAgainst}</td>
-                          <td>${t.goalsFor - t.goalsAgainst}</td>
-                          <td>${t.yellows}</td>
-                          <td>${t.reds}</td>
-                        </tr>`,
-                    )}
-                  </tbody>
-                </table>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Equipo</th>
+                        <th>GF</th>
+                        <th>GC</th>
+                        <th>Dif</th>
+                        <th>A</th>
+                        <th>R</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${teamStats.map(
+                        t =>
+                          html`<tr>
+                            <td>${t.team}</td>
+                            <td>${t.goalsFor}</td>
+                            <td>${t.goalsAgainst}</td>
+                            <td>${t.goalsFor - t.goalsAgainst}</td>
+                            <td>${t.yellows}</td>
+                            <td>${t.reds}</td>
+                          </tr>`,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               `}
         </div>
       </div>
@@ -190,27 +198,29 @@ export class StatsPage extends LitElement {
           ${topScorers.length === 0
             ? html`<p>Sin goles registrados.</p>`
             : html`
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Jugador</th>
-                      <th>Equipo</th>
-                      <th>G</th>
-                      <th>Asist</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${topScorers.map(
-                      p =>
-                        html`<tr>
-                          <td>${p.name}</td>
-                          <td>${p.team}</td>
-                          <td>${p.goals}</td>
-                          <td>${p.assists}</td>
-                        </tr>`,
-                    )}
-                  </tbody>
-                </table>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Jugador</th>
+                        <th>Equipo</th>
+                        <th>G</th>
+                        <th>Asist</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${topScorers.map(
+                        p =>
+                          html`<tr>
+                            <td>${p.name}</td>
+                            <td>${p.team}</td>
+                            <td>${p.goals}</td>
+                            <td>${p.assists}</td>
+                          </tr>`,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               `}
         </div>
         <div class="card">
@@ -218,27 +228,29 @@ export class StatsPage extends LitElement {
           ${topAssists.length === 0
             ? html`<p>Sin asistencias registradas.</p>`
             : html`
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Jugador</th>
-                      <th>Equipo</th>
-                      <th>Asist</th>
-                      <th>G</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${topAssists.map(
-                      p =>
-                        html`<tr>
-                          <td>${p.name}</td>
-                          <td>${p.team}</td>
-                          <td>${p.assists}</td>
-                          <td>${p.goals}</td>
-                        </tr>`,
-                    )}
-                  </tbody>
-                </table>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Jugador</th>
+                        <th>Equipo</th>
+                        <th>Asist</th>
+                        <th>G</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${topAssists.map(
+                        p =>
+                          html`<tr>
+                            <td>${p.name}</td>
+                            <td>${p.team}</td>
+                            <td>${p.assists}</td>
+                            <td>${p.goals}</td>
+                          </tr>`,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               `}
         </div>
         <div class="card">
@@ -247,27 +259,29 @@ export class StatsPage extends LitElement {
           ${fairPlay.length === 0
             ? html`<p>Sin tarjetas registradas.</p>`
             : html`
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Equipo</th>
-                      <th>Puntos</th>
-                      <th>A</th>
-                      <th>R</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${fairPlay.map(
-                      t =>
-                        html`<tr>
-                          <td>${t.team}</td>
-                          <td>${t.yellows + t.reds * 2}</td>
-                          <td>${t.yellows}</td>
-                          <td>${t.reds}</td>
-                        </tr>`,
-                    )}
-                  </tbody>
-                </table>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Equipo</th>
+                        <th>Puntos</th>
+                        <th>A</th>
+                        <th>R</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${fairPlay.map(
+                        t =>
+                          html`<tr>
+                            <td>${t.team}</td>
+                            <td>${t.yellows + t.reds * 2}</td>
+                            <td>${t.yellows}</td>
+                            <td>${t.reds}</td>
+                          </tr>`,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               `}
         </div>
       </div>
