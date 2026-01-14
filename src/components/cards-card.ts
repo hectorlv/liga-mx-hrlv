@@ -235,6 +235,17 @@ export class CardsCard extends LitElement {
         </div>
 
         <div class="add-card-form">
+          <md-filled-text-field
+            aria-label="Minuto de la tarjeta"
+            label="Minuto"
+            type="number"
+            inputmode="numeric"
+            id="cardMinute"
+            class="minute-input"
+            min="0"
+            max="90"
+            @change=${this._validateAddCard}
+          ></md-filled-text-field>
           <md-outlined-select
             id="cardTeam"
             aria-label="Equipo tarjeta"
@@ -263,17 +274,6 @@ export class CardsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
-          <md-filled-text-field
-            aria-label="Minuto de la tarjeta"
-            label="Minuto"
-            type="number"
-            inputmode="numeric"
-            id="cardMinute"
-            class="minute-input"
-            min="0"
-            max="90"
-            @change=${this._validateAddCard}
-          ></md-filled-text-field>
           <md-filled-select
             id="cardType"
             aria-label="Tipo de tarjeta"

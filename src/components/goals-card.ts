@@ -253,6 +253,18 @@ export class GoalsCard extends LitElement {
           </div>
         </div>
         <div class="add-goal-form">
+          <md-filled-text-field
+            aria-label="Minuto del gol"
+            label="Minuto"
+            type="number"
+            inputmode="numeric"
+            id="newGoalMinute"
+            class="minute-input"
+            min="0"
+            max="90"
+            @change=${this._validateForm}
+            required
+          ></md-filled-text-field>
           <md-outlined-select
             id="goalTeam"
             aria-label="Equipo del gol"
@@ -292,18 +304,6 @@ export class GoalsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
-          <md-filled-text-field
-            aria-label="Minuto del gol"
-            label="Minuto"
-            type="number"
-            inputmode="numeric"
-            id="newGoalMinute"
-            class="minute-input"
-            min="0"
-            max="90"
-            @change=${this._validateForm}
-            required
-          ></md-filled-text-field>
           <md-outlined-select
             id="newGoalType"
             aria-label="Tipo de gol"
