@@ -36,6 +36,17 @@ export class LineupsCard extends LitElement {
         gap: 24px;
         align-items: start;
       }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .lineup-collapsed-hint {
+        margin: 0;
+        color: #757575;
+      }
       .lineup > div {
         width: 100%;
       }
@@ -101,6 +112,8 @@ export class LineupsCard extends LitElement {
   @query('#newPlayerImage') newPlayerImageField!: MdFilledTextField;
 
   @state() private addPlayerSide: 'local' | 'visitor' | null = null;
+  @state() private lineupsCollapsed = false;
+  @state() private lastMatchId: string | null = null;
 
   override render() {
     if (!this.match) {
@@ -109,91 +122,125 @@ export class LineupsCard extends LitElement {
     const { lineupLocal, lineupVisitor } = this.match;
     return html`
       <div class="section card">
-        <h3>Alineación Inicial</h3>
-        <div class="lineup">
-          <div>
-            <div class="lineup-header">
-              <h4>Local</h4>
-              <md-icon-button
-                @click=${() => this._openAddPlayerDialog('local')}
-              >
-                <md-icon
-                  role="button"
-                  aria-label="Agregar jugador local"
-                  title="Agregar jugador local"
-                  >add</md-icon
+        <div class="section-header">
+          <h3>Alineación Inicial</h3>
+          ${this._lineupsReady()
+            ? html`
+                <md-filled-button
+                  class="toggle-lineups"
+                  aria-label="${this.lineupsCollapsed
+                    ? 'Ver alineaciones'
+                    : 'Ocultar alineaciones'}"
+                  title="${this.lineupsCollapsed
+                    ? 'Ver alineaciones'
+                    : 'Ocultar alineaciones'}"
+                  @click=${this._toggleLineups}
                 >
-              </md-icon-button>
-            </div>
-            ${this.localPlayers.map(player => {
-              const isTitular = lineupLocal?.some(
-                p => p.number === player.number && p.titular,
-              );
-              return html`
-                <div
-                  class="${`player-row ${isTitular ? 'selected' : ''}`}"
-                  role="button"
-                  tabindex="0"
-                  aria-label="Jugador ${player.number} ${player.name} — alternar alineación local"
-                  aria-pressed="${isTitular ? 'true' : 'false'}"
-                  @click=${() => this._toggleRow('local', player.number)}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._onRowKeydown(e, 'local', player.number)}
-                >
-                  <md-checkbox
-                    id="lineupLocal-${player.number}"
-                    aria-label="Incluir ${player.name} en alineación local"
-                    .checked=${isTitular}
-                    @change=${(e: Event) =>
-                      this._onLineupChange(e, 'local', player.number)}
-                  ></md-checkbox>
-                  <player-info .player=${player}></player-info>
-                </div>
-              `;
-            })}
-          </div>
-          <div>
-            <div class="lineup-header">
-              <h4>Visitante</h4>
-              <md-icon-button
-                @click=${() => this._openAddPlayerDialog('visitor')}
-              >
-                <md-icon
-                  role="button"
-                  aria-label="Agregar jugador visitante"
-                  title="Agregar jugador visitante"
-                  >add</md-icon
-                >
-              </md-icon-button>
-            </div>
-            ${this.visitorPlayers.map(player => {
-              const isTitular = lineupVisitor?.some(
-                p => p.number === player.number && p.titular,
-              );
-              return html`
-                <div
-                  class="${`player-row ${isTitular ? 'selected' : ''}`}"
-                  role="button"
-                  tabindex="0"
-                  aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
-                  aria-pressed="${isTitular ? 'true' : 'false'}"
-                  @click=${() => this._toggleRow('visitor', player.number)}
-                  @keydown=${(e: KeyboardEvent) =>
-                    this._onRowKeydown(e, 'visitor', player.number)}
-                >
-                  <md-checkbox
-                    id="lineupVisitor-${player.number}"
-                    aria-label="Incluir ${player.name} en alineación visitante"
-                    .checked=${isTitular}
-                    @change=${(e: Event) =>
-                      this._onLineupChange(e, 'visitor', player.number)}
-                  ></md-checkbox>
-                  <player-info .player=${player}></player-info>
-                </div>
-              `;
-            })}
-          </div>
+                  <md-icon
+                    >${this.lineupsCollapsed ? 'visibility' : 'visibility_off'}
+                  </md-icon>
+                  <span class="btn-label"
+                    >${this.lineupsCollapsed
+                      ? 'Ver alineaciones'
+                      : 'Ocultar alineaciones'}</span
+                  >
+                </md-filled-button>
+              `
+            : null}
         </div>
+        ${this.lineupsCollapsed
+          ? html`
+              <p class="lineup-collapsed-hint">
+                Las alineaciones iniciales están guardadas. Usa "Ver
+                alineaciones" para revisarlas.
+              </p>
+            `
+          : html`
+              <div class="lineup">
+                <div>
+                  <div class="lineup-header">
+                    <h4>Local</h4>
+                    <md-icon-button
+                      @click=${() => this._openAddPlayerDialog('local')}
+                    >
+                      <md-icon
+                        role="button"
+                        aria-label="Agregar jugador local"
+                        title="Agregar jugador local"
+                        >add</md-icon
+                      >
+                    </md-icon-button>
+                  </div>
+                  ${this.localPlayers.map(player => {
+                    const isTitular = lineupLocal?.some(
+                      p => p.number === player.number && p.titular,
+                    );
+                    return html`
+                      <div
+                        class="${`player-row ${isTitular ? 'selected' : ''}`}"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Jugador ${player.number} ${player.name} — alternar alineación local"
+                        aria-pressed="${isTitular ? 'true' : 'false'}"
+                        @click=${() => this._toggleRow('local', player.number)}
+                        @keydown=${(e: KeyboardEvent) =>
+                          this._onRowKeydown(e, 'local', player.number)}
+                      >
+                        <md-checkbox
+                          id="lineupLocal-${player.number}"
+                          aria-label="Incluir ${player.name} en alineación local"
+                          .checked=${isTitular}
+                          @change=${(e: Event) =>
+                            this._onLineupChange(e, 'local', player.number)}
+                        ></md-checkbox>
+                        <player-info .player=${player}></player-info>
+                      </div>
+                    `;
+                  })}
+                </div>
+                <div>
+                  <div class="lineup-header">
+                    <h4>Visitante</h4>
+                    <md-icon-button
+                      @click=${() => this._openAddPlayerDialog('visitor')}
+                    >
+                      <md-icon
+                        role="button"
+                        aria-label="Agregar jugador visitante"
+                        title="Agregar jugador visitante"
+                        >add</md-icon
+                      >
+                    </md-icon-button>
+                  </div>
+                  ${this.visitorPlayers.map(player => {
+                    const isTitular = lineupVisitor?.some(
+                      p => p.number === player.number && p.titular,
+                    );
+                    return html`
+                      <div
+                        class="${`player-row ${isTitular ? 'selected' : ''}`}"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
+                        aria-pressed="${isTitular ? 'true' : 'false'}"
+                        @click=${() => this._toggleRow('visitor', player.number)}
+                        @keydown=${(e: KeyboardEvent) =>
+                          this._onRowKeydown(e, 'visitor', player.number)}
+                      >
+                        <md-checkbox
+                          id="lineupVisitor-${player.number}"
+                          aria-label="Incluir ${player.name} en alineación visitante"
+                          .checked=${isTitular}
+                          @change=${(e: Event) =>
+                            this._onLineupChange(e, 'visitor', player.number)}
+                        ></md-checkbox>
+                        <player-info .player=${player}></player-info>
+                      </div>
+                    `;
+                  })}
+                </div>
+              </div>
+            `}
       </div>
       <md-filled-button
         class="action-btn"
@@ -268,6 +315,16 @@ export class LineupsCard extends LitElement {
       </md-dialog>
     `;
   }
+
+  override updated(changedProps: Map<string, unknown>) {
+    super.updated(changedProps);
+    if (!changedProps.has('match') || !this.match) return;
+    const currentId = this.match.idMatch ?? null;
+    if (currentId !== this.lastMatchId) {
+      this.lastMatchId = currentId;
+      this.lineupsCollapsed = this._lineupsReady();
+    }
+  }
   private _onLineupChange(
     e: Event,
     side: 'local' | 'visitor',
@@ -327,6 +384,10 @@ export class LineupsCard extends LitElement {
       side,
       playerNumber,
     );
+  }
+
+  private _toggleLineups() {
+    this.lineupsCollapsed = !this.lineupsCollapsed;
   }
 
   private _openAddPlayerDialog(side: 'local' | 'visitor') {
@@ -407,6 +468,7 @@ export class LineupsCard extends LitElement {
     this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
     this.requestUpdate();
     this.dialogLineups.show();
+    this.lineupsCollapsed = true;
   }
 
   private _lineupsReady(): boolean {
