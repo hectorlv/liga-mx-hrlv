@@ -217,6 +217,23 @@ export default css`
     color: var(--color-on-primary);
   }
 
+  /* Para un match activo (en vivo) poner una animación de borde parpadeando */
+  .activeMatch {
+    animation: blink-border 1s infinite;
+    border: 2px solid var(--color-on-primary);
+    border-radius: var(--radius-s);
+  }
+
+  @keyframes blink-border {
+    0%,
+    100% {
+      border-color: var(--color-on-primary);
+    }
+    50% {
+      border-color: transparent;
+    }
+  }
+
   .logo {
     height: 3em;
   }
@@ -324,5 +341,28 @@ export default css`
       color: var(--color-on-surface);
       border-left: 2px solid var(--color-outline);
     }
+  }
+
+  #scrollTopButton {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    z-index: 10;
+  }
+
+  #scrollTopButton:hover {
+    background-color: #45a049;
   }
 `;

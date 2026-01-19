@@ -109,10 +109,7 @@ function resolveResult(goalsFor: number, goalsAgainst: number): MatchResult {
   return goalsFor > goalsAgainst ? 'win' : 'loss';
 }
 
-function applyResult(
-  counters: ResultCounters,
-  result: MatchResult,
-): void {
+function applyResult(counters: ResultCounters, result: MatchResult): void {
   if (result === 'win') {
     counters.jg += 1;
     return;
