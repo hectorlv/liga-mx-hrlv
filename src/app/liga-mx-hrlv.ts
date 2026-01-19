@@ -142,6 +142,8 @@ export class LigaMxHrlv extends LitElement {
           <table-page
             .matchesList="${this.matchesList}"
             .table="${this.table}"
+            .teams="${this.teams}"
+            .players="${this.players}"
           ></table-page>
         `;
       case 'Estadísticas':

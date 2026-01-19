@@ -1,18 +1,46 @@
-import { LitElement, html } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, css, html } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
-import { TableEntry } from '../types/index.js';
+import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import './team-page.js';
 
 /**
  * Page for the table of positions
  */
 @customElement('table-page')
 export class TablePage extends LitElement {
-  static override readonly styles = [styles];
-  @property({ type: Array }) table: TableEntry[] = [];
+  static override readonly styles = [
+    styles,
+    css`
+      .team-name-cell {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    `,
+  ];
+  @property({ type: Array }) table!: TableEntry[];
+  @property({ type: Array }) teams!: string[];
+  @property({ type: Object }) players!: PlayerTeam;
+  @property({ type: Array }) matchesList!: Match[];
+
+  @state() private selectedTeam: string | null = null;
 
   override render() {
+    if (this.selectedTeam) {
+      return html`
+        <team-page
+          .team=${this.table.find(t => t.equipo === this.selectedTeam)!}
+          .players=${this.players.get(this.selectedTeam)!}
+          .matchesList=${this.matchesList.filter(
+            m =>
+              m.local === this.selectedTeam ||
+              m.visitante === this.selectedTeam,
+          )}
+          @back=${() => (this.selectedTeam = null)}
+        ></team-page>
+      `;
+    }
     return html`
       <main>
         <table class="greyGridTable">
@@ -36,7 +64,12 @@ export class TablePage extends LitElement {
                 <tr class="${this.getClass(i)}">
                   <td>${i + 1}</td>
                   <td>${getTeamImage(team.equipo)}</td>
-                  <td>${team.equipo}</td>
+                  <td
+                    class="team-name-cell"
+                    @click=${() => this.selectTeam(team.equipo)}
+                  >
+                    ${team.equipo}
+                  </td>
                   <td>${team.jj}</td>
                   <td>${team.jg}</td>
                   <td>${team.je}</td>
@@ -85,5 +118,10 @@ export class TablePage extends LitElement {
       return 'eliminated';
     }
     return '';
+  }
+
+  private selectTeam(teamName: string) {
+    console.log(`Selected team: ${teamName}`);
+    this.selectedTeam = teamName;
   }
 }
