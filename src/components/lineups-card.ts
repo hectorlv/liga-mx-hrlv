@@ -120,7 +120,9 @@ export class LineupsCard extends LitElement {
       return html``;
     }
     const { lineupLocal, lineupVisitor } = this.match;
-    const lineupsLabel = this.lineupsCollapsed ? 'Ver alineaciones' : 'Ocultar alineaciones';
+    const lineupsLabel = this.lineupsCollapsed
+      ? 'Ver alineaciones'
+      : 'Ocultar alineaciones';
     const lineupsIcon = this.lineupsCollapsed ? 'visibility' : 'visibility_off';
     return html`
       <div class="section card">

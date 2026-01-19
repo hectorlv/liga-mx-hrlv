@@ -255,7 +255,6 @@ export default css`
 
   h1 {
     font-size: 2em;
-    color: #333;
     margin-bottom: 20px;
   }
 
