@@ -89,6 +89,13 @@ export class LigaMxHrlv extends LitElement {
             </md-tabs>
           `}
       <main>${this._getTab()}</main>
+      <md-icon
+        id="scrollTopButton"
+        class="scrollTopButton material-icons-outlined"
+        title="Scroll to top"
+        @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >keyboard_control_key</md-icon
+      >
       <p class="app-footer">
         Made with love by HRLV - <span>v${APP_VERSION}</span>
       </p>

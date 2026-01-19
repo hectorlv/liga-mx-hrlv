@@ -231,6 +231,20 @@ export class MatchesPage extends LitElement {
           }
         }
       } else {
+        const today = new Date();
+        this.matchesList.some(match => {
+          if (
+            match.fecha instanceof Date &&
+            match.fecha.getFullYear() === today.getFullYear() &&
+            match.fecha.getMonth() === today.getMonth() &&
+            match.fecha.getDate() === today.getDate()
+          ) {
+            this.todayDateSelected = true;
+            if (this.todayDateCheckbox) this.todayDateCheckbox.selected = true;
+            return true;
+          }
+          return false;
+        });
         this._filtersChanged();
       }
     }
@@ -489,7 +503,10 @@ export class MatchesPage extends LitElement {
                     match => html`
                       <tr
                         id="match${match.idMatch}"
-                        class="${getMatchRowClass(match.fecha as Date)}"
+                        class="${getMatchRowClass(
+                          match.fecha as Date,
+                          match.phaseEvents,
+                        )}"
                       >
                         <td>
                           ${match.local.trim() == ''
@@ -561,7 +578,8 @@ export class MatchesPage extends LitElement {
       this.teamsSelect.value === ''
         ? ''
         : this.teams[Number(this.teamsSelect.value)];
-    const matchDay = this.matchDaySelect.value === '' ? '' : Number(this.matchDaySelect.value);
+    const matchDay =
+      this.matchDaySelect.value === '' ? '' : Number(this.matchDaySelect.value);
     this.matchesRender = this.matchesList.filter(match => {
       const findTeam =
         team === '' ? true : match.local === team || match.visitante === team;

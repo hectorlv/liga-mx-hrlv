@@ -1,6 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Match, Player, PlayerGame, PlayerTeam } from '../types';
+import styles from '../styles/liga-mx-hrlv-styles.js';
 
 interface PlayerStats {
   key: string;
@@ -24,17 +25,13 @@ interface TeamStats {
 @customElement('stats-page')
 export class StatsPage extends LitElement {
   static override readonly styles = [
+    styles,
     css`
       :host {
         display: block;
         box-sizing: border-box;
         padding: 16px;
         text-align: center;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 16px;
       }
       .card {
         background: var(--md-sys-color-surface, #fff);
@@ -49,61 +46,10 @@ export class StatsPage extends LitElement {
       h3 {
         margin: 0 0 8px 0;
       }
-      table {
-        width: 100%;
-        text-align: center;
-        border-collapse: collapse;
-        overflow-x: auto;
-      }
-      th,
-      td {
-        padding: 3px 4px;
-        text-align: center;
-        border: 1px solid #ffffff;
-      }
-      th {
-        font-weight: 600;
-        background: #ffffff;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-      }
-      tr:nth-child(even) {
-        background: var(--table-row-alt);
-      }
-      thead {
-        background: #ffffff;
-        position: sticky;
-        top: 0;
-        z-index: 2;
-      }
-      thead th {
-        font-size: 15px;
-        font-weight: bold;
-        color: #333333;
-        text-align: center;
-        border-left: 2px solid #333333;
-        position: sticky;
-        top: 0;
-      }
-      tfoot td {
-        font-size: 14px;
-      }
-      /* Row hover and chips */
-      tr:hover {
-        background: rgba(var(--color-primary-rgb), 0.06);
-      }
-      tr.selected-row {
-        background: rgba(var(--color-primary-rgb), 0.12);
-      }
+
       .meta {
         font-size: 0.9em;
         color: var(--md-sys-color-on-surface-variant, #555);
-      }
-      .subgrid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 12px;
       }
     `,
   ];
@@ -116,174 +62,170 @@ export class StatsPage extends LitElement {
     const { playerStats, teamStats, topScorers, topAssists, fairPlay } =
       this._buildStats();
     return html`
-      <div class="grid">
-        <div class="card">
-          <h3>Estadísticas por jugador</h3>
-          <div class="meta">Ordenado por goles</div>
-          ${playerStats.length === 0
-            ? html`<p>No hay datos de jugadores.</p>`
-            : html`
-                <div class="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Jugador</th>
-                        <th>Equipo</th>
-                        <th>G</th>
-                        <th>Asist</th>
-                        <th>A</th>
-                        <th>R</th>
-                        <th>Minutos jugados</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${playerStats.slice(0, 50).map(
-                        p =>
-                          html`<tr>
-                            <td>${p.name}</td>
-                            <td>${p.team}</td>
-                            <td>${p.goals}</td>
-                            <td>${p.assists}</td>
-                            <td>${p.yellows}</td>
-                            <td>${p.reds}</td>
-                            <td>${p.minutes}</td>
-                          </tr>`,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              `}
-        </div>
-
-        <div class="card">
-          <h3>Estadísticas por equipo</h3>
-          <div class="meta">Goles a favor/en contra y disciplina</div>
-          ${teamStats.length === 0
-            ? html`<p>No hay datos de equipos.</p>`
-            : html`
-                <div class="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Equipo</th>
-                        <th>GF</th>
-                        <th>GC</th>
-                        <th>Dif</th>
-                        <th>A</th>
-                        <th>R</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${teamStats.map(
-                        t =>
-                          html`<tr>
-                            <td>${t.team}</td>
-                            <td>${t.goalsFor}</td>
-                            <td>${t.goalsAgainst}</td>
-                            <td>${t.goalsFor - t.goalsAgainst}</td>
-                            <td>${t.yellows}</td>
-                            <td>${t.reds}</td>
-                          </tr>`,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              `}
-        </div>
+      <div class="card">
+        <h3>Estadísticas por jugador</h3>
+        <div class="meta">Ordenado por goles</div>
+        ${playerStats.length === 0
+          ? html`<p>No hay datos de jugadores.</p>`
+          : html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>Jugador</th>
+                    <th>Equipo</th>
+                    <th>G</th>
+                    <th>Asist</th>
+                    <th>A</th>
+                    <th>R</th>
+                    <th>Minutos jugados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${playerStats.slice(0, 50).map(
+                    (p, i) =>
+                      html`<tr>
+                        <td>${i + 1}</td>
+                        <td>${p.name}</td>
+                        <td>${p.team}</td>
+                        <td>${p.goals}</td>
+                        <td>${p.assists}</td>
+                        <td>${p.yellows}</td>
+                        <td>${p.reds}</td>
+                        <td>${p.minutes}</td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
+            `}
       </div>
 
-      <div class="grid" style="margin-top:12px;">
-        <div class="card">
-          <h3>Ranking goleadores</h3>
-          ${topScorers.length === 0
-            ? html`<p>Sin goles registrados.</p>`
-            : html`
-                <div class="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Jugador</th>
-                        <th>Equipo</th>
-                        <th>G</th>
-                        <th>Asist</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${topScorers.map(
-                        p =>
-                          html`<tr>
-                            <td>${p.name}</td>
-                            <td>${p.team}</td>
-                            <td>${p.goals}</td>
-                            <td>${p.assists}</td>
-                          </tr>`,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              `}
-        </div>
-        <div class="card">
-          <h3>Ranking asistencias</h3>
-          ${topAssists.length === 0
-            ? html`<p>Sin asistencias registradas.</p>`
-            : html`
-                <div class="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Jugador</th>
-                        <th>Equipo</th>
-                        <th>Asist</th>
-                        <th>G</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${topAssists.map(
-                        p =>
-                          html`<tr>
-                            <td>${p.name}</td>
-                            <td>${p.team}</td>
-                            <td>${p.assists}</td>
-                            <td>${p.goals}</td>
-                          </tr>`,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              `}
-        </div>
-        <div class="card">
-          <h3>Ranking fair play (menos puntos)</h3>
-          <div class="meta">Puntaje: Amarilla=1, Roja=2</div>
-          ${fairPlay.length === 0
-            ? html`<p>Sin tarjetas registradas.</p>`
-            : html`
-                <div class="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Equipo</th>
-                        <th>Puntos</th>
-                        <th>A</th>
-                        <th>R</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${fairPlay.map(
-                        t =>
-                          html`<tr>
-                            <td>${t.team}</td>
-                            <td>${t.yellows + t.reds * 2}</td>
-                            <td>${t.yellows}</td>
-                            <td>${t.reds}</td>
-                          </tr>`,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              `}
-        </div>
+      <div class="card">
+        <h3>Estadísticas por equipo</h3>
+        <div class="meta">Goles a favor/en contra y disciplina</div>
+        ${teamStats.length === 0
+          ? html`<p>No hay datos de equipos.</p>`
+          : html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>Equipo</th>
+                    <th>GF</th>
+                    <th>GC</th>
+                    <th>Dif</th>
+                    <th>A</th>
+                    <th>R</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${teamStats.map(
+                    (t, i) =>
+                      html`<tr>
+                        <td>${i + 1}</td>
+                        <td>${t.team}</td>
+                        <td>${t.goalsFor}</td>
+                        <td>${t.goalsAgainst}</td>
+                        <td>${t.goalsFor - t.goalsAgainst}</td>
+                        <td>${t.yellows}</td>
+                        <td>${t.reds}</td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
+            `}
+      </div>
+
+      <div class="card">
+        <h3>Ranking goleadores</h3>
+        ${topScorers.length === 0
+          ? html`<p>Sin goles registrados.</p>`
+          : html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>Jugador</th>
+                    <th>Equipo</th>
+                    <th>G</th>
+                    <th>Asist</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${topScorers.map(
+                    (p, i) =>
+                      html`<tr>
+                        <td>${i + 1}</td>
+                        <td>${p.name}</td>
+                        <td>${p.team}</td>
+                        <td>${p.goals}</td>
+                        <td>${p.assists}</td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
+            `}
+      </div>
+      <div class="card">
+        <h3>Ranking asistencias</h3>
+        ${topAssists.length === 0
+          ? html`<p>Sin asistencias registradas.</p>`
+          : html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>Jugador</th>
+                    <th>Equipo</th>
+                    <th>Asist</th>
+                    <th>G</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${topAssists.map(
+                    (p, i) =>
+                      html`<tr>
+                        <td>${i + 1}</td>
+                        <td>${p.name}</td>
+                        <td>${p.team}</td>
+                        <td>${p.assists}</td>
+                        <td>${p.goals}</td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
+            `}
+      </div>
+      <div class="card">
+        <h3>Ranking fair play (menos puntos)</h3>
+        <div class="meta">Puntaje: Amarilla=1, Roja=2</div>
+        ${fairPlay.length === 0
+          ? html`<p>Sin tarjetas registradas.</p>`
+          : html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>Equipo</th>
+                    <th>Puntos</th>
+                    <th>A</th>
+                    <th>R</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${fairPlay.map(
+                    (t, i) =>
+                      html`<tr>
+                        <td>${i + 1}</td>
+                        <td>${t.team}</td>
+                        <td>${t.yellows + t.reds * 2}</td>
+                        <td>${t.yellows}</td>
+                        <td>${t.reds}</td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
+            `}
       </div>
     `;
   }
@@ -344,17 +286,25 @@ export class StatsPage extends LitElement {
           : 0;
         let outMinute = 90;
         if (player.salioDeCambio) {
-          outMinute = match.substitutions?.find(
-            s => s.playerOut === player.number && s.team === teamTag,
-          )?.minute ?? 90;
+          outMinute =
+            match.substitutions?.find(
+              s => s.playerOut === player.number && s.team === teamTag,
+            )?.minute ?? 90;
         } else if (
           match.cards?.some(
-            c => c.player === player.number && c.team === teamTag && c.cardType === 'red',
+            c =>
+              c.player === player.number &&
+              c.team === teamTag &&
+              c.cardType === 'red',
           )
         ) {
-          outMinute = match.cards?.find(
-            c => c.player === player.number && c.team === teamTag && c.cardType === 'red',
-          )?.minute ?? 90;
+          outMinute =
+            match.cards?.find(
+              c =>
+                c.player === player.number &&
+                c.team === teamTag &&
+                c.cardType === 'red',
+            )?.minute ?? 90;
         }
         stat.minutes += outMinute - inMinute;
       });
@@ -427,7 +377,7 @@ export class StatsPage extends LitElement {
     const playerArray = Array.from(playerStats.values()).sort((a, b) => {
       if (b.goals !== a.goals) return b.goals - a.goals;
       if (b.assists !== a.assists) return b.assists - a.assists;
-      if (a.minutes !== b.minutes) return b.minutes - a.minutes;
+      if (a.minutes !== b.minutes) return a.minutes - b.minutes;
       return a.name.localeCompare(b.name);
     });
     const teamArray = Array.from(teamStats.values()).sort((a, b) => {

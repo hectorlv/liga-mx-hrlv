@@ -63,7 +63,8 @@ export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
     const formattedMatches = matches.map((match, index) => ({
       ...match,
       golLocal: typeof match.golLocal === 'number' ? match.golLocal : null,
-      golVisitante: typeof match.golVisitante === 'number' ? match.golVisitante : null,
+      golVisitante:
+        typeof match.golVisitante === 'number' ? match.golVisitante : null,
       idMatch: index,
       fecha: formatDate(match.fecha, match.hora),
       jornada: Number(match.jornada),

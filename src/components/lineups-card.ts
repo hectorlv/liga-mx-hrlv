@@ -113,13 +113,15 @@ export class LineupsCard extends LitElement {
 
   @state() private addPlayerSide: 'local' | 'visitor' | null = null;
   @state() private lineupsCollapsed = false;
-  @state() private lastMatchId: string | null = null;
+  @state() private lastMatchId: number | null = null;
 
   override render() {
     if (!this.match) {
       return html``;
     }
     const { lineupLocal, lineupVisitor } = this.match;
+    const lineupsLabel = this.lineupsCollapsed ? 'Ver alineaciones' : 'Ocultar alineaciones';
+    const lineupsIcon = this.lineupsCollapsed ? 'visibility' : 'visibility_off';
     return html`
       <div class="section card">
         <div class="section-header">
@@ -128,22 +130,12 @@ export class LineupsCard extends LitElement {
             ? html`
                 <md-filled-button
                   class="toggle-lineups"
-                  aria-label="${this.lineupsCollapsed
-                    ? 'Ver alineaciones'
-                    : 'Ocultar alineaciones'}"
-                  title="${this.lineupsCollapsed
-                    ? 'Ver alineaciones'
-                    : 'Ocultar alineaciones'}"
+                  aria-label="${lineupsLabel}"
+                  title="${lineupsLabel}"
                   @click=${this._toggleLineups}
                 >
-                  <md-icon
-                    >${this.lineupsCollapsed ? 'visibility' : 'visibility_off'}
-                  </md-icon>
-                  <span class="btn-label"
-                    >${this.lineupsCollapsed
-                      ? 'Ver alineaciones'
-                      : 'Ocultar alineaciones'}</span
-                  >
+                  <md-icon>${lineupsIcon}</md-icon>
+                  <span class="btn-label">${lineupsLabel}</span>
                 </md-filled-button>
               `
             : null}
@@ -223,7 +215,8 @@ export class LineupsCard extends LitElement {
                         tabindex="0"
                         aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
                         aria-pressed="${isTitular ? 'true' : 'false'}"
-                        @click=${() => this._toggleRow('visitor', player.number)}
+                        @click=${() =>
+                          this._toggleRow('visitor', player.number)}
                         @keydown=${(e: KeyboardEvent) =>
                           this._onRowKeydown(e, 'visitor', player.number)}
                       >

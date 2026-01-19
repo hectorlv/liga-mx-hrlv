@@ -266,18 +266,18 @@ export class EventsTimeline extends LitElement {
     return [...phaseItems, ...goalItems, ...cardItems, ...subItems].sort(
       (a, b) => {
         if (a.minute !== b.minute) return a.minute - b.minute;
-        const priority = (item : TimelineItem) => {
+        const priority = (item: TimelineItem) => {
           if (item.kind == 'phase') {
             const p = item.phase;
             if (p === 'start' || p === 'secondHalf') return 0;
             if (p === 'halftime' || p === 'fulltime') return 2;
           }
           return 1;
-      };
-      const pa = priority(a);
-      const pb = priority(b);
-      return pa - pb;
-      }
+        };
+        const pa = priority(a);
+        const pb = priority(b);
+        return pa - pb;
+      },
     );
   }
 
