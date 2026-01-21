@@ -3,7 +3,7 @@
   "description": "Web component liga-mx-hrlv following open-wc recommendations",
   "license": "MIT",
   "author": "liga-mx-hrlv",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "type": "module",
   "scripts": {
     "lint": "eslint \"src/**/*.{ts,js,html}\"",
