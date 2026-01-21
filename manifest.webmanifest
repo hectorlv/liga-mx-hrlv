@@ -1,0 +1,15 @@
+{
+  "name": "liga-mx-hrlv",
+  "short_name": "liga-mx-hrlv",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ededed",
+  "theme_color": "#ededed",
+  "icons": [
+    {
+      "src": "src/assets/images/favicon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
