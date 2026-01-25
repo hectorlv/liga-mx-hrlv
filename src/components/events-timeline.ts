@@ -1,7 +1,7 @@
 import '@material/web/icon/icon.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, Player, TimelineItem } from '../types';
+import { Match, Player, TeamSide, TimelineItem } from '../types';
 import { FOUL_TYPE_LABELS, GOAL_TYPE_LABELS } from '../constants';
 import '../components/player-info.js';
 
@@ -296,7 +296,7 @@ export class EventsTimeline extends LitElement {
     }
   }
 
-  private _playerName(team: 'local' | 'visitor', number: number) {
+  private _playerName(team: TeamSide, number: number) {
     const list = team === 'local' ? this.localPlayers : this.visitorPlayers;
     return list.find(p => p.number === number)?.name || `#${number}`;
   }

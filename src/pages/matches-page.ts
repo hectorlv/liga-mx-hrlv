@@ -56,6 +56,7 @@ export class MatchesPage extends LitElement {
         .filters-card {
           flex-direction: column;
           align-items: stretch;
+          width: auto;
         }
         .greyGridTable {
           display: none;

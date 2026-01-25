@@ -17,6 +17,19 @@ export class TablePage extends LitElement {
         cursor: pointer;
         text-decoration: underline;
       }
+
+      @media (max-width: 600px) {
+        .stats-table {
+          display: block;
+          width: 100vw;
+          max-width: 100vw;
+          margin-left: calc(-50vw + 50%);
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          box-sizing: border-box;
+          padding: 0 8px;
+        }
+      }
     `,
   ];
   @property({ type: Array }) table!: TableEntry[];
@@ -43,46 +56,48 @@ export class TablePage extends LitElement {
     }
     return html`
       <main>
-        <table class="greyGridTable">
-          <thead>
-            <tr>
-              <th>Pos</th>
-              <th colspan="2">Equipo</th>
-              <th>JJ</th>
-              <th>JG</th>
-              <th>JE</th>
-              <th>JP</th>
-              <th>GF</th>
-              <th>GC</th>
-              <th>DG</th>
-              <th>PTS</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.table.map(
-              (team, i) => html`
-                <tr class="${this.getClass(i)}">
-                  <td>${i + 1}</td>
-                  <td>${getTeamImage(team.equipo)}</td>
-                  <td
-                    class="team-name-cell"
-                    @click=${() => this.selectTeam(team.equipo)}
-                  >
-                    ${team.equipo}
-                  </td>
-                  <td>${team.jj}</td>
-                  <td>${team.jg}</td>
-                  <td>${team.je}</td>
-                  <td>${team.jp}</td>
-                  <td>${team.gf}</td>
-                  <td>${team.gc}</td>
-                  <td>${team.dg}</td>
-                  <td>${team.pts}</td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
+        <div class="stats-table">
+          <table class="greyGridTable">
+            <thead>
+              <tr>
+                <th>Pos</th>
+                <th colspan="2">Equipo</th>
+                <th>JJ</th>
+                <th>JG</th>
+                <th>JE</th>
+                <th>JP</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DG</th>
+                <th>PTS</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.table.map(
+                (team, i) => html`
+                  <tr class="${this.getClass(i)}">
+                    <td>${i + 1}</td>
+                    <td>${getTeamImage(team.equipo)}</td>
+                    <td
+                      class="team-name-cell"
+                      @click=${() => this.selectTeam(team.equipo)}
+                    >
+                      ${team.equipo}
+                    </td>
+                    <td>${team.jj}</td>
+                    <td>${team.jg}</td>
+                    <td>${team.je}</td>
+                    <td>${team.jp}</td>
+                    <td>${team.gf}</td>
+                    <td>${team.gc}</td>
+                    <td>${team.dg}</td>
+                    <td>${team.pts}</td>
+                  </tr>
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     `;
   }

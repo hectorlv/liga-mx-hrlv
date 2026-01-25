@@ -1,17 +1,25 @@
+import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
-import '@material/web/textfield/filled-text-field.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
+import '@material/web/textfield/filled-text-field.js';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
-import { Card, FoulType, FirebaseUpdates, Match, Player } from '../types';
 import { FOUL_TYPE_LABELS, FOUL_TYPES_BY_CARD } from '../constants';
+import {
+  Card,
+  CardType,
+  FirebaseUpdates,
+  FoulType,
+  Match,
+  Player,
+  TeamSide,
+  TeamSideOptional,
+} from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import { MdDialog } from '@material/web/dialog/dialog.js';
-
-type CardType = 'yellow' | 'red' | '';
+import { MdRadio } from '@material/web/radio/radio.js';
 
 @customElement('cards-card')
 export class CardsCard extends LitElement {
@@ -37,6 +45,8 @@ export class CardsCard extends LitElement {
         align-items: center;
         gap: 8px;
         width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       .card-details {
         display: flex;
@@ -44,6 +54,8 @@ export class CardsCard extends LitElement {
         gap: 8px;
         flex: 1 1 auto;
         min-width: 0;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       .card-actions {
         display: flex;
@@ -59,6 +71,9 @@ export class CardsCard extends LitElement {
       }
       .delete-btn {
         color: var(--md-sys-color-error, #b00020);
+      }
+      .edit-btn {
+        color: var(--md-sys-color-primary, #6200ee);
       }
       .badge {
         background: var(--md-sys-color-secondary-container, #e8def8);
@@ -95,38 +110,46 @@ export class CardsCard extends LitElement {
         align-items: center;
         margin-top: 8px;
       }
+      div[role='radiogroup'] {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
     `,
   ];
   @property({ type: Array }) localPlayers: Player[] = [];
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
 
-  @query('#cardTeam') cardTeamSelect!: MdOutlinedSelect;
   @query('#cardPlayer') cardPlayerSelect!: MdOutlinedSelect;
   @query('#cardMinute') cardMinuteInput!: MdFilledTextField;
-  @query('#cardType') cardTypeSelect!: MdOutlinedSelect;
   @query('#cardFoulType') cardFoulTypeSelect!: MdOutlinedSelect;
   @query('#editCardDialog') editCardDialog!: MdDialog;
-  @query('#editCardTeam') editCardTeamSelect!: MdOutlinedSelect;
   @query('#editCardPlayer') editCardPlayerSelect!: MdOutlinedSelect;
   @query('#editCardMinute') editCardMinuteInput!: MdFilledTextField;
   @query('#editCardType') editCardTypeSelect!: MdOutlinedSelect;
   @query('#editCardFoulType') editCardFoulTypeSelect!: MdOutlinedSelect;
+  @query('#editCardTeam') editCardTeamRadio!: MdRadio;
 
   @state() editingCardIndex: number | null = null;
   @state() editPlayers: Player[] = [];
   @state() disableSaveEditedCard = true;
   @state() disableAddCard = true;
+  @state() cardTeam: TeamSide = 'local';
+  @state() cardTypeState: CardType = 'yellow';
+  @state() editCardTeamState: TeamSideOptional = '';
+  @state() editCardTypeState: CardType = 'yellow';
 
   override render() {
     const cards = this.match?.cards || [];
-    const cardSide = this.cardTeamSelect?.value || 'local';
-    const cardTypeSelected = this.cardTypeSelect?.value as CardType;
+    const cardSide = this.cardTeam || 'local';
+    const cardTypeSelected = this.cardTypeState;
     const addFoulOptions = this._getFoulOptions(
       cardTypeSelected,
       this.cardFoulTypeSelect?.value as FoulType,
     );
-    const editCardTypeSelected = this.editCardTypeSelect?.value as CardType;
+    const editCardTypeSelected = this.editCardTypeState;
     const editFoulOptions = this._getFoulOptions(
       editCardTypeSelected,
       this.editCardFoulTypeSelect?.value as FoulType,
@@ -168,15 +191,14 @@ export class CardsCard extends LitElement {
                         title="Editar tarjeta"
                         @click=${() => this._openEditCard(card, index)}
                       >
-                        <md-icon>edit</md-icon>
+                        <md-icon class="edit-btn">edit</md-icon>
                       </md-icon-button>
                       <md-icon-button
-                        class="delete-btn"
                         aria-label="Eliminar tarjeta"
                         title="Eliminar tarjeta"
                         @click=${() => this._deleteCard(index)}
                       >
-                        <md-icon>delete</md-icon>
+                        <md-icon class="delete-btn">delete</md-icon>
                       </md-icon-button>
                     </div>
                   </div>
@@ -217,15 +239,14 @@ export class CardsCard extends LitElement {
                         title="Editar tarjeta"
                         @click=${() => this._openEditCard(card, index)}
                       >
-                        <md-icon>edit</md-icon>
+                        <md-icon class="edit-btn">edit</md-icon>
                       </md-icon-button>
                       <md-icon-button
-                        class="delete-btn"
                         aria-label="Eliminar tarjeta"
                         title="Eliminar tarjeta"
                         @click=${() => this._deleteCard(index)}
                       >
-                        <md-icon>delete</md-icon>
+                        <md-icon class="delete-btn">delete</md-icon>
                       </md-icon-button>
                     </div>
                   </div>
@@ -246,15 +267,32 @@ export class CardsCard extends LitElement {
             max="90"
             @change=${this._validateAddCard}
           ></md-filled-text-field>
-          <md-outlined-select
-            id="cardTeam"
-            aria-label="Equipo tarjeta"
-            title="Equipo tarjeta"
-            @change=${this._onCardTeamChange}
-          >
-            <md-select-option value="local">Local</md-select-option>
-            <md-select-option value="visitor">Visitante</md-select-option>
-          </md-outlined-select>
+          <div role="radiogroup" aria-label="Equipo tarjeta">
+            <label>
+              <md-radio
+                name="cardTeam"
+                value="local"
+                .checked=${this.cardTeam === 'local'}
+                @change=${(e: Event) => {
+                  this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                  this._onCardTeamChange();
+                }}
+              ></md-radio>
+              Local
+            </label>
+            <label>
+              <md-radio
+                name="cardTeam"
+                value="visitor"
+                .checked=${this.cardTeam === 'visitor'}
+                @change=${(e: Event) => {
+                  this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                  this._onCardTeamChange();
+                }}
+              ></md-radio>
+              Visitante
+            </label>
+          </div>
           <md-outlined-select
             id="cardPlayer"
             aria-label="Jugador tarjeta"
@@ -274,18 +312,32 @@ export class CardsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
-          <md-filled-select
-            id="cardType"
-            aria-label="Tipo de tarjeta"
-            title="Tipo de tarjeta"
-            @change=${this._onCardTypeChange}
-          >
-            <md-select-option value="" disabled selected
-              >Selecciona tipo de tarjeta</md-select-option
-            >
-            <md-select-option value="yellow">Amarilla</md-select-option>
-            <md-select-option value="red">Roja</md-select-option>
-          </md-filled-select>
+          <div role="radiogroup" aria-label="Tipo de tarjeta">
+            <label>
+              <md-radio
+                name="cardType"
+                value="yellow"
+                .checked=${this.cardTypeState === 'yellow'}
+                @change=${(e: Event) => {
+                  this.cardTypeState = (e.target as MdRadio).value as CardType;
+                  this._onCardTypeChange();
+                }}
+              ></md-radio>
+              Amarilla
+            </label>
+            <label>
+              <md-radio
+                name="cardType"
+                value="red"
+                .checked=${this.cardTypeState === 'red'}
+                @change=${(e: Event) => {
+                  this.cardTypeState = (e.target as MdRadio).value as CardType;
+                  this._onCardTypeChange();
+                }}
+              ></md-radio>
+              Roja
+            </label>
+          </div>
           <md-outlined-select
             id="cardFoulType"
             aria-label="Tipo de falta"
@@ -318,15 +370,34 @@ export class CardsCard extends LitElement {
         <div slot="headline">Editar tarjeta</div>
         <div slot="content">
           <div class="edit-card-form">
-            <md-outlined-select
-              id="editCardTeam"
-              aria-label="Equipo tarjeta"
-              title="Equipo tarjeta"
-              @change=${this._validateEditForm}
-            >
-              <md-select-option value="local">Local</md-select-option>
-              <md-select-option value="visitor">Visitante</md-select-option>
-            </md-outlined-select>
+            <div role="radiogroup" aria-label="Equipo tarjeta">
+              <label>
+                <md-radio
+                  name="editCardTeam"
+                  value="local"
+                  .checked=${this.editCardTeamState === 'local'}
+                  @change=${(e: Event) => {
+                    this.editCardTeamState = (e.target as MdRadio)
+                      .value as TeamSide;
+                    this._onCardTeamChange();
+                  }}
+                ></md-radio>
+                Local
+              </label>
+              <label>
+                <md-radio
+                  name="editCardTeam"
+                  value="visitor"
+                  .checked=${this.editCardTeamState === 'visitor'}
+                  @change=${(e: Event) => {
+                    this.editCardTeamState = (e.target as MdRadio)
+                      .value as TeamSide;
+                    this._onCardTeamChange();
+                  }}
+                ></md-radio>
+                Visitante
+              </label>
+            </div>
             <md-outlined-select
               id="editCardPlayer"
               aria-label="Jugador tarjeta"
@@ -354,15 +425,34 @@ export class CardsCard extends LitElement {
               max="90"
               @change=${this._validateEditForm}
             ></md-filled-text-field>
-            <md-filled-select
-              id="editCardType"
-              aria-label="Tipo de tarjeta"
-              title="Tipo de tarjeta"
-              @change=${this._onEditCardTypeChange}
-            >
-              <md-select-option value="yellow">Amarilla</md-select-option>
-              <md-select-option value="red">Roja</md-select-option>
-            </md-filled-select>
+            <div role="radiogroup" aria-label="Tipo de tarjeta">
+              <label>
+                <md-radio
+                  name="editCardType"
+                  value="yellow"
+                  .checked=${this.editCardTypeState === 'yellow'}
+                  @change=${(e: Event) => {
+                    this.editCardTypeState = (e.target as MdRadio)
+                      .value as CardType;
+                    this._onEditCardTypeChange();
+                  }}
+                ></md-radio>
+                Amarilla
+              </label>
+              <label>
+                <md-radio
+                  name="editCardType"
+                  value="red"
+                  .checked=${this.editCardTypeState === 'red'}
+                  @change=${(e: Event) => {
+                    this.editCardTypeState = (e.target as MdRadio)
+                      .value as CardType;
+                    this._onEditCardTypeChange();
+                  }}
+                ></md-radio>
+                Roja
+              </label>
+            </div>
             <md-outlined-select
               id="editCardFoulType"
               aria-label="Tipo de falta"
@@ -402,10 +492,10 @@ export class CardsCard extends LitElement {
   }
   private _addCard() {
     if (!this.match) return;
-    const team = this.cardTeamSelect.value as 'local' | 'visitor';
+    const team = this.cardTeam;
     const player = Number(this.cardPlayerSelect.value);
     const minute = Number(this.cardMinuteInput.value);
-    let cardType = this.cardTypeSelect.value as 'yellow' | 'red';
+    let cardType = this.cardTypeState;
     let foulType = this.cardFoulTypeSelect?.value as '' | FoulType;
     if (cardType === 'yellow' && this._hasPreviousYellow(team, player)) {
       cardType = 'red';
@@ -421,10 +511,10 @@ export class CardsCard extends LitElement {
     };
     const cards = [...(this.match.cards || []), newCard];
     this._updateCards(cards);
-    this.cardTeamSelect.value = 'local';
+    this.cardTeam = 'local';
     this.cardPlayerSelect.value = '';
     this.cardMinuteInput.value = '';
-    this.cardTypeSelect.value = '';
+    this.cardTypeState = 'yellow';
     if (this.cardFoulTypeSelect) this.cardFoulTypeSelect.value = '';
     this._validateAddCard();
   }
@@ -441,13 +531,12 @@ export class CardsCard extends LitElement {
     this.editingCardIndex = index;
     this.editPlayers = this._getPlayersForTeam(card.team, card.player);
     this.updateComplete.then(() => {
-      if (this.editCardTeamSelect) this.editCardTeamSelect.value = card.team;
+      if (this.editCardTeamRadio) this.editCardTeamState = card.team;
       if (this.editCardPlayerSelect)
         this.editCardPlayerSelect.value = String(card.player);
       if (this.editCardMinuteInput)
         this.editCardMinuteInput.value = String(card.minute);
-      if (this.editCardTypeSelect)
-        this.editCardTypeSelect.value = card.cardType;
+      if (this.editCardTypeSelect) this.editCardTypeState = card.cardType;
       if (this.editCardFoulTypeSelect)
         this.editCardFoulTypeSelect.value = card.foulType || '';
       this._validateEditForm();
@@ -463,7 +552,7 @@ export class CardsCard extends LitElement {
   }
 
   private _validateEditForm() {
-    const team = this.editCardTeamSelect?.value as 'local' | 'visitor' | '';
+    const team = this.editCardTeamState;
     if (team) {
       this.editPlayers = this._getPlayersForTeam(
         team,
@@ -478,7 +567,7 @@ export class CardsCard extends LitElement {
     }
     const player = this.editCardPlayerSelect?.value;
     const minute = this.editCardMinuteInput?.value;
-    const type = this.editCardTypeSelect?.value as CardType;
+    const type = this.editCardTypeState;
     const foulType = this.editCardFoulTypeSelect?.value;
     this.disableSaveEditedCard =
       !team ||
@@ -498,10 +587,10 @@ export class CardsCard extends LitElement {
       this.editingCardIndex < 0
     )
       return;
-    const team = this.editCardTeamSelect.value as 'local' | 'visitor';
+    const team = this.editCardTeamState as TeamSide;
     const player = Number(this.editCardPlayerSelect.value);
     const minute = Number(this.editCardMinuteInput.value);
-    let cardType = this.editCardTypeSelect.value as 'yellow' | 'red';
+    let cardType = this.editCardTypeState;
     let foulType = this.editCardFoulTypeSelect?.value as '' | FoulType;
     if (
       cardType === 'yellow' &&
@@ -535,10 +624,7 @@ export class CardsCard extends LitElement {
     this._updateCards(cards);
   }
 
-  private _getPlayersForTeam(
-    side: 'local' | 'visitor',
-    currentPlayer?: number,
-  ): Player[] {
+  private _getPlayersForTeam(side: TeamSide, currentPlayer?: number): Player[] {
     const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
     const players = [...list];
     if (currentPlayer) {
@@ -551,10 +637,10 @@ export class CardsCard extends LitElement {
   }
 
   private _validateAddCard() {
-    const team = this.cardTeamSelect?.value as 'local' | 'visitor' | '';
+    const team = this.cardTeam;
     const player = this.cardPlayerSelect?.value;
     const minute = this.cardMinuteInput?.value;
-    const type = this.cardTypeSelect?.value as 'yellow' | 'red' | '';
+    const type = this.cardTypeState;
     const foulType = this.cardFoulTypeSelect?.value;
     this.disableAddCard =
       !team ||
@@ -608,7 +694,7 @@ export class CardsCard extends LitElement {
   }
 
   private _hasPreviousYellow(
-    team: 'local' | 'visitor',
+    team: TeamSide,
     player: number,
     ignoreIndex?: number,
   ): boolean {
