@@ -552,10 +552,7 @@ export class SubstitutionsCard extends LitElement {
     this.editInPlayers = [];
   }
 
-  private _getPlayersForOut(
-    side: TeamSide,
-    currentPlayer?: number,
-  ): Player[] {
+  private _getPlayersForOut(side: TeamSide, currentPlayer?: number): Player[] {
     const players = [...this._getActivePlayers(side)];
     if (currentPlayer) {
       const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
@@ -567,10 +564,7 @@ export class SubstitutionsCard extends LitElement {
     return players;
   }
 
-  private _getPlayersForIn(
-    side: TeamSide,
-    currentPlayer?: number,
-  ): Player[] {
+  private _getPlayersForIn(side: TeamSide, currentPlayer?: number): Player[] {
     const players = [...this._getSubstitutePlayers(side)];
     if (currentPlayer) {
       const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
