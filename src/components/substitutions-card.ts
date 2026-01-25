@@ -12,6 +12,7 @@ import {
   Player,
   PlayerGame,
   Substitution,
+  TeamSide,
 } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import { MdDialog } from '@material/web/dialog/dialog.js';
@@ -40,6 +41,8 @@ export class SubstitutionsCard extends LitElement {
         align-items: center;
         gap: 8px;
         width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       .substitution-details {
         display: flex;
@@ -47,7 +50,15 @@ export class SubstitutionsCard extends LitElement {
         gap: 8px;
         flex: 1 1 auto;
         min-width: 0;
+        flex-wrap: wrap;
+        justify-content: center;
       }
+      .substitution-details div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
       .substitution-actions {
         display: flex;
         gap: 4px;
@@ -70,22 +81,17 @@ export class SubstitutionsCard extends LitElement {
         }
         .substitution-entry {
           flex-direction: column;
-          align-items: flex-start;
         }
 
-        .substitution-entry > *:nth-child(1),
-        .substitution-entry > *:nth-child(2),
-        .substitution-actions {
-          display: inline-block;
+        .substitution-details {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
         }
-
-        .substitution-entry > *:nth-child(3),
-        .substitution-entry > *:nth-child(4),
-        .substitution-entry > *:nth-child(5) {
-          display: inline-block;
-        }
-        .substitution-actions {
-          margin-top: 4px;
+        .substitution-details div {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
       }
       player-info {
@@ -108,6 +114,12 @@ export class SubstitutionsCard extends LitElement {
         align-items: center;
         margin-top: 8px;
       }
+      div[role='radiogroup'] {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
     `,
   ];
 
@@ -115,12 +127,10 @@ export class SubstitutionsCard extends LitElement {
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
 
-  @query('#subTeam') subTeamSelect!: MdOutlinedSelect;
   @query('#subOut') subOutSelect!: MdOutlinedSelect;
   @query('#subIn') subInSelect!: MdOutlinedSelect;
   @query('#subMinute') subMinuteInput!: MdFilledTextField;
   @query('#editSubDialog') editSubDialog!: MdDialog;
-  @query('#editSubTeam') editSubTeamSelect!: MdOutlinedSelect;
   @query('#editSubOut') editSubOutSelect!: MdOutlinedSelect;
   @query('#editSubIn') editSubInSelect!: MdOutlinedSelect;
   @query('#editSubMinute') editSubMinuteInput!: MdFilledTextField;
@@ -130,10 +140,12 @@ export class SubstitutionsCard extends LitElement {
   @state() editInPlayers: Player[] = [];
   @state() disableSaveEditedSub = true;
   @state() disableAddSub = true;
+  @state() subTeam: TeamSide = 'local';
+  @state() editSubTeam: TeamSide = 'local';
 
   override render() {
     const substitutions = this.match?.substitutions || [];
-    const side = this.subTeamSelect?.value || 'local';
+    const side = this.subTeam || 'local';
     const substitutionsWithIndex = substitutions.map((sub, index) => ({
       sub,
       index,
@@ -150,19 +162,23 @@ export class SubstitutionsCard extends LitElement {
                 ({ sub, index }) => html`
                   <div class="substitution-entry">
                     <div class="substitution-details">
-                      <player-info
-                        .player=${this.localPlayers.find(
-                          p => p.number === sub.playerOut,
-                        )}
-                      ></player-info>
-                      <md-icon class="out">arrow_outward</md-icon>
-                      <player-info
-                        .player=${this.localPlayers.find(
-                          p => p.number === sub.playerIn,
-                        )}
-                      ></player-info>
-                      <md-icon class="in">arrow_insert</md-icon
-                      ><span>Minuto ${sub.minute}</span>
+                      <div>
+                        <player-info
+                          .player=${this.localPlayers.find(
+                            p => p.number === sub.playerOut,
+                          )}
+                        ></player-info>
+                        <md-icon class="out">arrow_outward</md-icon>
+                      </div>
+                      <div>
+                        <player-info
+                          .player=${this.localPlayers.find(
+                            p => p.number === sub.playerIn,
+                          )}
+                        ></player-info>
+                        <md-icon class="in">arrow_insert</md-icon>
+                      </div>
+                      <span>Minuto ${sub.minute}</span>
                     </div>
                     <div class="substitution-actions">
                       <md-icon-button
@@ -192,19 +208,23 @@ export class SubstitutionsCard extends LitElement {
                 ({ sub, index }) =>
                   html`<div class="substitution-entry">
                     <div class="substitution-details">
-                      <player-info
-                        .player=${this.visitorPlayers.find(
-                          p => p.number === sub.playerOut,
-                        )}
-                      ></player-info>
-                      <md-icon class="out">arrow_outward</md-icon>
-                      <player-info
-                        .player=${this.visitorPlayers.find(
-                          p => p.number === sub.playerIn,
-                        )}
-                      ></player-info>
-                      <md-icon class="in">arrow_insert</md-icon
-                      ><span>Minuto ${sub.minute}</span>
+                      <div>
+                        <player-info
+                          .player=${this.visitorPlayers.find(
+                            p => p.number === sub.playerOut,
+                          )}
+                        ></player-info>
+                        <md-icon class="out">arrow_outward</md-icon>
+                      </div>
+                      <div>
+                        <player-info
+                          .player=${this.visitorPlayers.find(
+                            p => p.number === sub.playerIn,
+                          )}
+                        ></player-info>
+                        <md-icon class="in">arrow_insert</md-icon>
+                      </div>
+                      <span>Minuto ${sub.minute}</span>
                     </div>
                     <div class="substitution-actions">
                       <md-icon-button
@@ -238,15 +258,32 @@ export class SubstitutionsCard extends LitElement {
             max="90"
             @change=${this._validateAddSub}
           ></md-filled-text-field>
-          <md-outlined-select
-            @change=${this._onSubTeamChange}
-            id="subTeam"
-            aria-label="Equipo del cambio"
-            title="Equipo del cambio"
-          >
-            <md-select-option value="local">Local</md-select-option>
-            <md-select-option value="visitor">Visitante</md-select-option>
-          </md-outlined-select>
+          <div role="radiogroup" aria-label="Equipo del cambio">
+            <label>
+            <md-radio
+              name="subTeam"
+              value="local"
+              ?checked=${side === 'local'}
+              @change=${() => {
+                this.subTeam = 'local';
+                this._onSubTeamChange();
+              }}
+              ></md-radio>
+              Local
+            </label>
+            <label>
+            <md-radio
+              name="subTeam"
+              value="visitor"
+              ?checked=${side === 'visitor'}
+              @change=${() => {
+                this.subTeam = 'visitor';
+                this._onSubTeamChange();
+              }}
+              ></md-radio>
+              Visitante
+              <label>
+          </div>
           <md-outlined-select
             id="subOut"
             aria-label="Jugador que sale"
@@ -256,7 +293,7 @@ export class SubstitutionsCard extends LitElement {
             <md-select-option value="" disabled selected
               >Selecciona jugador</md-select-option
             >
-            ${this._getActivePlayers(side as 'local' | 'visitor').map(
+            ${this._getActivePlayers(side).map(
               p =>
                 html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
@@ -272,7 +309,7 @@ export class SubstitutionsCard extends LitElement {
             <md-select-option value="" disabled selected
               >Selecciona jugador</md-select-option
             >
-            ${this._getSubstitutePlayers(side as 'local' | 'visitor').map(
+            ${this._getSubstitutePlayers(side).map(
               p =>
                 html`<md-select-option value=${p.number}
                   >${p.name}</md-select-option
@@ -294,15 +331,28 @@ export class SubstitutionsCard extends LitElement {
         <div slot="headline">Editar cambio</div>
         <div slot="content">
           <div class="edit-substitution-form">
-            <md-outlined-select
-              id="editSubTeam"
-              aria-label="Equipo del cambio"
-              title="Equipo del cambio"
-              @change=${this._validateEditForm}
-            >
-              <md-select-option value="local">Local</md-select-option>
-              <md-select-option value="visitor">Visitante</md-select-option>
-            </md-outlined-select>
+            <div role="radiogroup" aria-label="Equipo del cambio">
+              <md-radio
+                name="editSubTeam"
+                value="local"
+                ?checked=${this.editSubTeam === 'local'}
+                @change=${() => {
+                  this.editSubTeam = 'local';
+                  this._validateEditForm();
+                }}
+                >Local</md-radio
+              >
+              <md-radio
+                name="editSubTeam"
+                value="visitor"
+                ?checked=${this.editSubTeam === 'visitor'}
+                @change=${() => {
+                  this.editSubTeam = 'visitor';
+                  this._validateEditForm();
+                }}
+                >Visitante</md-radio
+              >
+            </div>
             <md-outlined-select
               id="editSubOut"
               aria-label="Jugador que sale"
@@ -369,7 +419,7 @@ export class SubstitutionsCard extends LitElement {
 
   private _addSub() {
     if (!this.match) return;
-    const team = this.subTeamSelect.value as 'local' | 'visitor';
+    const team = this.subTeam;
     const playerOut = Number(this.subOutSelect.value);
     const playerIn = Number(this.subInSelect.value);
     const minute = Number(this.subMinuteInput.value);
@@ -385,7 +435,7 @@ export class SubstitutionsCard extends LitElement {
     ];
 
     this._updateSubstitutions(substitutions);
-    this.subTeamSelect.value = 'local';
+    this.subTeam = 'local';
     this.subOutSelect.value = '';
     this.subInSelect.value = '';
     this.subMinuteInput.value = '';
@@ -408,7 +458,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   // Obtener los jugadores activos considerando los cambios realizados
-  private _getActivePlayers(side: 'local' | 'visitor'): Player[] {
+  private _getActivePlayers(side: TeamSide): Player[] {
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
     const lineup =
@@ -426,7 +476,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   // Obtener los jugadores que pueden entrar como sustitutos
-  private _getSubstitutePlayers(side: 'local' | 'visitor'): Player[] {
+  private _getSubstitutePlayers(side: TeamSide): Player[] {
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
     const lineup =
@@ -441,7 +491,7 @@ export class SubstitutionsCard extends LitElement {
     );
   }
 
-  private _getInitialLineupForSide(side: 'local' | 'visitor'): PlayerGame[] {
+  private _getInitialLineupForSide(side: TeamSide): PlayerGame[] {
     const lineup =
       side === 'local'
         ? this.match?.lineupLocal || []
@@ -452,7 +502,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _computeLineupForSide(
-    side: 'local' | 'visitor',
+    side: TeamSide,
     substitutions: Substitution[],
   ): PlayerGame[] {
     const base = this._getInitialLineupForSide(side);
@@ -482,7 +532,7 @@ export class SubstitutionsCard extends LitElement {
     this.editOutPlayers = this._getPlayersForOut(sub.team, sub.playerOut);
     this.editInPlayers = this._getPlayersForIn(sub.team, sub.playerIn);
     this.updateComplete.then(() => {
-      if (this.editSubTeamSelect) this.editSubTeamSelect.value = sub.team;
+      this.editSubTeam = sub.team;
       if (this.editSubOutSelect)
         this.editSubOutSelect.value = String(sub.playerOut);
       if (this.editSubInSelect)
@@ -503,7 +553,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _getPlayersForOut(
-    side: 'local' | 'visitor',
+    side: TeamSide,
     currentPlayer?: number,
   ): Player[] {
     const players = [...this._getActivePlayers(side)];
@@ -518,7 +568,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _getPlayersForIn(
-    side: 'local' | 'visitor',
+    side: TeamSide,
     currentPlayer?: number,
   ): Player[] {
     const players = [...this._getSubstitutePlayers(side)];
@@ -533,10 +583,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _validateEditForm() {
-    const selectedTeam = this.editSubTeamSelect?.value as
-      | 'local'
-      | 'visitor'
-      | '';
+    const selectedTeam = this.editSubTeam;
     if (selectedTeam === 'local' || selectedTeam === 'visitor') {
       this.editOutPlayers = this._getPlayersForOut(
         selectedTeam,
@@ -576,7 +623,7 @@ export class SubstitutionsCard extends LitElement {
       this.editingSubIndex < 0
     )
       return;
-    const team = this.editSubTeamSelect.value as 'local' | 'visitor';
+    const team = this.editSubTeam;
     const playerOut = Number(this.editSubOutSelect.value);
     const playerIn = Number(this.editSubInSelect.value);
     const minute = Number(this.editSubMinuteInput.value);
@@ -599,7 +646,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _validateAddSub() {
-    const team = this.subTeamSelect?.value as 'local' | 'visitor' | '';
+    const team = this.subTeam;
     const playerOut = this.subOutSelect?.value;
     const playerIn = this.subInSelect?.value;
     const minute = this.subMinuteInput?.value;

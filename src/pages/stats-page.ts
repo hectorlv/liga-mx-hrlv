@@ -1,6 +1,6 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, Player, PlayerGame, PlayerTeam } from '../types';
+import { Match, Player, PlayerGame, PlayerTeam, TeamSide } from '../types';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 
 interface PlayerStats {
@@ -274,7 +274,7 @@ export class StatsPage extends LitElement {
       match: Match,
       lineup: PlayerGame[],
       teamName: string,
-      teamTag: 'local' | 'visitor',
+      teamTag: TeamSide,
       playerList: Player[],
     ) => {
       lineup.forEach(player => {

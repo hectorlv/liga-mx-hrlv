@@ -11,10 +11,16 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import { GOAL_TYPE_LABELS, GOAL_TYPES } from '../constants';
-import { FirebaseUpdates, Goal, GoalType, Match, Player } from '../types';
+import {
+  FirebaseUpdates,
+  Goal,
+  GoalType,
+  Match,
+  Player,
+  TeamSide,
+  TeamSideOptional,
+} from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-
-type TeamSide = '' | 'local' | 'visitor';
 
 @customElement('goals-card')
 export class GoalsCard extends LitElement {
@@ -40,13 +46,21 @@ export class GoalsCard extends LitElement {
         align-items: center;
         gap: 8px;
         width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       .goal-details {
         display: flex;
         align-items: center;
         gap: 8px;
         flex: 1 1 auto;
-        min-width: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .goal-details div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       .goal-actions {
         display: flex;
@@ -72,6 +86,24 @@ export class GoalsCard extends LitElement {
         .lineup {
           grid-template-columns: 1fr;
         }
+        .lineup > div {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .goal-entry {
+          flex-direction: column;
+        }
+        .goal-details {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .goal-details div {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
       }
       player-info {
         flex: 1 1 auto;
@@ -93,6 +125,12 @@ export class GoalsCard extends LitElement {
         align-items: center;
         margin-top: 8px;
       }
+      div[role='radiogroup'] {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
     `,
   ];
 
@@ -100,7 +138,7 @@ export class GoalsCard extends LitElement {
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
 
-  @state() goalTeam: TeamSide = '';
+  @state() goalTeam: TeamSideOptional = '';
   @state() disableAddGoalButton = true;
   @state() activePlayers: Player[] = [];
   @state() assistPlayers: Player[] = [];
@@ -108,6 +146,8 @@ export class GoalsCard extends LitElement {
   @state() editAssistPlayers: Player[] = [];
   @state() disableSaveEditedGoal = true;
   @state() editingGoalIndex: number | null = null;
+  @state() goalTeamState: TeamSideOptional = '';
+  @state() editGoalTeamState: TeamSideOptional = '';
 
   @query('#goalTeam') goalTeamSelect!: MdOutlinedSelect;
   @query('#newGoalPlayer') newGoalPlayerSelect!: MdOutlinedSelect;
@@ -141,35 +181,39 @@ export class GoalsCard extends LitElement {
                 ({ goal, index }) => html`
                   <div class="goal-entry">
                     <div class="goal-details">
-                      <player-info
-                        .player=${goal.ownGoal
-                          ? this.visitorPlayers.find(
-                              p => p.number === goal.player,
-                            )
-                          : this.localPlayers.find(
-                              p => p.number === goal.player,
-                            )}
-                      ></player-info>
-                      <span
-                        >${goal.ownGoal
-                          ? html`<em>(Gol en propia)</em>`
-                          : ''}</span
-                      >
-                      <md-icon>sports_soccer</md-icon
-                      ><span>Minuto ${goal.minute}</span>
-                      ${goal.goalType
-                        ? html`<span class="badge"
-                            >${GOAL_TYPE_LABELS[goal.goalType]}</span
-                          >`
-                        : null}
-                      ${goal.assist
-                        ? html`<span class="assist"
-                            >Asistencia:
-                            ${this.localPlayers.find(
-                              p => p.number === goal.assist,
-                            )?.name || goal.assist}</span
-                          >`
-                        : null}
+                      <div>
+                        <player-info
+                          .player=${goal.ownGoal
+                            ? this.visitorPlayers.find(
+                                p => p.number === goal.player,
+                              )
+                            : this.localPlayers.find(
+                                p => p.number === goal.player,
+                              )}
+                        ></player-info>
+                        <md-icon>sports_soccer</md-icon
+                        ><span>Minuto ${goal.minute}</span>
+                      </div>
+                      <div>
+                        ${goal.goalType
+                          ? html`<span class="badge"
+                              >${GOAL_TYPE_LABELS[goal.goalType]}</span
+                            >`
+                          : null}
+                        <span
+                          >${goal.ownGoal
+                            ? html`<em>(Gol en propia)</em>`
+                            : ''}</span
+                        >
+                        ${goal.assist
+                          ? html`<span class="assist"
+                              >Asistencia:
+                              ${this.localPlayers.find(
+                                p => p.number === goal.assist,
+                              )?.name || goal.assist}</span
+                            >`
+                          : null}
+                      </div>
                     </div>
                     <div class="goal-actions">
                       <md-icon-button
@@ -201,35 +245,39 @@ export class GoalsCard extends LitElement {
                 ({ goal, index }) => html`
                   <div class="goal-entry">
                     <div class="goal-details">
-                      <player-info
-                        .player=${goal.ownGoal
-                          ? this.localPlayers.find(
-                              p => p.number === goal.player,
-                            )
-                          : this.visitorPlayers.find(
-                              p => p.number === goal.player,
-                            )}
-                      ></player-info>
-                      <span
-                        >${goal.ownGoal
-                          ? html`<em>(Gol en propia)</em>`
-                          : ''}</span
-                      >
-                      <md-icon>sports_soccer</md-icon
-                      ><span>Minuto ${goal.minute}</span>
-                      ${goal.goalType
-                        ? html`<span class="badge"
-                            >${GOAL_TYPE_LABELS[goal.goalType]}</span
-                          >`
-                        : null}
-                      ${goal.assist
-                        ? html`<span class="assist"
-                            >Asistencia:
-                            ${this.visitorPlayers.find(
-                              p => p.number === goal.assist,
-                            )?.name || goal.assist}</span
-                          >`
-                        : null}
+                      <div>
+                        <player-info
+                          .player=${goal.ownGoal
+                            ? this.localPlayers.find(
+                                p => p.number === goal.player,
+                              )
+                            : this.visitorPlayers.find(
+                                p => p.number === goal.player,
+                              )}
+                        ></player-info>
+                        <md-icon>sports_soccer</md-icon
+                        ><span>Minuto ${goal.minute}</span>
+                      </div>
+                      <div>
+                        <span
+                          >${goal.ownGoal
+                            ? html`<em>(Gol en propia)</em>`
+                            : ''}</span
+                        >
+                        ${goal.goalType
+                          ? html`<span class="badge"
+                              >${GOAL_TYPE_LABELS[goal.goalType]}</span
+                            >`
+                          : null}
+                        ${goal.assist
+                          ? html`<span class="assist"
+                              >Asistencia:
+                              ${this.visitorPlayers.find(
+                                p => p.number === goal.assist,
+                              )?.name || goal.assist}</span
+                            >`
+                          : null}
+                      </div>
                     </div>
                     <div class="goal-actions">
                       <md-icon-button
@@ -265,19 +313,28 @@ export class GoalsCard extends LitElement {
             @change=${this._validateForm}
             required
           ></md-filled-text-field>
-          <md-outlined-select
-            id="goalTeam"
-            aria-label="Equipo del gol"
-            title="Equipo del gol"
-            @change=${this._validateForm}
-            required
-          >
-            <md-select-option value="" disabled selected
-              >Selecciona equipo</md-select-option
-            >
-            <md-select-option value="local">Local</md-select-option>
-            <md-select-option value="visitor">Visitante</md-select-option>
-          </md-outlined-select>
+          <div role="radiogroup" aria-label="Equipo del gol">
+            <label>
+              <md-radio
+                name="goalTeam"
+                id="goalTeamLocal"
+                value="local"
+                ?checked=${this.goalTeam === 'local'}
+                @change=${this._validateForm}
+              ></md-radio>
+              Local
+            </label>
+            <label>
+              <md-radio
+                name="goalTeam"
+                id="goalTeamVisitor"
+                value="visitor"
+                ?checked=${this.goalTeam === 'visitor'}
+                @change=${this._validateForm}
+              ></md-radio>
+              Visitante
+            </label>
+          </div>
           <label
             ><md-checkbox
               id="newGoalOwn"
@@ -354,16 +411,34 @@ export class GoalsCard extends LitElement {
         <div slot="headline">Editar gol</div>
         <div slot="content">
           <div class="edit-goal-form">
-            <md-outlined-select
-              id="editGoalTeam"
-              aria-label="Equipo del gol"
-              title="Equipo del gol"
-              @change=${this._validateEditForm}
-              required
-            >
-              <md-select-option value="local">Local</md-select-option>
-              <md-select-option value="visitor">Visitante</md-select-option>
-            </md-outlined-select>
+            <div role="radiogroup" aria-label="Equipo del gol">
+              <label>
+                <md-radio
+                  name="editGoalTeam"
+                  id="editGoalTeamLocal"
+                  value="local"
+                  .checked=${this.editGoalTeamState === 'local'}
+                  @change=${() => {
+                    this.editGoalTeamState = 'local';
+                    this._validateEditForm();
+                  }}
+                ></md-radio>
+                Local
+              </label>
+              <label>
+                <md-radio
+                  name="editGoalTeam"
+                  id="editGoalTeamVisitor"
+                  value="visitor"
+                  .checked=${this.editGoalTeamState === 'visitor'}
+                  @change=${() => {
+                    this.editGoalTeamState = 'visitor';
+                    this._validateEditForm();
+                  }}
+                ></md-radio>
+                Visitante
+              </label>
+            </div>
             <md-outlined-select
               id="editGoalPlayer"
               aria-label="Jugador que anotó"
@@ -452,7 +527,6 @@ export class GoalsCard extends LitElement {
   }
 
   private _getActivePlayers(side: TeamSide): Player[] {
-    if (side === '') return [];
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
     const lineup =
@@ -471,7 +545,7 @@ export class GoalsCard extends LitElement {
 
   private _addGoal() {
     if (!this.match) return;
-    const team = this.goalTeamSelect.value as 'local' | 'visitor';
+    const team = this.goalTeamState as TeamSide;
     const player = Number(this.newGoalPlayerSelect.value);
     const minute = Number(this.newGoalMinuteInput.value);
     const ownGoal = this.newGoalOwnCheckbox.checked;
@@ -482,7 +556,7 @@ export class GoalsCard extends LitElement {
     const newGoal: Goal = { team, player, minute, ownGoal, goalType, assist };
     const goals = [...(this.match.goals || []), newGoal];
     this._updateGoals(goals);
-    this.goalTeamSelect.value = '';
+    this.goalTeamState = '';
     this.newGoalPlayerSelect.value = '';
     this.newGoalMinuteInput.value = '';
     this.newGoalOwnCheckbox.checked = false;
@@ -506,7 +580,7 @@ export class GoalsCard extends LitElement {
   }
 
   private _validateForm() {
-    const selectedTeam = this.goalTeamSelect.value as '' | 'local' | 'visitor';
+    const selectedTeam = this.goalTeamState as TeamSide;
     const ownGoal = this.newGoalOwnCheckbox.checked;
     const teamForPlayers = this._resolvePlayerTeam(selectedTeam, ownGoal);
     const playerNumber = Number(this.newGoalPlayerSelect.value);
@@ -552,7 +626,6 @@ export class GoalsCard extends LitElement {
     selectedTeam: TeamSide,
     ownGoal: boolean,
   ): TeamSide {
-    if (!selectedTeam) return '';
     if (!ownGoal) return selectedTeam;
     return selectedTeam === 'local' ? 'visitor' : 'local';
   }
@@ -583,7 +656,7 @@ export class GoalsCard extends LitElement {
       ? []
       : this._getPlayersForTeam(goal.team, goal.assist);
     await this.updateComplete;
-    if (this.editGoalTeamSelect) this.editGoalTeamSelect.value = goal.team;
+    if (this.editGoalTeamSelect) this.editGoalTeamState = goal.team;
     if (this.editGoalPlayerSelect)
       this.editGoalPlayerSelect.value = String(goal.player);
     if (this.editGoalMinuteInput)
@@ -607,7 +680,7 @@ export class GoalsCard extends LitElement {
   }
 
   private _validateEditForm() {
-    const selectedTeam = this.editGoalTeamSelect?.value as TeamSide;
+    const selectedTeam = this.editGoalTeamState as TeamSide;
     const ownGoal = this.editGoalOwnCheckbox?.checked ?? false;
     const teamForPlayers = this._resolvePlayerTeam(selectedTeam, ownGoal);
     this.editActivePlayers = this._getPlayersForTeam(
@@ -656,7 +729,7 @@ export class GoalsCard extends LitElement {
       this.editingGoalIndex < 0
     )
       return;
-    const team = this.editGoalTeamSelect.value as 'local' | 'visitor';
+    const team = this.editGoalTeamState as TeamSide;
     const player = Number(this.editGoalPlayerSelect.value);
     const minute = Number(this.editGoalMinuteInput.value);
     const ownGoal = this.editGoalOwnCheckbox.checked;

@@ -2,7 +2,7 @@ import { MdCheckbox } from '@material/web/checkbox/checkbox';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
-import { FirebaseUpdates, Match, Player } from '../types';
+import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import '@material/web/button/filled-button.js';
 import '@material/web/icon/icon.js';
@@ -111,7 +111,7 @@ export class LineupsCard extends LitElement {
   @query('#newPlayerNumber') newPlayerNumberField!: MdFilledTextField;
   @query('#newPlayerImage') newPlayerImageField!: MdFilledTextField;
 
-  @state() private addPlayerSide: 'local' | 'visitor' | null = null;
+  @state() private addPlayerSide: TeamSide | null = null;
   @state() private lineupsCollapsed = false;
   @state() private lastMatchId: number | null = null;
 
@@ -322,7 +322,7 @@ export class LineupsCard extends LitElement {
   }
   private _onLineupChange(
     e: Event,
-    side: 'local' | 'visitor',
+    side: TeamSide,
     playerId: number,
   ) {
     if (!this.match) return;
@@ -355,7 +355,7 @@ export class LineupsCard extends LitElement {
   }
   private _onRowKeydown(
     e: KeyboardEvent,
-    side: 'local' | 'visitor',
+    side: TeamSide,
     playerNumber: number,
   ) {
     const key = e.key;
@@ -364,7 +364,7 @@ export class LineupsCard extends LitElement {
       this._toggleRow(side, playerNumber);
     }
   }
-  private _toggleRow(side: 'local' | 'visitor', playerNumber: number) {
+  private _toggleRow(side: TeamSide, playerNumber: number) {
     // Evita interferir si el click fue directamente en el checkbox
     const checkboxId =
       side === 'local'
@@ -385,7 +385,7 @@ export class LineupsCard extends LitElement {
     this.lineupsCollapsed = !this.lineupsCollapsed;
   }
 
-  private _openAddPlayerDialog(side: 'local' | 'visitor') {
+  private _openAddPlayerDialog(side: TeamSide) {
     this.addPlayerSide = side;
     this._resetAddPlayerForm();
     this.dialogAddPlayer?.show();
@@ -406,7 +406,7 @@ export class LineupsCard extends LitElement {
     this.addPlayerSide = null;
   }
 
-  private _getTeamKey(side: 'local' | 'visitor'): string {
+  private _getTeamKey(side: TeamSide): string {
     const teamName =
       side === 'local' ? this.match?.local || '' : this.match?.visitante || '';
     return teamName.replaceAll('.', '');

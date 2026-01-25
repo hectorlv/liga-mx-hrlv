@@ -45,10 +45,14 @@ export interface Player {
 
 export type PlayerTeam = Map<string, Player[]>;
 
+export type CardType = 'yellow' | 'red';
+export type TeamSide = 'local' | 'visitor';
+export type TeamSideOptional = TeamSide | '';
+
 export interface Goal {
   minute: number;
   player: number;
-  team: 'local' | 'visitor';
+  team: TeamSide;
   ownGoal?: boolean;
   goalType?: GoalType;
   assist?: number | null;
@@ -58,14 +62,14 @@ export interface Substitution {
   minute: number;
   playerIn: number;
   playerOut: number;
-  team: 'local' | 'visitor';
+  team: TeamSide;
 }
 
 export interface Card {
   minute: number;
   player: number;
-  cardType: 'yellow' | 'red';
-  team: 'local' | 'visitor';
+  cardType: CardType;
+  team: TeamSide;
   foulType?: FoulType;
 }
 
@@ -100,12 +104,12 @@ export type FoulType =
   | 'dobleAmarilla';
 
 export type TimelineItem =
-  | { kind: 'goal'; minute: number; team: 'local' | 'visitor'; goal: Goal }
-  | { kind: 'card'; minute: number; team: 'local' | 'visitor'; card: Card }
+  | { kind: 'goal'; minute: number; team: TeamSide; goal: Goal }
+  | { kind: 'card'; minute: number; team: TeamSide; card: Card }
   | {
       kind: 'sub';
       minute: number;
-      team: 'local' | 'visitor';
+      team: TeamSide;
       sub: Substitution;
     }
   | {

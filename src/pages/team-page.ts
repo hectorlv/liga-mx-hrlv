@@ -1,7 +1,7 @@
-import { LitElement, html } from 'lit';
+import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
-import { Match, Player, PlayerGame, TableEntry } from '../types/index.js';
+import { Match, Player, PlayerGame, TableEntry, TeamSide } from '../types/index.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 
 interface PlayerStats {
@@ -18,7 +18,23 @@ interface PlayerStats {
 
 @customElement('team-page')
 export class TeamPage extends LitElement {
-  static override readonly styles = [styles];
+  static override readonly styles = [
+    styles,
+    css`
+      @media (max-width: 600px) {
+        .players-table {
+          display: block;
+          width: 100vw;
+          max-width: 100vw;
+          margin-left: calc(-50vw + 50%);
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          box-sizing: border-box;
+          padding: 0 8px;
+        }
+      }
+    `,
+  ];
 
   @property({ type: Object }) team!: TableEntry;
   @property({ type: Array }) players!: Player[];
@@ -40,38 +56,40 @@ export class TeamPage extends LitElement {
           <md-icon>arrow_back</md-icon>
         </md-icon-button>
         <h2>Jugadores</h2>
-        <table class="greyGridTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-              <th>Posición</th>
-              <th>Partidos Jugados</th>
-              <th>Minutos Jugados</th>
-              <th>Goles</th>
-              <th>Asistencias</th>
-              <th>Tarjetas Amarillas</th>
-              <th>Tarjetas Rojas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.playersList.map(
-              player => html`
-                <tr>
-                  <td>${player.number}</td>
-                  <td>${player.name}</td>
-                  <td>${player.position}</td>
-                  <td>${player.gamesPlayed}</td>
-                  <td>${player.minutesPlayed}</td>
-                  <td>${player.goals}</td>
-                  <td>${player.assists}</td>
-                  <td>${player.yellowCards}</td>
-                  <td>${player.redCards}</td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
+        <div class="players-table">
+          <table class="greyGridTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Posición</th>
+                <th>Partidos Jugados</th>
+                <th>Minutos Jugados</th>
+                <th>Goles</th>
+                <th>Asistencias</th>
+                <th>Tarjetas Amarillas</th>
+                <th>Tarjetas Rojas</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.playersList.map(
+                player => html`
+                  <tr>
+                    <td>${player.number}</td>
+                    <td>${player.name}</td>
+                    <td>${player.position}</td>
+                    <td>${player.gamesPlayed}</td>
+                    <td>${player.minutesPlayed}</td>
+                    <td>${player.goals}</td>
+                    <td>${player.assists}</td>
+                    <td>${player.yellowCards}</td>
+                    <td>${player.redCards}</td>
+                  </tr>
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
     `;
   }
@@ -135,7 +153,7 @@ export class TeamPage extends LitElement {
   private computeInMinute(
     playerGame: PlayerGame,
     match: Match,
-    teamTag: 'local' | 'visitor',
+    teamTag: TeamSide,
   ): number {
     if (!playerGame.entroDeCambio) return 0;
     return (
@@ -148,7 +166,7 @@ export class TeamPage extends LitElement {
   private computeOutMinute(
     playerGame: PlayerGame,
     match: Match,
-    teamTag: 'local' | 'visitor',
+    teamTag: TeamSide,
   ): number {
     if (playerGame.salioDeCambio) {
       return (
