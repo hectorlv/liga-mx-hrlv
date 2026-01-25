@@ -20,6 +20,10 @@ interface TeamStats {
   goalsAgainst: number;
   yellows: number;
   reds: number;
+  u23PlayersCount: number;
+  u23totalMinutes: number;
+  u23countedMinutes: number;
+  u23minutesToFulfill: number;
 }
 
 @customElement('stats-page')
@@ -61,6 +65,7 @@ export class StatsPage extends LitElement {
   override render() {
     const { playerStats, teamStats, topScorers, topAssists, fairPlay } =
       this._buildStats();
+    const teamStatsByU23 = [...teamStats].sort((a, b) => b.u23countedMinutes - a.u23countedMinutes);
     return html`
       <div class="card">
         <h3>Estadísticas por jugador</h3>
@@ -227,12 +232,45 @@ export class StatsPage extends LitElement {
               </table>
             `}
       </div>
+      <div class="card">
+        <h3>Minutos de menores</h3>
+        ${teamStats && teamStats.length > 0
+          ? html`
+              <table class="greyGridTable">
+                <thead>
+                  <tr>
+                    <th>Pos</th>
+                    <th>Equipo</th>
+                    <th>Menores alineados</th>
+                    <th>Minutos acumulados</th>
+                    <th>Minutos al reglamento</th>
+                    <th>Minutos por cumplir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${teamStatsByU23.map(
+                    (t, i) =>
+                      html`<tr>
+                        <td>${i + 1}</td>
+                        <td>${t.team}</td>
+                        <td>${t.u23PlayersCount}</td>
+                        <td>${t.u23totalMinutes}</td>
+                        <td>${t.u23countedMinutes}</td>
+                        <td>${t.u23minutesToFulfill}</td>
+                      </tr>`,
+                  )}
+                </tbody>
+              </table>
+            `
+          : html`<p>No hay datos de minutos de menores.</p>`}
+      </div>
     `;
   }
 
   private _buildStats() {
     const playerStats = new Map<string, PlayerStats>();
     const teamStats = new Map<string, TeamStats>();
+    const u23PlayersTeam = new Map<string, Set<number>>();
 
     const ensureTeam = (teamName: string) => {
       if (!teamStats.has(teamName)) {
@@ -242,10 +280,21 @@ export class StatsPage extends LitElement {
           goalsAgainst: 0,
           yellows: 0,
           reds: 0,
+          u23PlayersCount: 0,
+          u23totalMinutes: 0,
+          u23countedMinutes: 0,
+          u23minutesToFulfill: 0,
         });
       }
       return teamStats.get(teamName)!;
     };
+
+    const u23PlayersSet = (teamName: string) => {
+      if (!u23PlayersTeam.has(teamName)) {
+        u23PlayersTeam.set(teamName, new Set<number>());
+      }
+      return u23PlayersTeam.get(teamName)!;
+    }
 
     const ensurePlayer = (
       teamName: string,
@@ -310,6 +359,62 @@ export class StatsPage extends LitElement {
       });
     };
 
+    const calculateU23Minutes = (match: Match,
+      lineup: PlayerGame[],
+      teamName: string,
+      teamTag: TeamSide,
+      playerList: Player[]) => {
+      const u23Players = Array.from(playerList.values()).filter(player => {
+        const birthYear = Number(typeof player.birthDate === 'string' ? player.birthDate.split("/")[2] : player.birthDate.getFullYear());
+        const minYear = 2003; // Año límite para ser considerado U23 en 2026
+        // Solo considerar jugadores con nacionalidad mexicana
+        if (player.nationality !== 'Mexicano') return false;
+        return birthYear >= minYear;
+      });
+      const teamStat = ensureTeam(teamName);
+      let minutesByU23 = 0;
+      lineup.forEach(playerGame => {
+        if (u23Players.some(p => p.number === playerGame.number)) {
+          u23PlayersSet(teamName).add(playerGame.number);
+          const inMinute = playerGame.entroDeCambio
+            ? (match.substitutions?.find(
+                s => s.playerIn === playerGame.number && s.team === teamTag,
+              )?.minute ?? 0)
+            : 0;
+          let outMinute = 90;
+          if (playerGame.salioDeCambio) {
+            outMinute =
+              match.substitutions?.find(
+                s => s.playerOut === playerGame.number && s.team === teamTag,
+              )?.minute ?? 90;
+          } else if (
+            match.cards?.some(
+              c =>
+                c.player === playerGame.number &&
+                c.team === teamTag &&
+                c.cardType === 'red',
+            )
+          ) {
+            outMinute =
+              match.cards?.find(
+                c =>
+                  c.player === playerGame.number &&
+                  c.team === teamTag &&
+                  c.cardType === 'red',
+              )?.minute ?? 90;
+          }
+          const minutesPlayed = outMinute - inMinute;
+          teamStat.u23totalMinutes += minutesPlayed;
+          minutesByU23 += minutesPlayed;
+        }
+      });
+      // Máximo 225 minutos contables por partido
+      teamStat.u23countedMinutes += Math.min(minutesByU23, 225);
+      teamStat.u23PlayersCount = u23PlayersSet(teamName).size;
+      const requiredMinutes = 1170;
+      teamStat.u23minutesToFulfill = Math.max(0, requiredMinutes - teamStat.u23countedMinutes);
+    };
+
     this.matchesList.forEach(match => {
       const localKey = this._teamKey(match.local);
       const visitorKey = this._teamKey(match.visitante);
@@ -365,6 +470,23 @@ export class StatsPage extends LitElement {
           localPlayers,
         );
         addLineupMinutes(
+          match,
+          match.lineupVisitor || [],
+          match.visitante,
+          'visitor',
+          visitorPlayers,
+        );
+      }
+      // U23 Minutes
+      if (match.phaseEvents?.some(e => e.phase === 'fulltime')) {
+        calculateU23Minutes(
+          match,
+          match.lineupLocal || [],
+          match.local,
+          'local',
+          localPlayers,
+        );
+        calculateU23Minutes(
           match,
           match.lineupVisitor || [],
           match.visitante,

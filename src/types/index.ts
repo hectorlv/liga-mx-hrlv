@@ -37,8 +37,11 @@ export interface TableEntry {
 }
 
 export interface Player {
+  birthDate: string | Date;
+  fullName: string;
   imgSrc: string;
   name: string;
+  nationality: string;
   number: number;
   position: string;
 }

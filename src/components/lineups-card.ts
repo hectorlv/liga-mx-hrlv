@@ -110,6 +110,9 @@ export class LineupsCard extends LitElement {
   @query('#newPlayerPosition') newPlayerPositionField!: MdFilledSelect;
   @query('#newPlayerNumber') newPlayerNumberField!: MdFilledTextField;
   @query('#newPlayerImage') newPlayerImageField!: MdFilledTextField;
+  @query('#newPlayerBirthDate') newPlayerBirthDateField!: MdFilledTextField;
+  @query('#newPlayerFullName') newPlayerFullNameField!: MdFilledTextField;
+  @query('#newPlayerNationality') newPlayerNationalityField!: MdFilledTextField;
 
   @state() private addPlayerSide: TeamSide | null = null;
   @state() private lineupsCollapsed = false;
@@ -269,6 +272,11 @@ export class LineupsCard extends LitElement {
             aria-label="Nombre del jugador"
             required
           ></md-filled-text-field>
+          <md-filled-text-field
+            id="newPlayerFullName"
+            label="Nombre Completo"
+            aria-label="Nombre completo del jugador"
+          ></md-filled-text-field>
           <md-filled-select
             id="newPlayerPosition"
             label="Posición"
@@ -286,6 +294,17 @@ export class LineupsCard extends LitElement {
             type="number"
             inputmode="numeric"
             required
+          ></md-filled-text-field>
+          <md-filled-text-field
+            id="newPlayerNationality"
+            label="Nacionalidad"
+            aria-label="Nacionalidad del jugador"
+          ></md-filled-text-field>
+          <md-filled-text-field
+            id="newPlayerBirthDate"
+            label="Fecha de Nacimiento"
+            aria-label="Fecha de nacimiento del jugador"
+            type="date"
           ></md-filled-text-field>
           <md-filled-text-field
             id="newPlayerImage"
@@ -320,11 +339,7 @@ export class LineupsCard extends LitElement {
       this.lineupsCollapsed = this._lineupsReady();
     }
   }
-  private _onLineupChange(
-    e: Event,
-    side: TeamSide,
-    playerId: number,
-  ) {
+  private _onLineupChange(e: Event, side: TeamSide, playerId: number) {
     if (!this.match) return;
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
     const lineup = [...(this.match[key] || [])];
@@ -418,6 +433,9 @@ export class LineupsCard extends LitElement {
     const position = this.newPlayerPositionField?.value?.trim();
     const number = Number(this.newPlayerNumberField?.value);
     const imgSrc = this.newPlayerImageField?.value?.trim() || '';
+    const birthDate = this.newPlayerBirthDateField?.value || '';
+    const fullName = this.newPlayerFullNameField?.value?.trim() || '';
+    const nationality = this.newPlayerNationalityField?.value?.trim() || '';
 
     if (!name || !position || Number.isNaN(number)) {
       this.newPlayerNumberField?.setCustomValidity(
@@ -436,7 +454,15 @@ export class LineupsCard extends LitElement {
       return;
     }
     this.newPlayerNumberField?.setCustomValidity('');
-    const newPlayer: Player = { name, position, number, imgSrc };
+    const newPlayer: Player = {
+      name,
+      position,
+      number,
+      imgSrc,
+      birthDate,
+      fullName,
+      nationality,
+    };
     const updatedList = [...currentPlayers, newPlayer];
     if (this.addPlayerSide === 'local') {
       this.localPlayers = updatedList;

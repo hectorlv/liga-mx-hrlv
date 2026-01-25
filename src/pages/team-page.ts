@@ -1,7 +1,13 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
-import { Match, Player, PlayerGame, TableEntry, TeamSide } from '../types/index.js';
+import {
+  Match,
+  Player,
+  PlayerGame,
+  TableEntry,
+  TeamSide,
+} from '../types/index.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 
 interface PlayerStats {
@@ -14,6 +20,10 @@ interface PlayerStats {
   assists: number;
   yellowCards: number;
   redCards: number;
+  fullName: string;
+  nationality: string;
+  age: string;
+  ownGoals: number;
 }
 
 @customElement('team-page')
@@ -63,10 +73,13 @@ export class TeamPage extends LitElement {
                 <th>#</th>
                 <th>Nombre</th>
                 <th>Posición</th>
+                <th>Nacionalidad</th>
+                <th>Edad</th>
                 <th>Partidos Jugados</th>
                 <th>Minutos Jugados</th>
                 <th>Goles</th>
                 <th>Asistencias</th>
+                <th>Autogoles</th>
                 <th>Tarjetas Amarillas</th>
                 <th>Tarjetas Rojas</th>
               </tr>
@@ -76,12 +89,15 @@ export class TeamPage extends LitElement {
                 player => html`
                   <tr>
                     <td>${player.number}</td>
-                    <td>${player.name}</td>
+                    <td>${player.fullName}</td>
                     <td>${player.position}</td>
+                    <td>${player.nationality}</td>
+                    <td>${player.age}</td>
                     <td>${player.gamesPlayed}</td>
                     <td>${player.minutesPlayed}</td>
                     <td>${player.goals}</td>
                     <td>${player.assists}</td>
+                    <td>${player.ownGoals}</td>
                     <td>${player.yellowCards}</td>
                     <td>${player.redCards}</td>
                   </tr>
@@ -125,9 +141,40 @@ export class TeamPage extends LitElement {
         assists: 0,
         yellowCards: 0,
         redCards: 0,
+        fullName: player.fullName,
+        nationality: player.nationality,
+        age: this.getAgeFromBirthDate(player.birthDate),
+        ownGoals: 0,
       });
     }
     return statsMap;
+  }
+
+  private getAgeFromBirthDate(birthDate: string | Date): string {
+    const birthParts =
+      typeof birthDate === 'string' ? birthDate.split('/') : [];
+    let birth: Date;
+    if (birthParts.length === 3) {
+      const day = Number.parseInt(birthParts[0], 10);
+      const month = Number.parseInt(birthParts[1], 10) - 1; // Months are zero-based
+      const year = Number.parseInt(birthParts[2], 10);
+      birth = new Date(year, month, day);
+    } else if (birthDate instanceof Date) {
+      birth = birthDate;
+    } else {
+      return 'Desconocida';
+    }
+    const today = new Date();
+    const years = today.getFullYear() - birth.getFullYear();
+    const months = today.getMonth() - birth.getMonth();
+    const days = today.getDate() - birth.getDate();
+
+    let ageString = `${years} años`;
+    if (months < 0 || (months === 0 && days < 0)) {
+      ageString = `${years - 1} años`;
+    }
+    ageString += ` ${(months + 12) % 12} meses ${days < 0 ? days + 30 : days} días`;
+    return ageString;
   }
 
   private processLineup(
@@ -196,7 +243,8 @@ export class TeamPage extends LitElement {
       const playerStats = statsMap.get(goal.player);
       if (!playerStats) continue;
 
-      if (!goal.ownGoal) playerStats.goals += 1;
+      if (goal.ownGoal) playerStats.ownGoals += 1;
+      else playerStats.goals += 1;
       if (goal.assist) {
         const assistStats = statsMap.get(goal.assist);
         if (assistStats) assistStats.assists += 1;
