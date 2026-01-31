@@ -319,7 +319,7 @@ export class GoalsCard extends LitElement {
                 name="goalTeam"
                 id="goalTeamLocal"
                 value="local"
-                ?checked=${this.goalTeam === 'local'}
+                ?checked=${this.goalTeamState === 'local'}
                 @change=${this._validateForm}
               ></md-radio>
               Local
@@ -329,7 +329,7 @@ export class GoalsCard extends LitElement {
                 name="goalTeam"
                 id="goalTeamVisitor"
                 value="visitor"
-                ?checked=${this.goalTeam === 'visitor'}
+                ?checked=${this.goalTeamState === 'visitor'}
                 @change=${this._validateForm}
               ></md-radio>
               Visitante
@@ -594,7 +594,7 @@ export class GoalsCard extends LitElement {
     if (ownGoal && this.newGoalAssistSelect) {
       this.newGoalAssistSelect.value = '';
     }
-    this.goalTeam = teamForPlayers;
+    this.goalTeamState = teamForPlayers;
     this.activePlayers = players;
     this.assistPlayers =
       selectedTeam && !ownGoal
