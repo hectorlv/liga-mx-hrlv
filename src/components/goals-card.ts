@@ -320,7 +320,10 @@ export class GoalsCard extends LitElement {
                 id="goalTeamLocal"
                 value="local"
                 ?checked=${this.goalTeamState === 'local'}
-                @change=${this._validateForm}
+                @change=${() => {
+                    this.goalTeamState = 'local';
+										this._validateForm();
+                }}
               ></md-radio>
               Local
             </label>
@@ -330,7 +333,10 @@ export class GoalsCard extends LitElement {
                 id="goalTeamVisitor"
                 value="visitor"
                 ?checked=${this.goalTeamState === 'visitor'}
-                @change=${this._validateForm}
+                @change=${() => {
+                    this.goalTeamState = 'visitor';
+										this._validateForm();
+                }}
               ></md-radio>
               Visitante
             </label>
