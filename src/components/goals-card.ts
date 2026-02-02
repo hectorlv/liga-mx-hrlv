@@ -588,9 +588,14 @@ export class GoalsCard extends LitElement {
   private _validateForm() {
     const selectedTeam = this.goalTeamState as TeamSide;
     const ownGoal = this.newGoalOwnCheckbox.checked;
-    const teamForPlayers = this._resolvePlayerTeam(selectedTeam, ownGoal);
+    const teamForPlayers =
+      selectedTeam && ownGoal
+        ? this._resolvePlayerTeam(selectedTeam, ownGoal)
+        : selectedTeam;
     const playerNumber = Number(this.newGoalPlayerSelect.value);
-    const players = this._getPlayersForTeam(teamForPlayers, playerNumber);
+    const players = teamForPlayers
+      ? this._getPlayersForTeam(teamForPlayers, playerNumber)
+      : [];
     const playerExists = players.some(
       p => String(p.number) === this.newGoalPlayerSelect.value,
     );
@@ -600,7 +605,6 @@ export class GoalsCard extends LitElement {
     if (ownGoal && this.newGoalAssistSelect) {
       this.newGoalAssistSelect.value = '';
     }
-    this.goalTeamState = teamForPlayers;
     this.activePlayers = players;
     this.assistPlayers =
       selectedTeam && !ownGoal

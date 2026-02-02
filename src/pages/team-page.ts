@@ -2,6 +2,7 @@ import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
+  Goal,
   Match,
   Player,
   PlayerGame,
@@ -239,17 +240,36 @@ export class TeamPage extends LitElement {
   ) {
     const teamTag = isLocal ? 'local' : 'visitor';
     for (const goal of match.goals || []) {
-      if (goal.team !== teamTag) continue;
-      const playerStats = statsMap.get(goal.player);
-      if (!playerStats) continue;
+      const playerTeam = this.getGoalPlayerTeam(goal);
+      if (playerTeam !== teamTag) continue;
 
-      if (goal.ownGoal) playerStats.ownGoals += 1;
-      else playerStats.goals += 1;
-      if (goal.assist) {
-        const assistStats = statsMap.get(goal.assist);
-        if (assistStats) assistStats.assists += 1;
-      }
+      this.applyGoalToPlayer(statsMap, goal);
+      this.applyAssistToPlayer(statsMap, goal);
     }
+  }
+
+  private getGoalPlayerTeam(goal: Goal): TeamSide {
+    if (goal.ownGoal) {
+      return goal.team === 'local' ? 'visitor' : 'local';
+    }
+    return goal.team;
+  }
+
+  private applyGoalToPlayer(statsMap: Map<number, PlayerStats>, goal: Goal) {
+    const playerStats = statsMap.get(goal.player);
+    if (!playerStats) return;
+
+    if (goal.ownGoal) {
+      playerStats.ownGoals += 1;
+    } else {
+      playerStats.goals += 1;
+    }
+  }
+
+  private applyAssistToPlayer(statsMap: Map<number, PlayerStats>, goal: Goal) {
+    if (!goal.assist) return;
+    const assistStats = statsMap.get(goal.assist);
+    if (assistStats) assistStats.assists += 1;
   }
 
   private processCards(
