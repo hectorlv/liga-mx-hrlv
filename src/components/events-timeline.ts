@@ -126,6 +126,12 @@ export class EventsTimeline extends LitElement {
   private _renderGoalItem(item: TimelineItem) {
     if (item.kind !== 'goal') return null;
     const goalTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
+    let playerTeam: TeamSide;
+    if (item.goal.ownGoal) {
+      playerTeam = item.team === 'local' ? 'visitor' : 'local';
+    } else {
+      playerTeam = item.team;
+    }
     return html`
       <div class="item">
         <span class="time">${item.minute}'</span>
@@ -145,7 +151,7 @@ export class EventsTimeline extends LitElement {
               : null}
           </div>
           <div class="details-text">
-            ${this._playerName(item.team, item.goal.player)}
+            ${this._playerName(playerTeam, item.goal.player)}
           </div>
           ${item.goal.assist
             ? html`<div class="assist">
