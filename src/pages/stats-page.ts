@@ -65,7 +65,9 @@ export class StatsPage extends LitElement {
   override render() {
     const { playerStats, teamStats, topScorers, topAssists, fairPlay } =
       this._buildStats();
-    const teamStatsByU23 = [...teamStats].sort((a, b) => b.u23countedMinutes - a.u23countedMinutes);
+    const teamStatsByU23 = [...teamStats].sort(
+      (a, b) => b.u23countedMinutes - a.u23countedMinutes,
+    );
     return html`
       <div class="card">
         <h3>Estadísticas por jugador</h3>
@@ -294,7 +296,7 @@ export class StatsPage extends LitElement {
         u23PlayersTeam.set(teamName, new Set<number>());
       }
       return u23PlayersTeam.get(teamName)!;
-    }
+    };
 
     const ensurePlayer = (
       teamName: string,
@@ -359,13 +361,19 @@ export class StatsPage extends LitElement {
       });
     };
 
-    const calculateU23Minutes = (match: Match,
+    const calculateU23Minutes = (
+      match: Match,
       lineup: PlayerGame[],
       teamName: string,
       teamTag: TeamSide,
-      playerList: Player[]) => {
+      playerList: Player[],
+    ) => {
       const u23Players = Array.from(playerList.values()).filter(player => {
-        const birthYear = Number(typeof player.birthDate === 'string' ? player.birthDate.split("/")[2] : player.birthDate.getFullYear());
+        const birthYear = Number(
+          typeof player.birthDate === 'string'
+            ? player.birthDate.split('/')[2]
+            : player.birthDate.getFullYear(),
+        );
         const minYear = 2003; // Año límite para ser considerado U23 en 2026
         // Solo considerar jugadores con nacionalidad mexicana
         if (player.nationality !== 'Mexicano') return false;
@@ -412,7 +420,10 @@ export class StatsPage extends LitElement {
       teamStat.u23countedMinutes += Math.min(minutesByU23, 225);
       teamStat.u23PlayersCount = u23PlayersSet(teamName).size;
       const requiredMinutes = 1170;
-      teamStat.u23minutesToFulfill = Math.max(0, requiredMinutes - teamStat.u23countedMinutes);
+      teamStat.u23minutesToFulfill = Math.max(
+        0,
+        requiredMinutes - teamStat.u23countedMinutes,
+      );
     };
 
     this.matchesList.forEach(match => {
