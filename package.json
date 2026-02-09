@@ -3,7 +3,7 @@
   "description": "Web component liga-mx-hrlv following open-wc recommendations",
   "license": "MIT",
   "author": "liga-mx-hrlv",
-  "version": "4.3.2",
+  "version": "4.4.0",
   "type": "module",
   "scripts": {
     "lint": "eslint \"src/**/*.{ts,js,html}\"",
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@material/web": "^2.4.1",
-    "firebase": "^12.8.0",
+    "firebase": "^12.9.0",
     "lit": "^3.3.2"
   },
   "devDependencies": {
@@ -31,14 +31,14 @@
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@web/dev-server": "^0.4.6",
-    "@web/rollup-plugin-html": "^3.0.0",
+    "@web/rollup-plugin-html": "^3.1.0",
     "@web/rollup-plugin-import-meta-assets": "^2.3.0",
     "axe-core": "^4.11.1",
     "babel-plugin-template-html-minifier": "^4.1.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-lit": "^2.1.1",
-    "playwright": "^1.58.1",
+    "playwright": "^1.58.2",
     "prettier": "^3.8.1",
     "rimraf": "^6.1.2",
     "rollup": "^4.57.1",

@@ -94,7 +94,25 @@ export function fetchStadiums(callback: SimpleCallback<string[]>): Unsubscribe {
 export function fetchPlayers(
   callback: SimpleCallback<PlayerTeam>,
 ): Unsubscribe {
-  return subscribeToFirebasePath<PlayerTeam>('/players', callback, false);
+  const callbackWrapper = (teamsMap: PlayerTeam) => {
+    const orderPosition = ['Portero', 'Defensa', 'Medio', 'Delantero'];
+    teamsMap.forEach(players => {
+      players.sort((a, b) => {
+        const posA = orderPosition.indexOf(a.position);
+        const posB = orderPosition.indexOf(b.position);
+        if (posA === posB) {
+          return a.number - b.number;
+        }
+        return posA - posB;
+      });
+    });
+    callback(teamsMap);
+  };
+  return subscribeToFirebasePath<PlayerTeam>(
+    '/players',
+    callbackWrapper,
+    false,
+  );
 }
 
 export async function saveUpdates(updates: FirebaseUpdates): Promise<void> {

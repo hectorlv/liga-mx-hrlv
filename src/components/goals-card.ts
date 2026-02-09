@@ -321,8 +321,8 @@ export class GoalsCard extends LitElement {
                 value="local"
                 ?checked=${this.goalTeamState === 'local'}
                 @change=${() => {
-                    this.goalTeamState = 'local';
-										this._validateForm();
+                  this.goalTeamState = 'local';
+                  this._validateForm();
                 }}
               ></md-radio>
               Local
@@ -334,8 +334,8 @@ export class GoalsCard extends LitElement {
                 value="visitor"
                 ?checked=${this.goalTeamState === 'visitor'}
                 @change=${() => {
-                    this.goalTeamState = 'visitor';
-										this._validateForm();
+                  this.goalTeamState = 'visitor';
+                  this._validateForm();
                 }}
               ></md-radio>
               Visitante
