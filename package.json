@@ -35,7 +35,7 @@
     "@web/rollup-plugin-import-meta-assets": "^2.3.0",
     "axe-core": "^4.11.1",
     "babel-plugin-template-html-minifier": "^4.1.0",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-lit": "^2.2.1",
     "playwright": "^1.58.2",
