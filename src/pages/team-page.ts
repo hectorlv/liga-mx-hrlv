@@ -1,7 +1,8 @@
 import { LitElement, css, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
+  FirebaseUpdates,
   Goal,
   Match,
   Player,
@@ -10,6 +11,16 @@ import {
   TeamSide,
 } from '../types/index.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { dispatchEventMatchUpdated } from '../utils/functionUtils.js';
+
+// Imports de Material para el formulario de edición
+import { MdDialog } from '@material/web/dialog/dialog.js';
+import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
+import { MdFilledSelect } from '@material/web/select/filled-select.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/outlined-button.js';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/icon/icon.js';
 
 interface PlayerStats {
   number: number;
@@ -25,7 +36,8 @@ interface PlayerStats {
   nationality: string;
   age: string;
   ownGoals: number;
-  imageUrl: string;
+  image?: string;
+  rawBirthDate?: string | Date; // Guardamos el dato crudo para el formulario
 }
 
 @customElement('team-page')
@@ -39,7 +51,6 @@ export class TeamPage extends LitElement {
         --card-bg: var(--md-sys-color-surface);
       }
 
-      /* HEADER DEL EQUIPO */
       .header-container {
         display: flex;
         align-items: center;
@@ -60,14 +71,12 @@ export class TeamPage extends LitElement {
         color: var(--md-sys-color-on-surface);
       }
 
-      /* CONTENEDOR GRID */
       .players-grid {
         display: flex;
         flex-direction: column;
         gap: 12px;
       }
 
-      /* --- VISTA MÓVIL (Tarjetas de Jugador) --- */
       .player-card {
         background: var(--card-bg);
         border-radius: 12px;
@@ -77,6 +86,7 @@ export class TeamPage extends LitElement {
         flex-direction: column;
         gap: 12px;
         border: 1px solid var(--md-sys-color-outline-variant);
+        position: relative; /* Para el botón de editar en móvil */
       }
 
       .player-header {
@@ -86,6 +96,7 @@ export class TeamPage extends LitElement {
         border-bottom: 1px solid var(--md-sys-color-outline-variant);
         padding-bottom: 8px;
       }
+
       .cell-num {
         font-size: 1.5rem;
         font-weight: 800;
@@ -109,6 +120,12 @@ export class TeamPage extends LitElement {
         text-align: center;
       }
 
+      /* Botón editar en móvil */
+      .mobile-edit-btn {
+        margin-left: auto;
+        --md-icon-button-icon-color: var(--md-sys-color-primary);
+      }
+
       .player-meta {
         font-size: 0.85rem;
         color: var(--md-sys-color-on-surface-variant);
@@ -116,10 +133,9 @@ export class TeamPage extends LitElement {
         gap: 16px;
       }
 
-      /* Bloquecitos de Stats para el cel */
       .player-stats {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); /* 3 columnas en móvil */
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
         font-size: 0.85rem;
       }
@@ -141,10 +157,6 @@ export class TeamPage extends LitElement {
         color: var(--md-sys-color-on-surface);
       }
 
-      .desktop-headers {
-        display: none;
-      }
-
       .player-photo {
         width: 44px;
         height: 44px;
@@ -159,12 +171,19 @@ export class TeamPage extends LitElement {
         border: 2px solid var(--md-sys-color-outline-variant);
       }
 
-      /* --- VISTA ESCRITORIO (Tabla) --- */
+      .desktop-headers {
+        display: none;
+      }
+
+      /* --- VISTA ESCRITORIO --- */
       @media (min-width: 800px) {
         .players-grid {
           display: grid;
-          /* 13 columnas: Foto| Num | Nombre | Pos | Nac | Edad | PJ | MIN | G | A | AG | TA | TR */
-          grid-template-columns: 60px 50px 2fr 100px 100px 80px repeat(7, 1fr);
+          /* Agregamos una columna extra de 50px al final para el botón de editar */
+          grid-template-columns: 60px 50px 2fr 100px 100px 80px repeat(
+              7,
+              1fr
+            ) 50px;
           gap: 0;
           background: var(--card-bg);
           border-radius: 12px;
@@ -191,16 +210,16 @@ export class TeamPage extends LitElement {
         .player-card {
           display: contents;
         }
-
-        /* "Desarmamos" los divs de móvil para que los hijos fluyan en el grid */
         .player-header,
         .player-meta,
         .player-stats,
         .stat-item {
           display: contents;
         }
+        .mobile-edit-btn {
+          display: none;
+        } /* Ocultamos el botón móvil */
 
-        /* Estilo general de celda */
         .cell {
           padding: 12px 8px;
           border-bottom: 1px solid var(--md-sys-color-outline-variant);
@@ -211,7 +230,6 @@ export class TeamPage extends LitElement {
           background: var(--card-bg);
         }
 
-        /* Asignación estricta a columnas */
         .cell-photo {
           grid-column: 1;
         }
@@ -253,25 +271,45 @@ export class TeamPage extends LitElement {
         }
         .stat-ta {
           grid-column: 12;
-          color: var(--app-color-warning, #b8860b);
+          color: #b8860b;
           font-weight: bold;
         }
         .stat-tr {
           grid-column: 13;
-          color: var(--app-color-danger, #d32f2f);
+          color: #d32f2f;
           font-weight: bold;
+        }
+        .cell-action {
+          display: flex !important;
+          grid-column: 14;
         }
 
         .stat-label {
           display: none;
-        } /* Ocultamos etiquetas en desktop */
+        }
         .stat-value {
           font-weight: normal;
           color: inherit;
-        } /* Reseteamos peso */
+        }
 
         .player-card:hover .cell {
-          background-color: var(--row-hover);
+          background-color: var(--row-hover, rgba(0, 0, 0, 0.02));
+        }
+      }
+
+      /* FORMULARIO DIALOG */
+      .dialog-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-top: 8px;
+      }
+      @media (min-width: 600px) {
+        .dialog-form {
+          grid-template-columns: 1fr 1fr;
+        }
+        .full-width {
+          grid-column: 1 / -1;
         }
       }
     `,
@@ -282,16 +320,23 @@ export class TeamPage extends LitElement {
   @property({ type: Array }) matchesList!: Match[];
 
   @state() private playersList: PlayerStats[] = [];
+  @state() private editingPlayer: PlayerStats | null = null;
+
+  @query('#dialogEditPlayer') dialogEditPlayer!: MdDialog;
+  @query('#editName') editNameField!: MdFilledTextField;
+  @query('#editFullName') editFullNameField!: MdFilledTextField;
+  @query('#editPosition') editPositionField!: MdFilledSelect;
+  @query('#editNationality') editNationalityField!: MdFilledTextField;
+  @query('#editBirthDate') editBirthDateField!: MdFilledTextField;
+  @query('#editImage') editImageField!: MdFilledTextField;
 
   override render() {
     return html`
       <main>
         <div class="header-container">
           <md-icon-button
-            id="backButton"
             @click=${() => this.dispatchEvent(new CustomEvent('back'))}
             title="Volver"
-            aria-label="Volver"
           >
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
@@ -316,6 +361,9 @@ export class TeamPage extends LitElement {
             <div class="header-cell" title="Autogoles">AG</div>
             <div class="header-cell" title="Tarjetas Amarillas">TA</div>
             <div class="header-cell" title="Tarjetas Rojas">TR</div>
+            <div class="header-cell">
+              <md-icon style="font-size: 18px">settings</md-icon>
+            </div>
           </div>
 
           ${this.playersList.map(
@@ -323,22 +371,29 @@ export class TeamPage extends LitElement {
               <div class="player-card">
                 <div class="player-header">
                   <div class="cell cell-photo">
-                    ${player.imageUrl
-                      ? html`
-                          <img
-                            class="player-photo"
-                            src="${player.imageUrl}"
-                            alt="${player.fullName}"
-                            loading="lazy"
-                          />
-                        `
+                    ${player.image
+                      ? html`<img
+                          src="${player.image}"
+                          class="player-photo"
+                          alt="${player.fullName}"
+                          loading="lazy"
+                        />`
                       : html`<div class="player-photo">
                           <md-icon>person</md-icon>
                         </div>`}
                   </div>
+
                   <div class="cell cell-num">${player.number}</div>
                   <div class="cell cell-name">${player.fullName}</div>
                   <div class="cell cell-pos">${player.position}</div>
+
+                  <md-icon-button
+                    class="mobile-edit-btn"
+                    @click=${() => this._openEditPlayer(player)}
+                    title="Editar jugador"
+                  >
+                    <md-icon>edit</md-icon>
+                  </md-icon-button>
                 </div>
 
                 <div class="player-meta">
@@ -380,6 +435,14 @@ export class TeamPage extends LitElement {
                   <div class="cell stat-item stat-tr">
                     <span class="stat-label">Rojas</span>
                     <span class="stat-value">${player.redCards}</span>
+                    </div>
+
+                  <div class="cell cell-action" style="display: none;">
+                    <md-icon-button
+                      @click=${() => this._openEditPlayer(player)}
+                      title="Editar"
+                      ><md-icon>edit</md-icon></md-icon-button
+                    >
                   </div>
                 </div>
               </div>
@@ -387,7 +450,92 @@ export class TeamPage extends LitElement {
           )}
         </div>
       </main>
+
+      <md-dialog id="dialogEditPlayer" type="modal">
+        <div slot="headline">Editar Jugador</div>
+        <div slot="content" class="dialog-form">
+          <md-filled-text-field
+            label="Número de jersey"
+            type="number"
+            value="${this.editingPlayer?.number || ''}"
+            disabled
+            title="El número no se puede cambiar para no romper las estadísticas"
+          ></md-filled-text-field>
+          <md-filled-text-field
+            id="editName"
+            label="Nombre corto"
+            required
+            value="${this.editingPlayer?.name || ''}"
+          ></md-filled-text-field>
+          <md-filled-select
+            id="editPosition"
+            label="Posición"
+            class="full-width"
+          >
+            <md-select-option
+              value="Portero"
+              ?selected=${this.editingPlayer?.position === 'Portero'}
+              ><div slot="headline">Portero</div></md-select-option
+            >
+            <md-select-option
+              value="Defensa"
+              ?selected=${this.editingPlayer?.position === 'Defensa'}
+              ><div slot="headline">Defensa</div></md-select-option
+            >
+            <md-select-option
+              value="Medio"
+              ?selected=${this.editingPlayer?.position === 'Medio'}
+              ><div slot="headline">Medio</div></md-select-option
+            >
+            <md-select-option
+              value="Delantero"
+              ?selected=${this.editingPlayer?.position === 'Delantero'}
+              ><div slot="headline">Delantero</div></md-select-option
+            >
+          </md-filled-select>
+          <md-filled-text-field
+            id="editFullName"
+            label="Nombre Completo"
+            class="full-width"
+            value="${this.editingPlayer?.fullName || ''}"
+          ></md-filled-text-field>
+          <md-filled-text-field
+            id="editNationality"
+            label="Nacionalidad"
+            value="${this.editingPlayer?.nationality || ''}"
+          ></md-filled-text-field>
+          <md-filled-text-field
+            id="editBirthDate"
+            label="Nacimiento"
+            type="date"
+            value="${this._formatDateForInput(
+              this.editingPlayer?.rawBirthDate,
+            )}"
+          ></md-filled-text-field>
+          <md-filled-text-field
+            id="editImage"
+            label="URL de foto"
+            class="full-width"
+            value="${this.editingPlayer?.image || ''}"
+          ></md-filled-text-field>
+        </div>
+        <div slot="actions">
+          <md-outlined-button @click=${this._closeEditPlayer}
+            >Cancelar</md-outlined-button
+          >
+          <md-filled-button @click=${this._saveEditedPlayer}
+            >Guardar</md-filled-button
+          >
+        </div>
+      </md-dialog>
     `;
+  }
+
+  // Aseguramos que la lista se recalcule si Firebase manda nuevos datos de jugadores
+  override willUpdate(changedProps: Map<string, unknown>) {
+    if (changedProps.has('players') || changedProps.has('matchesList')) {
+      this.getPlayerStats();
+    }
   }
 
   override connectedCallback() {
@@ -395,16 +543,88 @@ export class TeamPage extends LitElement {
     this.getPlayerStats();
   }
 
-  private getPlayerStats() {
-    const statsMap = this.buildStatsMap(this.players);
+  // --- LÓGICA DE EDICIÓN ---
 
+  private _openEditPlayer(player: PlayerStats) {
+    this.editingPlayer = player;
+    this.dialogEditPlayer.show();
+  }
+
+  private _closeEditPlayer() {
+    this.dialogEditPlayer.close();
+    this.editingPlayer = null;
+  }
+
+  private _formatDateForInput(date: string | Date | undefined): string {
+    if (!date) return '';
+    if (typeof date === 'string') {
+      const parts = date.split('/');
+      if (parts.length === 3)
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      return date;
+    }
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  private _saveEditedPlayer() {
+    if (!this.editingPlayer) return;
+
+    const name = this.editNameField.value.trim();
+    const position = this.editPositionField.value.trim();
+    const fullName = this.editFullNameField.value.trim();
+    const nationality = this.editNationalityField.value.trim();
+    const imgSrc = this.editImageField.value.trim();
+    const birthDateInput = this.editBirthDateField.value;
+
+    // Formateamos la fecha de YYYY-MM-DD a DD/MM/YYYY para mantener tu estándar
+    let formattedBirthDate = birthDateInput;
+    if (birthDateInput?.includes('-')) {
+      const [year, month, day] = birthDateInput.split('-');
+      formattedBirthDate = `${day}/${month}/${year}`;
+    }
+
+    if (!name || !position) {
+      alert('El nombre corto y la posición son obligatorios.');
+      return;
+    }
+
+    // Buscamos al jugador original en el array global
+    const updatedPlayers = this.players.map(p => {
+      if (p.number === this.editingPlayer!.number) {
+        return {
+          ...p,
+          name,
+          position,
+          fullName,
+          nationality,
+          imgSrc,
+          birthDate: formattedBirthDate,
+        };
+      }
+      return p;
+    });
+
+    // Disparamos el evento de actualización a Firebase
+    const updates: FirebaseUpdates = {};
+    const teamKey = this.team.equipo.replaceAll('.', '');
+    updates[`/players/${teamKey}`] = updatedPlayers;
+
+    this.dispatchEvent(dispatchEventMatchUpdated(updates));
+    this._closeEditPlayer();
+  }
+
+  // --- LÓGICA DE ESTADÍSTICAS (SE QUEDA IGUAL) ---
+
+  private getPlayerStats() {
+    if (!this.players) return;
+    const statsMap = this.buildStatsMap(this.players);
     for (const match of this.matchesList) {
       const isLocal = match.local === this.team.equipo;
       this.processLineup(statsMap, match, isLocal);
       this.processGoals(statsMap, match, isLocal);
       this.processCards(statsMap, match, isLocal);
     }
-
     this.playersList = Array.from(statsMap.values());
   }
 
@@ -425,7 +645,8 @@ export class TeamPage extends LitElement {
         nationality: player.nationality,
         age: this.getAgeFromBirthDate(player.birthDate),
         ownGoals: 0,
-        imageUrl: player.imgSrc || '',
+        image: player.imgSrc || '',
+        rawBirthDate: player.birthDate,
       });
     }
     return statsMap;
@@ -435,7 +656,6 @@ export class TeamPage extends LitElement {
     const birthParts =
       typeof birthDate === 'string' ? birthDate.split('/') : [];
     let birth: Date;
-
     if (birthParts.length === 3) {
       const day = Number.parseInt(birthParts[0], 10);
       const month = Number.parseInt(birthParts[1], 10) - 1;
@@ -446,15 +666,12 @@ export class TeamPage extends LitElement {
     } else {
       return 'N/A';
     }
-
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
-
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-
     return `${age} años`;
   }
 
@@ -501,7 +718,6 @@ export class TeamPage extends LitElement {
         )?.minute ?? 90
       );
     }
-
     const redCard = match.cards?.find(
       c =>
         c.player === playerGame.number &&
@@ -526,16 +742,13 @@ export class TeamPage extends LitElement {
   }
 
   private getGoalPlayerTeam(goal: Goal): TeamSide {
-    if (goal.ownGoal) {
-      return goal.team === 'local' ? 'visitor' : 'local';
-    }
+    if (goal.ownGoal) return goal.team === 'local' ? 'visitor' : 'local';
     return goal.team;
   }
 
   private applyGoalToPlayer(statsMap: Map<number, PlayerStats>, goal: Goal) {
     const playerStats = statsMap.get(goal.player);
     if (!playerStats) return;
-
     if (goal.ownGoal) {
       playerStats.ownGoals += 1;
     } else {
@@ -559,7 +772,6 @@ export class TeamPage extends LitElement {
       if (card.team !== teamTag) continue;
       const playerStats = statsMap.get(card.player);
       if (!playerStats) continue;
-
       if (card.cardType === 'yellow') {
         playerStats.yellowCards += 1;
       } else if (card.cardType === 'red') {
