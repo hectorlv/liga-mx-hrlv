@@ -471,7 +471,12 @@ export class LineupsCard extends LitElement {
     const position = this.newPlayerPositionField?.value?.trim();
     const number = Number(this.newPlayerNumberField?.value);
     const imgSrc = this.newPlayerImageField?.value?.trim() || '';
-    const birthDate = this.newPlayerBirthDateField?.value || '';
+    const birthDateInput = this.newPlayerBirthDateField?.value || '';
+    let birthDate = birthDateInput;
+    if (birthDateInput.includes('-')) {
+      const [year, month, day] = birthDateInput.split('-');
+      birthDate = `${day}/${month}/${year}`;
+    }
     const fullName = this.newPlayerFullNameField?.value?.trim() || '';
     const nationality = this.newPlayerNationalityField?.value?.trim() || '';
 
