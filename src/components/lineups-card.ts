@@ -5,10 +5,12 @@ import '../components/player-info.js';
 import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import '@material/web/button/filled-button.js';
+import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
+
 @customElement('lineups-card')
 export class LineupsCard extends LitElement {
   static override readonly styles = [
@@ -17,85 +19,149 @@ export class LineupsCard extends LitElement {
         display: block;
         width: 100%;
         box-sizing: border-box;
-        contain: content;
-        --color-primary-rgb: 76, 175, 80;
-        --md-icon-button-icon-color: #e0e0e0;
-        --md-icon-button-hover-icon-color: #a5d6a7;
+        --card-bg: var(--md-sys-color-surface);
+        --header-bg: var(--md-sys-color-surface-container);
+        --selected-bg: var(--md-sys-color-primary-container);
+        --selected-text: var(--md-sys-color-on-primary-container);
       }
-      .player-row:hover,
-      .player-row:focus-within {
-        background: rgba(0, 0, 0, 0.03);
-        outline: none;
+
+      /* LA TARJETA PRINCIPAL */
+      .card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
       }
-      .player-row.selected {
-        background: rgba(var(--color-primary-rgb), 0.08);
-      }
-      .lineup {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 24px;
-        align-items: start;
-      }
+
+      /* HEADER DE LA TARJETA */
       .section-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
+        padding: 16px 20px;
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
       }
-      .lineup-collapsed-hint {
+
+      .section-header h3 {
         margin: 0;
-        color: #757575;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--md-sys-color-on-surface);
       }
-      .lineup > div {
-        width: 100%;
+
+      .lineup-collapsed-hint {
+        padding: 24px;
+        margin: 0;
+        text-align: center;
+        color: var(--md-sys-color-on-surface-variant);
+        font-style: italic;
       }
+
+      /* CONTENEDOR DE EQUIPOS (Grid de 2 columnas) */
+      .lineup {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      @media (min-width: 600px) {
+        .lineup {
+          grid-template-columns: 1fr 1fr;
+        }
+        /* Línea divisoria entre los dos equipos */
+        .team-column:first-child {
+          border-right: 1px solid var(--md-sys-color-outline-variant);
+        }
+      }
+
+      .team-column {
+        display: flex;
+        flex-direction: column;
+        max-height: 500px; /* Limita la altura y agrega scroll interno */
+        overflow-y: auto;
+      }
+
+      /* HEADER DE CADA EQUIPO (Pegajoso al hacer scroll) */
       .lineup-header {
+        position: sticky;
+        top: 0;
+        background: var(--header-bg);
+        z-index: 2;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 6px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
       }
+
+      .lineup-header h4 {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--md-sys-color-on-surface);
+      }
+
+      /* FILA DE JUGADOR */
       .player-row {
         display: flex;
         align-items: center;
-        width: 100%;
-        padding: 6px 8px;
-        box-sizing: border-box;
-        justify-content: start;
-        gap: 10px;
+        padding: 8px 16px;
+        gap: 12px;
         cursor: pointer;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        transition: background 0.2s;
       }
+
+      .player-row:hover {
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      /* Estado Seleccionado (Titular) */
+      .player-row.selected {
+        background: var(--selected-bg);
+        border-left: 4px solid var(--md-sys-color-primary);
+        padding-left: 12px; /* Compensamos el borde */
+      }
+
       .player-row md-checkbox {
-        flex: 0 0 auto;
-        width: 16px;
-        height: 16px;
-        margin: auto 0;
+        flex-shrink: 0;
       }
-      .player-row img {
-        flex: 0 0 auto;
-        width: 60px;
-        height: auto;
-        object-fit: contain;
-      }
-      .player-row span {
-        flex: 1 1 auto;
+
+      /* Envolvemos el player-info para que no se rompa */
+      .player-info-wrapper {
+        flex: 1;
         min-width: 0;
-        margin: auto 0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        pointer-events: none; /* Para que el click pase al div padre */
       }
-      @media (max-width: 600px) {
-        .lineup {
-          grid-template-columns: 1fr;
+
+      /* BOTÓN DE GUARDAR FLOTANTE / FOOTER */
+      .card-footer {
+        padding: 16px 20px;
+        background: var(--card-bg);
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* Formularios dentro del Dialog */
+      .dialog-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-top: 8px;
+      }
+      @media (min-width: 600px) {
+        .dialog-form {
+          grid-template-columns: 1fr 1fr;
         }
-      }
-      player-info {
-        flex: 1 1 auto;
-        min-width: 0;
-        margin: 0;
+        .full-width {
+          grid-column: 1 / -1;
+        }
       }
     `,
   ];
@@ -119,216 +185,210 @@ export class LineupsCard extends LitElement {
   @state() private lastMatchId: number | null = null;
 
   override render() {
-    if (!this.match) {
-      return html``;
-    }
-    const { lineupLocal, lineupVisitor } = this.match;
+    if (!this.match) return html``;
+
+    const { lineupLocal, lineupVisitor, local, visitante } = this.match;
     const lineupsLabel = this.lineupsCollapsed
       ? 'Ver alineaciones'
       : 'Ocultar alineaciones';
     const lineupsIcon = this.lineupsCollapsed ? 'visibility' : 'visibility_off';
+
     return html`
-      <div class="section card">
+      <div class="card">
         <div class="section-header">
-          <h3>Alineación Inicial</h3>
+          <h3><md-icon>group</md-icon> Alineaciones</h3>
           ${this._lineupsReady()
             ? html`
-                <md-filled-button
-                  class="toggle-lineups"
-                  aria-label="${lineupsLabel}"
-                  title="${lineupsLabel}"
+                <md-outlined-button
                   @click=${this._toggleLineups}
+                  title="${lineupsLabel}"
                 >
-                  <md-icon>${lineupsIcon}</md-icon>
-                  <span class="btn-label">${lineupsLabel}</span>
-                </md-filled-button>
+                  <md-icon slot="icon">${lineupsIcon}</md-icon>
+                  ${lineupsLabel}
+                </md-outlined-button>
               `
             : null}
         </div>
+
         ${this.lineupsCollapsed
           ? html`
               <p class="lineup-collapsed-hint">
-                Las alineaciones iniciales están guardadas. Usa "Ver
-                alineaciones" para revisarlas.
+                Las alineaciones iniciales están guardadas y listas.<br />
+                Usa el botón de arriba si necesitas hacer cambios.
               </p>
             `
           : html`
               <div class="lineup">
-                <div>
+                <div class="team-column">
                   <div class="lineup-header">
-                    <h4>Local</h4>
+                    <h4>${local} (Local)</h4>
                     <md-icon-button
                       @click=${() => this._openAddPlayerDialog('local')}
+                      title="Agregar jugador"
                     >
-                      <md-icon
-                        role="button"
-                        aria-label="Agregar jugador local"
-                        title="Agregar jugador local"
-                        >add</md-icon
-                      >
+                      <md-icon>person_add</md-icon>
                     </md-icon-button>
                   </div>
+
                   ${this.localPlayers.map(player => {
                     const isTitular = lineupLocal?.some(
                       p => p.number === player.number && p.titular,
                     );
                     return html`
                       <div
-                        class="${`player-row ${isTitular ? 'selected' : ''}`}"
+                        class="player-row ${isTitular ? 'selected' : ''}"
                         role="button"
                         tabindex="0"
-                        aria-label="Jugador ${player.number} ${player.name} — alternar alineación local"
-                        aria-pressed="${isTitular ? 'true' : 'false'}"
-                        @click=${() => this._toggleRow('local', player.number)}
-                        @keydown=${(e: KeyboardEvent) =>
-                          this._onRowKeydown(e, 'local', player.number)}
+                        @click=${(e: Event) =>
+                          this._toggleRow(e, 'local', player.number)}
                       >
                         <md-checkbox
                           id="lineupLocal-${player.number}"
-                          aria-label="Incluir ${player.name} en alineación local"
                           .checked=${isTitular}
                           @change=${(e: Event) =>
                             this._onLineupChange(e, 'local', player.number)}
+                          @click=${(e: Event) => e.stopPropagation()}
                         ></md-checkbox>
-                        <player-info .player=${player}></player-info>
+                        <div class="player-info-wrapper">
+                          <player-info .player=${player}></player-info>
+                        </div>
                       </div>
                     `;
                   })}
                 </div>
-                <div>
+
+                <div class="team-column">
                   <div class="lineup-header">
-                    <h4>Visitante</h4>
+                    <h4>${visitante} (Visitante)</h4>
                     <md-icon-button
                       @click=${() => this._openAddPlayerDialog('visitor')}
+                      title="Agregar jugador"
                     >
-                      <md-icon
-                        role="button"
-                        aria-label="Agregar jugador visitante"
-                        title="Agregar jugador visitante"
-                        >add</md-icon
-                      >
+                      <md-icon>person_add</md-icon>
                     </md-icon-button>
                   </div>
+
                   ${this.visitorPlayers.map(player => {
                     const isTitular = lineupVisitor?.some(
                       p => p.number === player.number && p.titular,
                     );
                     return html`
                       <div
-                        class="${`player-row ${isTitular ? 'selected' : ''}`}"
+                        class="player-row ${isTitular ? 'selected' : ''}"
                         role="button"
                         tabindex="0"
-                        aria-label="Jugador ${player.number} ${player.name} — alternar alineación visitante"
-                        aria-pressed="${isTitular ? 'true' : 'false'}"
-                        @click=${() =>
-                          this._toggleRow('visitor', player.number)}
-                        @keydown=${(e: KeyboardEvent) =>
-                          this._onRowKeydown(e, 'visitor', player.number)}
+                        @click=${(e: Event) =>
+                          this._toggleRow(e, 'visitor', player.number)}
                       >
                         <md-checkbox
                           id="lineupVisitor-${player.number}"
-                          aria-label="Incluir ${player.name} en alineación visitante"
                           .checked=${isTitular}
                           @change=${(e: Event) =>
                             this._onLineupChange(e, 'visitor', player.number)}
+                          @click=${(e: Event) => e.stopPropagation()}
                         ></md-checkbox>
-                        <player-info .player=${player}></player-info>
+                        <div class="player-info-wrapper">
+                          <player-info .player=${player}></player-info>
+                        </div>
                       </div>
                     `;
                   })}
                 </div>
               </div>
+
+              <div class="card-footer">
+                <md-filled-button
+                  ?disabled=${!this._lineupsReady()}
+                  @click=${this.updateLineups}
+                >
+                  <md-icon slot="icon">save</md-icon>
+                  Guardar Alineaciones
+                </md-filled-button>
+              </div>
             `}
       </div>
-      <md-filled-button
-        class="action-btn"
-        aria-label="Guardar alineaciones"
-        title="Guardar alineaciones"
-        ?disabled=${!this._lineupsReady()}
-        @click=${this.updateLineups}
-      >
-        <md-icon>save</md-icon>
-        <span class="btn-label">Guardar Alineaciones</span>
-      </md-filled-button>
+
       <md-dialog id="dialogLineups" type="alert">
-        <div slot="headline">Alineaciones Actualizadas</div>
+        <div slot="headline">Alineaciones Guardadas</div>
         <div slot="content">
           Las alineaciones han sido actualizadas correctamente.
         </div>
+        <div slot="actions">
+          <md-filled-button @click=${() => this.dialogLineups.close()}
+            >OK</md-filled-button
+          >
+        </div>
       </md-dialog>
+
       <md-dialog id="dialogAddPlayer" type="modal">
         <div slot="headline">
           ${this.addPlayerSide === 'local'
             ? 'Agregar jugador local'
             : 'Agregar jugador visitante'}
         </div>
-        <div
-          slot="content"
-          style="display:flex;flex-direction:column;gap:12px;"
-        >
+        <div slot="content" class="dialog-form">
           <md-filled-text-field
             id="newPlayerName"
-            label="Nombre"
-            aria-label="Nombre del jugador"
+            label="Nombre corto"
             required
           ></md-filled-text-field>
           <md-filled-text-field
-            id="newPlayerFullName"
-            label="Nombre Completo"
-            aria-label="Nombre completo del jugador"
+            id="newPlayerNumber"
+            label="Número de jersey"
+            type="number"
+            required
           ></md-filled-text-field>
           <md-filled-select
             id="newPlayerPosition"
             label="Posición"
-            aria-label="Posición del jugador"
+            class="full-width"
           >
-            <md-select-option value="Portero">Portero</md-select-option>
-            <md-select-option value="Defensa">Defensa</md-select-option>
-            <md-select-option value="Medio">Medio</md-select-option>
-            <md-select-option value="Delantero">Delantero</md-select-option>
+            <md-select-option value="Portero"
+              ><div slot="headline">Portero</div></md-select-option
+            >
+            <md-select-option value="Defensa"
+              ><div slot="headline">Defensa</div></md-select-option
+            >
+            <md-select-option value="Medio"
+              ><div slot="headline">Medio</div></md-select-option
+            >
+            <md-select-option value="Delantero"
+              ><div slot="headline">Delantero</div></md-select-option
+            >
           </md-filled-select>
           <md-filled-text-field
-            id="newPlayerNumber"
-            label="Número de jersey"
-            aria-label="Número de jersey"
-            type="number"
-            inputmode="numeric"
-            required
+            id="newPlayerFullName"
+            label="Nombre Completo"
+            class="full-width"
           ></md-filled-text-field>
           <md-filled-text-field
             id="newPlayerNationality"
             label="Nacionalidad"
-            aria-label="Nacionalidad del jugador"
           ></md-filled-text-field>
           <md-filled-text-field
             id="newPlayerBirthDate"
-            label="Fecha de Nacimiento"
-            aria-label="Fecha de nacimiento del jugador"
+            label="Nacimiento"
             type="date"
           ></md-filled-text-field>
           <md-filled-text-field
             id="newPlayerImage"
             label="URL de foto"
-            aria-label="URL de foto"
+            class="full-width"
           ></md-filled-text-field>
         </div>
         <div slot="actions">
-          <md-filled-button
-            aria-label="Cancelar"
-            title="Cancelar"
-            @click=${this._cancelAddPlayer}
-            >Cancelar</md-filled-button
+          <md-outlined-button @click=${this._cancelAddPlayer}
+            >Cancelar</md-outlined-button
           >
-          <md-filled-button
-            aria-label="Guardar jugador"
-            title="Guardar jugador"
-            @click=${this._saveNewPlayer}
+          <md-filled-button @click=${this._saveNewPlayer}
             >Guardar</md-filled-button
           >
         </div>
       </md-dialog>
     `;
   }
+
+  // --- LÓGICA DE COMPONENTE ---
 
   override updated(changedProps: Map<string, unknown>) {
     super.updated(changedProps);
@@ -339,6 +399,7 @@ export class LineupsCard extends LitElement {
       this.lineupsCollapsed = this._lineupsReady();
     }
   }
+
   private _onLineupChange(e: Event, side: TeamSide, playerId: number) {
     if (!this.match) return;
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
@@ -351,44 +412,17 @@ export class LineupsCard extends LitElement {
       if (idx !== -1) lineup.splice(idx, 1);
     }
     this.match = { ...this.match, [key]: lineup };
-    // Visual feedback: toggle selected class on the row containing the checkbox
-    try {
-      const cb = e.target as MdCheckbox;
-      const row = cb?.closest('.player-row') ?? null;
-      if (row) {
-        if (cb.checked) {
-          row.classList.add('selected');
-          row.setAttribute('aria-pressed', 'true');
-        } else {
-          row.classList.remove('selected');
-          row.setAttribute('aria-pressed', 'false');
-        }
-      }
-    } catch (err) {
-      console.error('Error updating lineup row selection state', err);
-    }
   }
-  private _onRowKeydown(
-    e: KeyboardEvent,
-    side: TeamSide,
-    playerNumber: number,
-  ) {
-    const key = e.key;
-    if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
-      e.preventDefault();
-      this._toggleRow(side, playerNumber);
-    }
-  }
-  private _toggleRow(side: TeamSide, playerNumber: number) {
-    // Evita interferir si el click fue directamente en el checkbox
+
+  private _toggleRow(e: Event, side: TeamSide, playerNumber: number) {
     const checkboxId =
       side === 'local'
         ? `lineupLocal-${playerNumber}`
         : `lineupVisitor-${playerNumber}`;
     const cb = this.shadowRoot?.getElementById(checkboxId) as MdCheckbox;
     if (!cb) return;
+
     cb.checked = !cb.checked;
-    // Generar un objeto de evento mínimo para reutilizar la lógica existente
     this._onLineupChange(
       { target: cb } as unknown as Event,
       side,
@@ -414,6 +448,10 @@ export class LineupsCard extends LitElement {
       this.newPlayerNumberField.setCustomValidity('');
     }
     if (this.newPlayerImageField) this.newPlayerImageField.value = '';
+    if (this.newPlayerFullNameField) this.newPlayerFullNameField.value = '';
+    if (this.newPlayerNationalityField)
+      this.newPlayerNationalityField.value = '';
+    if (this.newPlayerBirthDateField) this.newPlayerBirthDateField.value = '';
   }
 
   private _cancelAddPlayer() {
@@ -454,6 +492,7 @@ export class LineupsCard extends LitElement {
       return;
     }
     this.newPlayerNumberField?.setCustomValidity('');
+
     const newPlayer: Player = {
       name,
       position,
@@ -463,12 +502,12 @@ export class LineupsCard extends LitElement {
       fullName,
       nationality,
     };
-    const updatedList = [...currentPlayers, newPlayer];
-    if (this.addPlayerSide === 'local') {
-      this.localPlayers = updatedList;
-    } else {
-      this.visitorPlayers = updatedList;
-    }
+    const updatedList = [...currentPlayers, newPlayer].sort(
+      (a, b) => a.number - b.number,
+    );
+
+    if (this.addPlayerSide === 'local') this.localPlayers = updatedList;
+    else this.visitorPlayers = updatedList;
 
     const updates: FirebaseUpdates = {};
     updates[`/players/${this._getTeamKey(this.addPlayerSide)}`] = updatedList;
@@ -487,7 +526,7 @@ export class LineupsCard extends LitElement {
     updatedMatch[`/matches/${this.match.idMatch}/lineupVisitor`] =
       lineupVisitor;
     this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
-    this.requestUpdate();
+
     this.dialogLineups.show();
     this.lineupsCollapsed = true;
   }

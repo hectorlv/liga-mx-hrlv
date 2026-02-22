@@ -1,6 +1,8 @@
 import '@material/web/icon/icon.js';
 import '@material/web/select/select-option.js';
 import '@material/web/textfield/filled-text-field.js';
+import '@material/web/chips/chip-set.js';
+import '@material/web/chips/filter-chip.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import {
   customElement,
@@ -13,12 +15,11 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 import './match-detail-page.js';
 
 import { MdFilledButton } from '@material/web/button/filled-button.js';
-import { MdIconButton } from '@material/web/iconbutton/icon-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
 import { Match, PlayerTeam } from '../types/index.js';
 import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
-import { formatDateDDMMYYYY, getMatchRowClass } from '../utils/dateUtils.js';
+import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 /**
  * Page for show the fixture
@@ -28,68 +29,222 @@ export class MatchesPage extends LitElement {
   static override readonly styles = [
     styles,
     css`
-      .filters-card {
-        width: 100%;
-        max-width: 1100px;
-        margin: var(--space-8) auto var(--space-16);
-        padding: var(--space-12) var(--space-16);
-        background: var(--md-sys-color-surface-container-highest);
-        border-radius: var(--radius-m);
+      :host {
+        display: block;
+        padding: 16px;
+        /* Tus variables globales ya deberían estar aplicadas en el index.html o componente padre */
+        --card-bg: var(--md-sys-color-surface, #fff);
+        --header-bg: var(--md-sys-color-surface-variant, #f0f0f0);
+      }
+
+      /* --- SECCIÓN DE FILTROS --- */
+      .filters-container {
         display: flex;
-        gap: var(--space-12);
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        align-items: center;
+        background: var(--md-sys-color-surface);
+        padding: 16px;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .filter-item {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      /* --- CONTENEDOR PRINCIPAL (GRID HÍBRIDO) --- */
+      .matches-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* ESTILOS MÓVIL (TARJETAS) */
+      .match-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        display: grid;
+        grid-template-areas:
+          'jornada header header'
+          'local score visit'
+          'actions actions actions';
+        grid-template-columns: 1fr auto 1fr;
+        gap: 12px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .match-card:active {
+        transform: scale(0.98);
+      }
+
+      /* Asignación de áreas en MÓVIL */
+      .cell-jornada {
+        grid-area: jornada;
+      }
+      .cell-jornada {
+        grid-area: header;
+      }
+      .cell-local {
+        grid-area: local;
+      }
+      .cell-score {
+        grid-area: score;
+      }
+      .cell-visit {
+        grid-area: visit;
+      }
+      .cell-stadium {
+        display: none;
+      } /* Ocultamos estadio detallado en móvil para limpiar */
+
+      /* Estilos internos MÓVIL */
+
+      .cell-date,
+      .cell-jornada {
+        background: var(--header-bg);
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        color: var(--md-sys-color-on-surface-variant);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .team-block {
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        flex-wrap: wrap;
+        text-align: center;
+        padding: 8px;
+      }
+      .team-block img {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 4px;
+      }
+      .team-name {
+        font-size: 0.85rem;
+        font-weight: 600;
       }
 
-      .filters-card md-filled-select {
-        min-width: 220px;
-      }
-
-      .today-row {
-        display: inline-flex;
+      .cell-score {
+        display: flex;
         align-items: center;
-        gap: var(--space-8);
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--md-sys-color-primary);
       }
 
-      @media (max-width: 600px) {
-        .filters-card {
-          flex-direction: column;
-          align-items: stretch;
-          width: auto;
+      /* Cabeceras de tabla (ocultas en móvil) */
+      .table-headers {
+        display: none;
+      }
+
+      /* --- ESTILOS ESCRITORIO (TABLA) --- */
+      @media (min-width: 800px) {
+        .matches-grid {
+          display: grid;
+          /* Columnas: Fecha | Local | Score | Visitante | Estadio */
+          grid-template-columns: 180px 1fr 100px 1fr 200px;
+          gap: 0;
+          background: var(--card-bg);
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
-        .greyGridTable {
-          display: none;
+
+        .table-headers {
+          display: contents; /* Para que los headers sean hijos directos del grid */
         }
-        .match-cards {
-          display: block;
-          padding: 0 var(--space-8);
+
+        .header-cell {
+          background: var(--md-sys-color-primary-container);
+          color: var(--md-sys-color-on-primary-container);
+          padding: 16px;
+          font-weight: bold;
+          text-transform: uppercase;
+          font-size: 0.8rem;
         }
+
         .match-card {
-          background: var(--md-sys-color-surface-container-highest);
-          border-radius: var(--radius-s);
-          padding: var(--space-8);
-          margin-bottom: var(--space-8);
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+          display: contents; /* ¡MAGIA! Desaparece el div contenedor */
         }
-        .match-card .teams {
+
+        /* Reasignación de celdas para TABLA */
+        .cell-jornada,
+        .cell-date,
+        .cell-local,
+        .cell-score,
+        .cell-visit,
+        .cell-stadium {
+          grid-area: auto; /* Reseteamos áreas de móvil */
           display: flex;
           align-items: center;
-          gap: var(--space-8);
-          justify-content: space-between;
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--md-sys-color-outline-variant);
+          background: var(--card-bg);
+          height: 64px; /* Altura fija para alineación perfecta */
         }
-        .match-card .meta {
-          margin-top: var(--space-6);
-          font-size: 13px;
-          color: var(--md-sys-color-on-surface);
+
+        /* Ubicación explícita en columnas (Col 1 a 6) */
+        .cell-jornada {
+          grid-column: 1;
+          justify-content: center;
         }
-        .matches-filter {
+        .cell-date {
+          grid-column: 2;
+          justify-content: flex-start;
+          background: transparent;
+        }
+        .cell-local {
+          grid-column: 3;
+          flex-direction: row-reverse;
+          text-align: right;
+        }
+        .cell-score {
+          grid-column: 4;
+          justify-content: center;
+          background: var(--md-sys-color-surface-variant);
+        }
+        .cell-visit {
+          grid-column: 5;
+          flex-direction: row;
+          text-align: left;
+        }
+        .cell-stadium {
+          grid-column: 6;
           display: flex;
-          flex-direction: column;
+          color: var(--md-sys-color-on-surface-variant);
         }
-        .matches-filter md-filled-select {
-          width: 100%;
-          margin-bottom: 10px;
+
+        /* Ajustes visuales Desktop */
+        .team-block img {
+          width: 32px;
+          height: 32px;
+          margin: 0 12px;
+        }
+        .team-name {
+          font-size: 1rem;
+        }
+
+        /* Hover en la fila "virtual" */
+        .match-card:hover .cell-jornada,
+        .match-card:hover .cell-date,
+        .match-card:hover .cell-local,
+        .match-card:hover .cell-score,
+        .match-card:hover .cell-visit,
+        .match-card:hover .cell-stadium {
+          background-color: var(--row-hover);
+          cursor: pointer;
         }
       }
 
@@ -131,7 +286,6 @@ export class MatchesPage extends LitElement {
 
   private _boundOnResize: (() => void) | undefined;
   private _boundOnDocClick: (() => void) | undefined;
-  private _boundOnGlobalKey: ((e: KeyboardEvent) => void) | undefined;
 
   private get championLegend(): string | null {
     const finalIda = this.matchesList.find(
@@ -194,8 +348,6 @@ export class MatchesPage extends LitElement {
     window.addEventListener('resize', this._boundOnResize);
     this._boundOnDocClick = this._onDocumentClick.bind(this);
     globalThis.addEventListener('click', this._boundOnDocClick);
-    this._boundOnGlobalKey = this._onGlobalKeyDown.bind(this);
-    globalThis.addEventListener('keydown', this._boundOnGlobalKey);
   }
 
   override disconnectedCallback() {
@@ -204,9 +356,6 @@ export class MatchesPage extends LitElement {
     }
     if (this._boundOnDocClick) {
       globalThis.removeEventListener('click', this._boundOnDocClick);
-    }
-    if (this._boundOnGlobalKey) {
-      globalThis.removeEventListener('keydown', this._boundOnGlobalKey);
     }
     super.disconnectedCallback();
   }
@@ -251,112 +400,10 @@ export class MatchesPage extends LitElement {
     }
   }
 
-  private _toggleRowMenu(e: CustomEvent) {
-    e.stopPropagation();
-    const id = Number((e.currentTarget as MdIconButton).dataset['id']);
-    this.openRowMenuId = this.openRowMenuId === id ? null : id;
-    this.requestUpdate();
-    // After menu opens, focus first actionable item
-    this.updateComplete.then(() => {
-      if (this.openRowMenuId === id) {
-        const menu = this.rowMenu;
-        if (menu) {
-          if (
-            this.firstMenuItem &&
-            typeof this.firstMenuItem.focus === 'function'
-          )
-            this.firstMenuItem.focus();
-          // attach keydown handler to trap focus inside menu
-          menu.addEventListener('keydown', this._onRowMenuKeydown.bind(this));
-        }
-      } else {
-        // closed, restore focus to the trigger button
-        const btn = this.shadowRoot?.querySelector(
-          `md-icon-button[data-id="${id}"]`,
-        ) as MdIconButton;
-        if (btn && typeof btn.focus === 'function') btn.focus();
-      }
-    });
-  }
-
   private _onDocumentClick() {
     if (this.openRowMenuId !== null) {
       this.openRowMenuId = null;
       this.requestUpdate();
-    }
-  }
-
-  private _onDetailsFromMenu(e: Event) {
-    e.stopPropagation();
-    const id = Number((e.currentTarget as MdFilledButton).dataset['id']);
-    this._showMatchDetails({
-      target: { getAttribute: () => id },
-    } as unknown as Event);
-    this.openRowMenuId = null;
-    this.updateComplete.then(() => {
-      const btn = this.shadowRoot?.querySelector(
-        `md-icon-button[data-id="${id}"]`,
-      ) as MdIconButton;
-      if (btn && typeof btn.focus === 'function') btn.focus();
-    });
-  }
-
-  private _onGlobalKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape' || e.key === 'Esc') {
-      if (this.openRowMenuId !== null) {
-        // close menu and restore focus to trigger
-        const id = this.openRowMenuId;
-        this.openRowMenuId = null;
-        this.requestUpdate();
-        this.updateComplete.then(() => {
-          const btn = this.shadowRoot?.querySelector(
-            `md-icon-button[data-id="${id}"]`,
-          ) as MdIconButton;
-          if (btn && typeof btn.focus === 'function') btn.focus();
-        });
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }
-  }
-
-  private _onRowMenuKeydown(e: KeyboardEvent) {
-    // Trap Tab focus inside the menu and handle Escape
-    const menu = e.currentTarget;
-    const focusable = Array.from(this.menuFocusableElements).filter(
-      n => !n.hasAttribute('disabled'),
-    );
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (e.key === 'Tab') {
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    } else if (e.key === 'Escape' || e.key === 'Esc') {
-      // close menu and restore focus
-      const idAttr = (menu as HTMLElement).parentElement?.querySelector(
-        'md-icon-button',
-      )?.dataset['id'];
-      const id = idAttr ? Number(idAttr) : null;
-      this.openRowMenuId = null;
-      this.requestUpdate();
-      this.updateComplete.then(() => {
-        if (id !== null) {
-          const btn = this.shadowRoot?.querySelector(
-            `md-icon-button[data-id="${id}"]`,
-          ) as MdIconButton;
-          if (btn && typeof btn.focus === 'function') btn.focus();
-        }
-      });
-      e.preventDefault();
-      e.stopPropagation();
     }
   }
 
@@ -374,29 +421,15 @@ export class MatchesPage extends LitElement {
     }
     return html`
       <main>
-        <div class="filters-card">
-          <md-filled-select
-            id="teamsSelect"
-            label="Equipos"
-            aria-label="Seleccionar equipo"
-            @change="${this._filtersChanged}"
-          >
-            <md-select-option selected></md-select-option>
-            ${this.teams.map(
-              (team, i) => html`
-                <md-select-option value="${i}"
-                  ><div slot="headline">${team}</div></md-select-option
-                >
-              `,
-            )}
-          </md-filled-select>
+        <div class="filters-container">
           <md-filled-select
             id="matchDaySelect"
             label="Jornada"
             aria-label="Seleccionar jornada"
+            class="filter-item"
             @change="${this._filtersChanged}"
           >
-            <md-select-option selected></md-select-option>
+            <md-select-option selected>Todas</md-select-option>
             ${Array.from(
               { length: this.teams.length - 1 },
               (_, i) => i + 1,
@@ -411,6 +444,22 @@ export class MatchesPage extends LitElement {
               i => html`
                 <md-select-option value="${i.id}"
                   ><div slot="headline">${i.descripcion}</div></md-select-option
+                >
+              `,
+            )}
+          </md-filled-select>
+          <md-filled-select
+            id="teamsSelect"
+            label="Equipos"
+            class="filter-item"
+            aria-label="Seleccionar equipo"
+            @change="${this._filtersChanged}"
+          >
+            <md-select-option selected></md-select-option>
+            ${this.teams.map(
+              (team, i) => html`
+                <md-select-option value="${i}"
+                  ><div slot="headline">${team}</div></md-select-option
                 >
               `,
             )}
@@ -432,132 +481,22 @@ export class MatchesPage extends LitElement {
             <span>Solo partidos de Liguilla</span>
           </div>
         </div>
-        ${this.isMobile
-          ? html`
-              <div class="match-cards">
-                ${this.matchesRender.map(
-                  match => html`
-                    <div class="match-card">
-                      <div class="teams">
-                        <div class="team-left">
-                          ${match.local.trim() == ''
-                            ? ''
-                            : getTeamImage(match.local)}
-                          <div>${match.local}</div>
-                        </div>
-                        <div class="score">
-                          <strong>${match.golLocal}</strong>
-                          <span> - </span>
-                          <strong>${match.golVisitante}</strong>
-                        </div>
-                        <div class="team-right">
-                          ${match.visitante.trim() == ''
-                            ? ''
-                            : getTeamImage(match.visitante)}
-                          <div>${match.visitante}</div>
-                        </div>
-                      </div>
-                      <div class="meta">
-                        <div>Jornada: ${match.jornada}</div>
-                        <div>
-                          ${formatDateDDMMYYYY(match.fecha as Date)}
-                          ${match.hora}
-                        </div>
-                        <div>${match.estadio}</div>
-                      </div>
-                      <div
-                        class="actions"
-                        style="margin-top:8px; display:flex; gap:8px;"
-                      >
-                        <md-filled-button
-                          class="action-btn"
-                          index="${match.idMatch}"
-                          aria-label="Detalles"
-                          @click="${this._showMatchDetails}"
-                        >
-                          <md-icon>info</md-icon>
-                          <span class="btn-label">Detalles</span>
-                        </md-filled-button>
-                      </div>
-                    </div>
-                  `,
-                )}
-              </div>
-            `
-          : html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th class="dynamic-colspan" colspan="2">Local</th>
-                    <th>Gol Local</th>
-                    <th class="dynamic-colspan" colspan="2">Visitante</th>
-                    <th>Gol Visitante</th>
-                    <th>Jornada</th>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Estadio</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${this.matchesRender.map(
-                    match => html`
-                      <tr
-                        id="match${match.idMatch}"
-                        class="${getMatchRowClass(
-                          match.fecha as Date,
-                          match.phaseEvents,
-                        )}"
-                      >
-                        <td>
-                          ${match.local.trim() == ''
-                            ? ''
-                            : getTeamImage(match.local)}
-                        </td>
-                        <td>${match.local}</td>
-                        <td>${match.golLocal}</td>
-                        <td>
-                          ${match.visitante.trim() == ''
-                            ? ''
-                            : getTeamImage(match.visitante)}
-                        </td>
-                        <td>${match.visitante}</td>
-                        <td>${match.golVisitante}</td>
-                        <td><span class="chip">${match.jornada}</span></td>
-                        <td>${formatDateDDMMYYYY(match.fecha as Date)}</td>
-                        <td>${match.hora}</td>
-                        <td>${match.estadio}</td>
-                        <td class="actions-cell">
-                          <md-icon-button
-                            data-id="${match.idMatch}"
-                            aria-label="Acciones"
-                            title="Más"
-                            @click="${this._toggleRowMenu}"
-                          >
-                            <md-icon>more_vert</md-icon>
-                          </md-icon-button>
-                          ${this.openRowMenuId === match.idMatch
-                            ? html`<div
-                                class="row-menu"
-                                role="menu"
-                                aria-label="Menú de acciones"
-                              >
-                                <md-filled-button
-                                  role="menuitem"
-                                  @click="${this._onDetailsFromMenu}"
-                                  data-id="${match.idMatch}"
-                                  ><md-icon>info</md-icon
-                                  >Detalles</md-filled-button
-                                >
-                              </div>`
-                            : ''}
-                        </td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-            `}
+        <div class="matches-grid">
+          <div class="table-headers">
+            <div class="table-header">Jornada</div>
+            <div class="table-header">Fecha</div>
+            <div class="table-header" style="justify-content: flex-end">
+              Local
+            </div>
+            <div class="table-header" style="justify-content: center">
+              Marcador
+            </div>
+            <div class="table-header">Visitante</div>
+            <div class="table-header">Estadio</div>
+          </div>
+          ${this.matchesRender.map(match => this.renderMatchItem(match))}
+        </div>
+
         ${this.championLegend
           ? html`<div class="champion-legend" role="note">
               ${this.championLegend}
@@ -567,6 +506,36 @@ export class MatchesPage extends LitElement {
     `;
   }
 
+  private renderMatchItem(match: Match) {
+    return html`
+      <div
+        class="match-card"
+        @click=${() =>
+          this._showMatchDetails({
+            target: { getAttribute: () => match.idMatch },
+          } as unknown as Event)}
+      >
+        <div class="cell-jornada">
+          <span>${match.jornada}</span>
+        </div>
+        <div class="cell-date">
+          <span
+            >${formatDateDDMMYYYY(match.fecha as Date)} - ${match.hora}</span
+          >
+        </div>
+        <div class="cell-local team-block">
+          <span class="team-name">${match.local}</span>
+          ${getTeamImage(match.local)}
+        </div>
+        <div class="cell-score">${match.golLocal} - ${match.golVisitante}</div>
+        <div class="cell-visit team-block">
+          ${getTeamImage(match.visitante)}
+          <span class="team-name">${match.visitante}</span>
+        </div>
+        <div class="cell-stadium">${match.estadio}</div>
+      </div>
+    `;
+  }
   /**
    * Filter the matches when selected options change
    */

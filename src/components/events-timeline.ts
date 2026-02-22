@@ -13,76 +13,242 @@ export class EventsTimeline extends LitElement {
         display: block;
         width: 100%;
         box-sizing: border-box;
+        --card-bg: var(--md-sys-color-surface);
+        --header-bg: var(--md-sys-color-surface-container);
+        --line-color: var(--md-sys-color-outline-variant);
       }
-      .timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+
+      .card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--line-color);
+        overflow: hidden;
       }
-      .item {
+
+      .section-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 4px 0;
+        padding: 16px 20px;
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--line-color);
+      }
+
+      .section-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--md-sys-color-on-surface);
+      }
+
+      /* CONTENEDOR DE LA LÍNEA DE TIEMPO */
+      .timeline-container {
+        padding: 24px 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .no-events {
+        text-align: center;
+        color: var(--md-sys-color-on-surface-variant);
+        font-style: italic;
+        padding: 20px;
+      }
+
+      /* --- VISTA MÓVIL (Línea a la izquierda) --- */
+      .timeline {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      /* La línea vertical principal */
+      .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 20px; /* Posición de la línea en móvil */
+        width: 2px;
+        background: var(--line-color);
+        z-index: 0;
+      }
+
+      /* CADA EVENTO */
+      .event-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        z-index: 1;
+      }
+
+      /* LA BURBUJA DEL MINUTO */
+      .minute-bubble {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-on-surface);
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+        border: 2px solid var(--card-bg); /* Efecto de corte en la línea */
+        z-index: 2;
+      }
+
+      /* CONTENIDO DEL EVENTO */
+      .event-content {
+        background: var(--md-sys-color-surface-container-lowest, #f8fafc);
+        padding: 12px 16px;
+        border-radius: 12px;
+        flex: 1;
+        border: 1px solid var(--line-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      }
+
+      /* --- BADGES (Etiquetas de color) --- */
+      .badge-row {
+        display: flex;
         flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 6px;
+        align-items: center;
       }
-      .item.phase .badge {
-        background: var(--md-sys-color-primary-container, #eaddff);
-        color: var(--md-sys-color-on-primary-container, #21005d);
-      }
-      .time {
-        font-weight: 600;
-        min-width: 60px;
-      }
+
       .badge {
-        background: var(--md-sys-color-secondary-container, #e8def8);
-        color: var(--md-sys-color-on-secondary-container, #1d192b);
         padding: 2px 8px;
-        border-radius: 999px;
-        font-size: 0.85em;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
         display: inline-flex;
         align-items: center;
         gap: 4px;
       }
+      .badge md-icon {
+        font-size: 14px;
+      }
+
       .badge.goal {
-        background: var(--md-sys-color-tertiary-container, #d0bcff);
+        background: #d6f5d6;
+        color: #005229;
+      }
+      .badge.goal-own {
+        background: #ffebee;
+        color: #b71c1c;
       }
       .badge.card-yellow {
-        background: #fff3cd;
-        color: #665500;
+        background: #fff8e1;
+        color: #f57f17;
       }
       .badge.card-red {
-        background: #ffdad6;
-        color: #5c1a12;
+        background: #ffebee;
+        color: #b71c1c;
       }
-      .details {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        align-items: flex-start;
+      .badge.sub {
+        background: var(--header-bg);
+        color: var(--md-sys-color-on-surface-variant);
       }
-      .title-line {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-        width: fit-content;
+      .badge.phase-badge {
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
       }
-      .assist {
-        font-size: 0.9em;
+
+      /* TEXTOS DEL EVENTO */
+      .event-text {
+        font-size: 0.95rem;
+        color: var(--md-sys-color-on-surface);
+        font-weight: 500;
+        line-height: 1.4;
       }
-      .details-text {
-        font-size: 1em;
-        white-space: normal;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        width: fit-content;
+
+      .event-subtext {
+        font-size: 0.8rem;
+        color: var(--md-sys-color-on-surface-variant);
+        margin-top: 4px;
       }
-      .section-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+
+      /* EVENTO DE FASE (Medio tiempo, Fin, etc.) */
+      .event-item.phase-item {
+        justify-content: flex-start;
+      }
+      .event-item.phase-item .event-content {
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        text-align: center;
+        font-weight: bold;
+        flex: 0 1 auto;
+      }
+
+      /* --- VISTA ESCRITORIO (> 700px) --- */
+      @media (min-width: 700px) {
+        .timeline::before {
+          left: 50%;
+          transform: translateX(-50%); /* Línea al centro exacto */
+        }
+
+        .event-item {
+          width: 100%; /* La fila ocupa todo el ancho */
+          position: relative;
+          display: flex;
+        }
+
+        .minute-bubble {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          margin: 0;
+        }
+
+        /* Eventos Locales (Tarjeta a la izquierda) */
+        .event-item.team-local {
+          justify-content: flex-start; /* Empuja el contenido a la izquierda */
+        }
+        .event-item.team-local .event-content {
+          width: calc(
+            50% - 40px
+          ); /* La mitad exacta menos un respiro para la burbuja */
+          flex: none;
+          text-align: right;
+          box-sizing: border-box;
+        }
+        .event-item.team-local .badge-row {
+          justify-content: flex-end;
+        }
+
+        /* Eventos Visitantes (Tarjeta a la derecha) */
+        .event-item.team-visitor {
+          justify-content: flex-end; /* Empuja el contenido a la derecha */
+        }
+        .event-item.team-visitor .event-content {
+          width: calc(50% - 40px);
+          flex: none;
+          text-align: left;
+          box-sizing: border-box;
+        }
+
+        /* Eventos de Fase (Centro) */
+        .event-item.phase-item {
+          justify-content: center;
+        }
+        .event-item.phase-item .event-content {
+          width: auto;
+        }
+        .event-item.phase-item .minute-bubble {
+          display: none; /* En PC las fases no ocupan burbuja extra */
+        }
       }
     `,
   ];
@@ -94,16 +260,24 @@ export class EventsTimeline extends LitElement {
   override render() {
     if (!this.match) return html``;
     const items = this._buildTimelineItems();
+
     return html`
-      <div class="section-card">
-        <h3>Cronología</h3>
-        ${items.length === 0
-          ? html`<p>No hay eventos registrados.</p>`
-          : html`
-              <div class="timeline">
-                ${items.map(item => this._renderItem(item))}
-              </div>
-            `}
+      <div class="card">
+        <div class="section-header">
+          <h3><md-icon>history</md-icon> Cronología del Partido</h3>
+        </div>
+
+        <div class="timeline-container">
+          ${items.length === 0
+            ? html`<div class="no-events">
+                El partido no ha comenzado o no hay eventos registrados.
+              </div>`
+            : html`
+                <div class="timeline">
+                  ${items.map(item => this._renderItem(item))}
+                </div>
+              `}
+        </div>
       </div>
     `;
   }
@@ -125,39 +299,36 @@ export class EventsTimeline extends LitElement {
 
   private _renderGoalItem(item: TimelineItem) {
     if (item.kind !== 'goal') return null;
-    const goalTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
-    let playerTeam: TeamSide;
-    if (item.goal.ownGoal) {
-      playerTeam = item.team === 'local' ? 'visitor' : 'local';
-    } else {
-      playerTeam = item.team;
-    }
+    const isLocal = item.team === 'local';
+    const ownGoalTeam = isLocal ? 'visitor' : 'local';
+    const playerTeam = item.goal.ownGoal ? ownGoalTeam : item.team;
+    const alignClass = isLocal ? 'team-local' : 'team-visitor';
+
     return html`
-      <div class="item">
-        <span class="time">${item.minute}'</span>
-        <div class="details">
-          <div class="title-line">
-            <span class="badge goal">
+      <div class="event-item ${alignClass}">
+        <div class="minute-bubble">${item.minute}'</div>
+        <div class="event-content">
+          <div class="badge-row">
+            <span class="badge ${item.goal.ownGoal ? 'goal-own' : 'goal'}">
               <md-icon>sports_soccer</md-icon>
-              Gol ${goalTeamLabel}
+              ${item.goal.ownGoal ? 'Autogol' : 'Gol'}
             </span>
             ${item.goal.goalType
-              ? html`<span class="badge"
+              ? html`<span
+                  class="badge"
+                  style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
                   >${GOAL_TYPE_LABELS[item.goal.goalType]}</span
                 >`
-              : null}
-            ${item.goal.ownGoal
-              ? html`<span class="badge">Autogol</span>`
-              : null}
+              : ''}
           </div>
-          <div class="details-text">
+          <div class="event-text">
             ${this._playerName(playerTeam, item.goal.player)}
           </div>
           ${item.goal.assist
-            ? html`<div class="assist">
-                Asistencia: ${this._playerName(item.team, item.goal.assist)}
+            ? html`<div class="event-subtext">
+                A: ${this._playerName(item.team, item.goal.assist)}
               </div>`
-            : null}
+            : ''}
         </div>
       </div>
     `;
@@ -165,29 +336,31 @@ export class EventsTimeline extends LitElement {
 
   private _renderCardItem(item: TimelineItem) {
     if (item.kind !== 'card') return null;
-    const cardTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
+    const isLocal = item.team === 'local';
+    const alignClass = isLocal ? 'team-local' : 'team-visitor';
+    const isYellow = item.card.cardType === 'yellow';
+
     return html`
-      <div class="item">
-        <span class="time">${item.minute}'</span>
-        <div class="details">
-          <div class="title-line">
-            <span
-              class="badge ${item.card.cardType === 'yellow'
-                ? 'card-yellow'
-                : 'card-red'}"
-            >
-              <md-icon>crop_portrait</md-icon>
-              ${item.card.cardType === 'yellow' ? 'Amarilla' : 'Roja'}
-              ${cardTeamLabel}
+      <div class="event-item ${alignClass}">
+        <div class="minute-bubble">${item.minute}'</div>
+        <div class="event-content">
+          <div class="badge-row">
+            <span class="badge ${isYellow ? 'card-yellow' : 'card-red'}">
+              <md-icon style="font-size:16px;"
+                >${isYellow ? 'style' : 'crop_portrait'}</md-icon
+              >
+              ${isYellow ? 'Amarilla' : 'Roja'}
             </span>
             ${item.card.foulType
-              ? html`<span class="badge"
+              ? html`<span
+                  class="badge"
+                  style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
                   >${FOUL_TYPE_LABELS[item.card.foulType] ||
                   item.card.foulType}</span
                 >`
-              : null}
+              : ''}
           </div>
-          <div class="details-text">
+          <div class="event-text">
             ${this._playerName(item.team, item.card.player)}
           </div>
         </div>
@@ -197,26 +370,26 @@ export class EventsTimeline extends LitElement {
 
   private _renderSubItem(item: TimelineItem) {
     if (item.kind !== 'sub') return null;
-    const subTeamLabel = item.team === 'local' ? 'Local' : 'Visitante';
+    const isLocal = item.team === 'local';
+    const alignClass = isLocal ? 'team-local' : 'team-visitor';
+
     return html`
-      <div class="item">
-        <span class="time">${item.minute}'</span>
-        <div class="details">
-          <div class="title-line">
-            <span class="badge">
-              <md-icon>swap_horiz</md-icon>
-              Cambio ${subTeamLabel}
+      <div class="event-item ${alignClass}">
+        <div class="minute-bubble">${item.minute}'</div>
+        <div class="event-content">
+          <div class="badge-row">
+            <span class="badge sub">
+              <md-icon>swap_horiz</md-icon> Cambio
             </span>
           </div>
-          <div class="details-text">
-            <strong>Sale:</strong> ${this._playerName(
-              item.team,
-              item.sub.playerOut,
-            )}
-            &nbsp; | &nbsp; <strong>Entra:</strong> ${this._playerName(
-              item.team,
-              item.sub.playerIn,
-            )}
+          <div class="event-text" style="color: var(--md-sys-color-primary)">
+            + ${this._playerName(item.team, item.sub.playerIn)}
+          </div>
+          <div
+            class="event-text"
+            style="color: var(--app-color-danger, #D32F2F); opacity: 0.8;"
+          >
+            - ${this._playerName(item.team, item.sub.playerOut)}
           </div>
         </div>
       </div>
@@ -226,13 +399,13 @@ export class EventsTimeline extends LitElement {
   private _renderPhaseItem(item: TimelineItem) {
     if (item.kind !== 'phase') return null;
     return html`
-      <div class="item phase">
-        <span class="time">${item.minute}'</span>
-        <div class="details">
-          <span class="badge">
-            <md-icon>schedule</md-icon>
-            ${this._phaseLabel(item.phase)}
-          </span>
+      <div class="event-item phase-item">
+        <div class="minute-bubble mobile-only">${item.minute}'</div>
+        <div class="event-content">
+          <md-icon style="vertical-align: middle; margin-right: 4px;"
+            >schedule</md-icon
+          >
+          ${item.minute}' - ${this._phaseLabel(item.phase)}
         </div>
       </div>
     `;
@@ -280,9 +453,7 @@ export class EventsTimeline extends LitElement {
           }
           return 1;
         };
-        const pa = priority(a);
-        const pb = priority(b);
-        return pa - pb;
+        return priority(a) - priority(b);
       },
     );
   }

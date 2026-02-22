@@ -13,22 +13,273 @@ export class TablePage extends LitElement {
   static override readonly styles = [
     styles,
     css`
-      .team-name-cell {
-        cursor: pointer;
-        text-decoration: underline;
+      :host {
+        display: block;
+        padding: var(--space-16);
       }
 
-      @media (max-width: 600px) {
-        .stats-table {
-          display: block;
-          width: 100vw;
-          max-width: 100vw;
-          margin-left: calc(-50vw + 50%);
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          box-sizing: border-box;
-          padding: 0 8px;
+      /* Leyenda de clasificación */
+      .legend {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        font-size; 0.8rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .dot.qualified {
+        background-color: var(--md-sys-color-primary);
+      }
+      .dot.playin {
+        background-color: var(--app-color-warning, #FFC107);
+      }
+      .dot.eliminated {
+        background-color: var(--app-color-danger);
+      }
+
+      /* Contenedor principal */
+      .table-container {
+        display: flex;
+        flex-direction: column;
+        background: var(--md-sys-color-surface);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+      }
+
+      /* Vista movil */
+      .table-row {
+        position: relative;
+        display: grid;
+        grid-template-areas:
+        "pos logo team pts"
+        "pos logo stats pts";
+        grid-template-columns: 32px 48px 1fr 45px;
+        padding: 12px 8px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        cursor: pointer;
+        transition: background-color 0.2s;
+        gap: 4px 8px;
+        align-items: center;
+      }
+
+      .table-row:active {
+        background-color: var(--row-hover);
+      }
+
+      /* Indicador lateral de clasifiación */
+      .indicator-bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+      }
+      .qualified .indicator-bar {
+        background-color: var(--md-sys-color-primary);
+      }
+      .playin .indicator-bar {
+        background-color: var(--app-color-warning, #FFC107);
+      }
+      .eliminated .indicator-bar {
+        background-color: var(--app-color-danger, #F44336);
+      }
+      .cell {
+        display: flex;
+        align-items: center;
+      }
+      .cell-pos {
+        grid-area: pos;
+        justify-content: center;
+        font-weight: bold;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.9rem;
+      }
+      .cell-logo {
+        grid-area: logo;
+        justify-content: center;
+      }
+      .cell-logo img {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+      }
+      .cell-team {
+        grid-area: team;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: var(--md-sys-color-primary);
+        justify-content: flex-end;
+      }
+      .cell-pts {
+        grid-area: pts;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: var(--md-sys-color-on-surface);
+        background: var(--md-sys-color-surface-variant);
+        justify-content: flex-end;
+      }
+      
+      .mobile-stats {
+        grid-area: stats;
+        display: flex;
+        gap: 12px;
+        font-size: 0.75rem;
+        color: var(--md-sys-color-on-surface-variant);
+        align-self: flex-start;
+      }
+      .stat-pill {
+        display: flex;
+        gap: 4px;
+      }
+      .stat-label {
+        opacity: 0.7;
+      }
+      .desktop-header, .desktop-stat {
+        display: none;
+      }
+
+      /* Vista desktop */
+      @media (min-width: 700px) {
+        .table-container {
+          display: grid;
+          /*Definición de filas y columnas para desktop:
+          Pos(50) Logo(60) Equipo(1fr) | JJ JG JE JP | GF GC DG | PTS(80)
+          */
+          grid-template-columns: 50px 70px 1fr 50px 50px 50px 50px 60px 60px 60px 80px;
+          gap: 0;
         }
+
+        .cell-pos { grid-column: 1; }
+        .cell-logo { grid-column: 2; }
+        .cell-team { grid-column: 3; }
+        .stat-jj { grid-column: 4; }
+        .stat-jg { grid-column: 5; }
+        .stat-je { grid-column: 6; }
+        .stat-jp { grid-column: 7; }
+        .stat-gf { grid-column: 8; }
+        .stat-gc { grid-column: 9; }
+        .stat-dg { grid-column: 10; }
+        .cell-pts { grid-column: 11;
+          background: var(--md-sys-color-surface-variant);
+          color: var(--md-sys-color-on-surface);
+          font-weight:bold;
+        }
+
+        .desktop-header {
+          display: contents;
+        }
+        .header-cell {
+          background: var(--md-sys-color-primary-container);
+          color: var(--md-sys-color-on-primary-container);
+          font-weight: 700;
+          font-size: 0.85rem;
+          padding: 16px 8px;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .header-cell.align-left {
+          justify-content: flex-start;
+          padding-left: 16px;
+        }
+        .table-row {
+          display: contents;
+        }
+        .indicator-bar {
+          display: none;
+        }
+        .cell-pos, .cell-logo, .cell-team, .cell-pts {
+          grid-area: auto;
+        }
+        .cell {
+          padding: 8px;
+          border-bottom: 1px solid var(--md-sys-color-outline-variant);
+          justify-content: center;
+          height: 56px; /* Altura fija */
+          font-size: 0.95rem;
+          background: var(--md-sys-color-surface);
+        }
+        .cell-team {
+          justify-content: flex-start;
+          font-size: 1rem;
+          align-self: center;
+        }
+        .cell-logo img {
+          width: 32px;
+          height: 32px;
+        }
+        .cell-pts {
+          background: var(--md-sys-color-surface-variant);
+        }
+        .desktop-stat {
+          display: flex;
+        }
+        .mobile-stats {
+          display: none;
+        }
+        .table-row:hover .cell {
+          background-color: var(--row-hover);
+          cursor: pointer;
+        }
+        .cell-pos {
+          position: relative;
+        }
+        .qualified .cell-pos::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 4px;
+          bottom: 4px;
+          width: 4px;
+          background-color: var(--md-sys-color-primary);
+          border-radius: 0 4px 4px 0;
+        }
+        .playin .cell-pos::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 4px;
+          bottom: 4px;
+          width: 4px;
+          background-color: var(--app-color-warning, #FFC107);
+          border-radius: 0 4px 4px 0;
+        }
+        .eliminated .cell-pos::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 4px;
+          bottom: 4px;
+          width: 4px;
+          background-color: var(--app-color-danger, #F44336);
+          border-radius: 0 4px 4px 0;
+        }
+
+      }
+      .champion-legend {
+        max-width: 1100px;
+        margin: var(--space-8) auto var(--space-16);
+        padding: var(--space-12) var(--space-16);
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--radius-m);
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+        font-weight: 600;
+        justify-content: center;
       }
     `,
   ];
@@ -56,47 +307,73 @@ export class TablePage extends LitElement {
     }
     return html`
       <main>
-        <div class="stats-table">
-          <table class="greyGridTable">
-            <thead>
-              <tr>
-                <th>Pos</th>
-                <th colspan="2">Equipo</th>
-                <th>JJ</th>
-                <th>JG</th>
-                <th>JE</th>
-                <th>JP</th>
-                <th>GF</th>
-                <th>GC</th>
-                <th>DG</th>
-                <th>PTS</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.table.map(
-                (team, i) => html`
-                  <tr class="${this.getClass(i)}">
-                    <td>${i + 1}</td>
-                    <td>${getTeamImage(team.equipo)}</td>
-                    <td
-                      class="team-name-cell"
-                      @click=${() => this.selectTeam(team.equipo)}
-                    >
-                      ${team.equipo}
-                    </td>
-                    <td>${team.jj}</td>
-                    <td>${team.jg}</td>
-                    <td>${team.je}</td>
-                    <td>${team.jp}</td>
-                    <td>${team.gf}</td>
-                    <td>${team.gc}</td>
-                    <td>${team.dg}</td>
-                    <td>${team.pts}</td>
-                  </tr>
-                `,
-              )}
-            </tbody>
-          </table>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="dot qualified"></div>
+            Clasificado
+          </div>
+          <div class="legend-item">
+            <div class="dot playin"></div>
+            Play-in
+          </div>
+          <div class="legend-item">
+            <div class="dot eliminated"></div>
+            Eliminado
+          </div>
+        </div>
+
+        <div class="table-container">
+          <div class="desktop-header">
+            <div class="header-cell">Pos</div>
+            <div class="header-cell"></div>
+            <div class="header-cell align-left">Equipo</div>
+            <div class="header-cell">JJ</div>
+            <div class="header-cell">JG</div>
+            <div class="header-cell">JE</div>
+            <div class="header-cell">JP</div>
+            <div class="header-cell">GF</div>
+            <div class="header-cell">GC</div>
+            <div class="header-cell">DG</div>
+            <div class="header-cell">PTS</div>
+          </div>
+
+          ${this.table.map((team, index) => {
+            const statusClass = this.getClass(index);
+            return html`
+              <div
+                class="table-row ${statusClass}"
+                @click=${() => this.selectTeam(team.equipo)}
+              >
+                <div class="indicator-bar"></div>
+                <div class="cell cell-pos">${index + 1}</div>
+                <div class="cell cell-logo">${getTeamImage(team.equipo)}</div>
+                <div class="cell cell-team">${team.equipo}</div>
+
+                <div class="mobile-stats">
+                  <div class="stat-pill">
+                    <span class="stat-label">JJ:</span>
+                    <span>${team.jj}</span>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-label">DG:</span>
+                    <span>${team.dg}</span>
+                  </div>
+                  <div class="stat-pill">
+                    ${team.jg} - ${team.je} - ${team.jp}
+                  </div>
+                </div>
+
+                <div class="cell desktop-stat stat-jj">${team.jj}</div>
+                <div class="cell desktop-stat stat-jg">${team.jg}</div>
+                <div class="cell desktop-stat stat-je">${team.je}</div>
+                <div class="cell desktop-stat stat-jp">${team.jp}</div>
+                <div class="cell desktop-stat stat-gf">${team.gf}</div>
+                <div class="cell desktop-stat stat-gc">${team.gc}</div>
+                <div class="cell desktop-stat stat-dg">${team.dg}</div>
+                <div class="cell cell-pts">${team.pts}</div>
+              </div>
+            `;
+          })}
         </div>
       </main>
     `;
