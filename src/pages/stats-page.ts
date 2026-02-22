@@ -2,6 +2,7 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Match, Player, PlayerGame, PlayerTeam, TeamSide } from '../types';
 import styles from '../styles/liga-mx-hrlv-styles.js';
+import { getTeamImage } from '../utils/imageUtils.js';
 
 interface PlayerStats {
   key: string;
@@ -33,27 +34,135 @@ export class StatsPage extends LitElement {
     css`
       :host {
         display: block;
-        box-sizing: border-box;
         padding: 16px;
-        text-align: center;
+        --card-bg: var(--md-sys-color-surface);
       }
+
+      /* LAYOUT TIPO DASHBOARD */
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+
+      @media (min-width: 900px) {
+        .dashboard-grid {
+          /* En pantallas grandes, acomoda 2 tablas por fila */
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        /* Hacemos que la tabla principal de jugadores ocupe todo el ancho */
+        .card.full-width {
+          grid-column: 1 / -1;
+        }
+      }
+
+      /* ESTILO DE LAS TARJETAS */
       .card {
-        background: var(--md-sys-color-surface, #fff);
-        border-radius: 12px;
-        padding: 12px 14px;
-        box-shadow: var(--md-sys-elevation-1, 0 1px 3px rgba(0, 0, 0, 0.15));
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        overflow: hidden;
       }
-      .table-wrapper {
-        width: 100%;
-        overflow-x: auto;
+
+      .card-header {
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        padding-bottom: 12px;
       }
+
       h3 {
-        margin: 0 0 8px 0;
+        margin: 0 0 4px 0;
+        color: var(--md-sys-color-on-surface);
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .meta {
-        font-size: 0.9em;
-        color: var(--md-sys-color-on-surface-variant, #555);
+        font-size: 0.85rem;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      /* ESTILO LIMPIO PARA TODAS LAS TABLAS */
+      .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        /* Scroll suave en móvil */
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+
+      .modern-table th {
+        background: var(--md-sys-color-surface-container);
+        color: var(--md-sys-color-on-surface-variant);
+        font-weight: 600;
+        padding: 12px 16px;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--md-sys-color-outline-variant);
+      }
+
+      .modern-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        color: var(--md-sys-color-on-surface);
+        vertical-align: middle;
+      }
+
+      /* Hover sutil en las filas */
+      .modern-table tbody tr:hover {
+        background-color: var(--row-hover, rgba(0, 0, 0, 0.02));
+      }
+
+      /* Destacar la columna de "Posición" */
+      .modern-table td:first-child {
+        font-weight: bold;
+        color: var(--md-sys-color-on-surface-variant);
+        text-align: center;
+      }
+      .modern-table th:first-child {
+        text-align: center;
+      }
+
+      /* El #1 de los rankings resalta en dorado/primario */
+      .rank-1 td:first-child {
+        color: var(--app-color-warning, #ffb300);
+        font-size: 1.1rem;
+      }
+      .rank-1 {
+        background-color: rgba(255, 179, 0, 0.05);
+      }
+
+      /* Alineación de números a la derecha para legibilidad */
+      .modern-table th.num-col,
+      .modern-table td.num-col {
+        text-align: center;
+      }
+
+      /* Imagen del equipo chiquita en la tabla */
+      .team-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+      }
+      .team-cell img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
       }
     `,
   ];
@@ -63,208 +172,252 @@ export class StatsPage extends LitElement {
   @property({ type: Object }) players: PlayerTeam = new Map();
 
   override render() {
-    const { playerStats, teamStats, topScorers, topAssists, fairPlay } =
-      this._buildStats();
+    const { teamStats, topScorers, topAssists, fairPlay } = this._buildStats();
     const teamStatsByU23 = [...teamStats].sort(
       (a, b) => b.u23countedMinutes - a.u23countedMinutes,
     );
+
     return html`
-      <div class="card">
-        <h3>Estadísticas por jugador</h3>
-        <div class="meta">Ordenado por goles</div>
-        ${playerStats.length === 0
-          ? html`<p>No hay datos de jugadores.</p>`
-          : html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th>Pos</th>
-                    <th>Jugador</th>
-                    <th>Equipo</th>
-                    <th>G</th>
-                    <th>Asist</th>
-                    <th>A</th>
-                    <th>R</th>
-                    <th>Minutos jugados</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${playerStats.slice(0, 50).map(
-                    (p, i) =>
-                      html`<tr>
-                        <td>${i + 1}</td>
-                        <td>${p.name}</td>
-                        <td>${p.team}</td>
-                        <td>${p.goals}</td>
-                        <td>${p.assists}</td>
-                        <td>${p.yellows}</td>
-                        <td>${p.reds}</td>
-                        <td>${p.minutes}</td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
-            `}
-      </div>
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3><md-icon>sports_soccer</md-icon> Top Goleadores</h3>
+            <div class="meta">Los 10 mejores romperedes</div>
+          </div>
+          <div class="table-wrapper">
+            ${topScorers.length === 0
+              ? html`<p class="meta">Sin goles registrados.</p>`
+              : html`
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Jugador</th>
+                        <th>Equipo</th>
+                        <th class="num-col">G</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${topScorers.map(
+                        (p, i) => html`
+                          <tr class="${i === 0 ? 'rank-1' : ''}">
+                            <td>${i + 1}</td>
+                            <td style="font-weight: bold;">${p.name}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(p.team)} ${p.team}
+                              </div>
+                            </td>
+                            <td
+                              class="num-col"
+                              style="font-weight:bold; color: var(--md-sys-color-primary)"
+                            >
+                              ${p.goals}
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `}
+          </div>
+        </div>
 
-      <div class="card">
-        <h3>Estadísticas por equipo</h3>
-        <div class="meta">Goles a favor/en contra y disciplina</div>
-        ${teamStats.length === 0
-          ? html`<p>No hay datos de equipos.</p>`
-          : html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th>Pos</th>
-                    <th>Equipo</th>
-                    <th>GF</th>
-                    <th>GC</th>
-                    <th>Dif</th>
-                    <th>A</th>
-                    <th>R</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${teamStats.map(
-                    (t, i) =>
-                      html`<tr>
-                        <td>${i + 1}</td>
-                        <td>${t.team}</td>
-                        <td>${t.goalsFor}</td>
-                        <td>${t.goalsAgainst}</td>
-                        <td>${t.goalsFor - t.goalsAgainst}</td>
-                        <td>${t.yellows}</td>
-                        <td>${t.reds}</td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
-            `}
-      </div>
+        <div class="card">
+          <div class="card-header">
+            <h3><md-icon>assist_walker</md-icon> Top Asistencias</h3>
+            <div class="meta">Los 10 mejores pasadores</div>
+          </div>
+          <div class="table-wrapper">
+            ${topAssists.length === 0
+              ? html`<p class="meta">Sin asistencias registradas.</p>`
+              : html`
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Jugador</th>
+                        <th>Equipo</th>
+                        <th class="num-col">Ast</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${topAssists.map(
+                        (p, i) => html`
+                          <tr class="${i === 0 ? 'rank-1' : ''}">
+                            <td>${i + 1}</td>
+                            <td style="font-weight: bold;">${p.name}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(p.team)} ${p.team}
+                              </div>
+                            </td>
+                            <td
+                              class="num-col"
+                              style="font-weight:bold; color: var(--md-sys-color-primary)"
+                            >
+                              ${p.assists}
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `}
+          </div>
+        </div>
 
-      <div class="card">
-        <h3>Ranking goleadores</h3>
-        ${topScorers.length === 0
-          ? html`<p>Sin goles registrados.</p>`
-          : html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th>Pos</th>
-                    <th>Jugador</th>
-                    <th>Equipo</th>
-                    <th>G</th>
-                    <th>Asist</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${topScorers.map(
-                    (p, i) =>
-                      html`<tr>
-                        <td>${i + 1}</td>
-                        <td>${p.name}</td>
-                        <td>${p.team}</td>
-                        <td>${p.goals}</td>
-                        <td>${p.assists}</td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
-            `}
-      </div>
-      <div class="card">
-        <h3>Ranking asistencias</h3>
-        ${topAssists.length === 0
-          ? html`<p>Sin asistencias registradas.</p>`
-          : html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th>Pos</th>
-                    <th>Jugador</th>
-                    <th>Equipo</th>
-                    <th>Asist</th>
-                    <th>G</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${topAssists.map(
-                    (p, i) =>
-                      html`<tr>
-                        <td>${i + 1}</td>
-                        <td>${p.name}</td>
-                        <td>${p.team}</td>
-                        <td>${p.assists}</td>
-                        <td>${p.goals}</td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
-            `}
-      </div>
-      <div class="card">
-        <h3>Ranking fair play (menos puntos)</h3>
-        <div class="meta">Puntaje: Amarilla=1, Roja=2</div>
-        ${fairPlay.length === 0
-          ? html`<p>Sin tarjetas registradas.</p>`
-          : html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th>Pos</th>
-                    <th>Equipo</th>
-                    <th>Puntos</th>
-                    <th>A</th>
-                    <th>R</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${fairPlay.map(
-                    (t, i) =>
-                      html`<tr>
-                        <td>${i + 1}</td>
-                        <td>${t.team}</td>
-                        <td>${t.yellows + t.reds * 2}</td>
-                        <td>${t.yellows}</td>
-                        <td>${t.reds}</td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
-            `}
-      </div>
-      <div class="card">
-        <h3>Minutos de menores</h3>
-        ${teamStats && teamStats.length > 0
-          ? html`
-              <table class="greyGridTable">
-                <thead>
-                  <tr>
-                    <th>Pos</th>
-                    <th>Equipo</th>
-                    <th>Menores alineados</th>
-                    <th>Minutos acumulados</th>
-                    <th>Minutos al reglamento</th>
-                    <th>Minutos por cumplir</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${teamStatsByU23.map(
-                    (t, i) =>
-                      html`<tr>
-                        <td>${i + 1}</td>
-                        <td>${t.team}</td>
-                        <td>${t.u23PlayersCount}</td>
-                        <td>${t.u23totalMinutes}</td>
-                        <td>${t.u23countedMinutes}</td>
-                        <td>${t.u23minutesToFulfill}</td>
-                      </tr>`,
-                  )}
-                </tbody>
-              </table>
-            `
-          : html`<p>No hay datos de minutos de menores.</p>`}
+        <div class="card full-width">
+          <div class="card-header">
+            <h3><md-icon>boy</md-icon> Regla de Menores (Sub-23)</h3>
+            <div class="meta">Minutos acumulados para cumplir la norma</div>
+          </div>
+          <div class="table-wrapper">
+            ${teamStats.length === 0
+              ? html`<p class="meta">No hay datos.</p>`
+              : html`
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Equipo</th>
+                        <th class="num-col">Menores Alineados</th>
+                        <th class="num-col">Minutos Acumulados</th>
+                        <th class="num-col">Min. Acreditados</th>
+                        <th class="num-col">Faltan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${teamStatsByU23.map(
+                        (t, i) => html`
+                          <tr>
+                            <td>${i + 1}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(t.team)} ${t.team}
+                              </div>
+                            </td>
+                            <td class="num-col">${t.u23PlayersCount}</td>
+                            <td class="num-col">${t.u23totalMinutes}'</td>
+                            <td
+                              class="num-col"
+                              style="font-weight:bold; color:var(--md-sys-color-primary)"
+                            >
+                              ${t.u23countedMinutes}'
+                            </td>
+                            <td
+                              class="num-col"
+                              style="color: ${t.u23minutesToFulfill === 0
+                                ? 'var(--md-sys-color-primary)'
+                                : 'var(--app-color-danger, #D32F2F)'}; font-weight:bold;"
+                            >
+                              ${t.u23minutesToFulfill === 0
+                                ? '✓ Cumplido'
+                                : t.u23minutesToFulfill + "'"}
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><md-icon>style</md-icon> Ranking Fair Play</h3>
+            <div class="meta">Menos puntos es mejor (A=1, R=2)</div>
+          </div>
+          <div class="table-wrapper">
+            ${fairPlay.length === 0
+              ? html`<p class="meta">Sin tarjetas.</p>`
+              : html`
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Equipo</th>
+                        <th class="num-col">Pts</th>
+                        <th class="num-col" style="color:#B8860B">A</th>
+                        <th class="num-col" style="color:#D32F2F">R</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${fairPlay.map(
+                        (t, i) => html`
+                          <tr class="${i === 0 ? 'rank-1' : ''}">
+                            <td>${i + 1}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(t.team)} ${t.team}
+                              </div>
+                            </td>
+                            <td class="num-col" style="font-weight:bold;">
+                              ${t.yellows + t.reds * 2}
+                            </td>
+                            <td class="num-col">${t.yellows}</td>
+                            <td class="num-col">${t.reds}</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><md-icon>bar_chart</md-icon> Ofensiva y Defensiva</h3>
+            <div class="meta">Goles a favor y en contra</div>
+          </div>
+          <div class="table-wrapper">
+            ${teamStats.length === 0
+              ? html`<p class="meta">No hay datos.</p>`
+              : html`
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Equipo</th>
+                        <th class="num-col">GF</th>
+                        <th class="num-col">GC</th>
+                        <th class="num-col">Dif</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${teamStats.slice(0, 10).map(
+                        (t, i) => html`
+                          <tr>
+                            <td>${i + 1}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(t.team)} ${t.team}
+                              </div>
+                            </td>
+                            <td class="num-col">${t.goalsFor}</td>
+                            <td class="num-col">${t.goalsAgainst}</td>
+                            <td
+                              class="num-col"
+                              style="font-weight:bold; color:${t.goalsFor -
+                                t.goalsAgainst >
+                              0
+                                ? 'var(--md-sys-color-primary)'
+                                : 'inherit'}"
+                            >
+                              ${t.goalsFor - t.goalsAgainst > 0
+                                ? '+'
+                                : ''}${t.goalsFor - t.goalsAgainst}
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `}
+          </div>
+        </div>
       </div>
     `;
   }
