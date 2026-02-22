@@ -25,100 +25,209 @@ export class SubstitutionsCard extends LitElement {
         display: block;
         width: 100%;
         box-sizing: border-box;
-        contain: content;
-      }
-      .lineup {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 24px;
-        align-items: start;
-      }
-      .lineup > div {
-        width: 100%;
-      }
-      .substitution-entry {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .substitution-details {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1 1 auto;
-        min-width: 0;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .substitution-details div {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        --card-bg: var(--md-sys-color-surface);
+        --header-bg: var(--md-sys-color-surface-container);
+        --event-bg: var(--md-sys-color-surface-variant);
+        --color-in: #2e7d32; /* Verde fuerte */
+        --color-out: #c62828; /* Rojo fuerte */
       }
 
-      .substitution-actions {
-        display: flex;
-        gap: 4px;
-      }
-      .out {
-        color: orange;
-      }
-      .in {
-        color: green;
-      }
-      .delete-btn {
-        color: var(--md-sys-color-error, #b00020);
-      }
-      .edit-btn {
-        color: var(--md-sys-color-primary, #6200ee);
-      }
-      @media (max-width: 600px) {
-        .lineup {
-          grid-template-columns: 1fr;
-        }
-        .substitution-entry {
-          flex-direction: column;
-        }
-
-        .substitution-details {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .substitution-details div {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-      }
-      player-info {
-        flex: 1 1 auto;
-        min-width: 0;
-        margin: 0;
-      }
-      .add-substitution-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        margin-top: 16px;
-        justify-content: center;
-      }
-      .edit-substitution-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        margin-top: 8px;
-      }
-      div[role='radiogroup'] {
+      /* LA TARJETA */
+      .card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
+      }
+
+      /* CABECERA GENERAL */
+      .section-header {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      .section-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--md-sys-color-on-surface);
+      }
+
+      /* GRID DE DOS COLUMNAS (LOCAL VS VISITANTE) */
+      .teams-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      @media (min-width: 600px) {
+        .teams-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .team-column:first-child {
+          border-right: 1px solid var(--md-sys-color-outline-variant);
+        }
+      }
+
+      .team-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .team-header {
+        background: var(--header-bg);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+      }
+
+      .team-header span.score-pill {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+      }
+
+      /* EVENTO CAMBIO */
+      .sub-entry {
+        display: flex;
+        align-items: stretch; /* Para que la burbuja y la info compartan altura */
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        transition: background 0.2s;
+        gap: 16px;
+      }
+
+      .sub-entry:hover {
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .minute-bubble {
+        background: var(--event-bg);
+        color: var(--md-sys-color-on-surface);
+        font-weight: bold;
+        padding: 6px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        align-self: center;
+      }
+
+      .sub-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .player-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .player-row md-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .player-row.in md-icon {
+        color: var(--color-in);
+      }
+      .player-row.out md-icon {
+        color: var(--color-out);
+      }
+
+      .player-wrapper {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .sub-actions {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .sub-actions md-icon-button {
+        --md-icon-button-icon-size: 20px;
+        width: 32px;
+        height: 32px;
+      }
+
+      .delete-btn {
+        color: var(--app-color-danger, #d32f2f);
+      }
+      .edit-btn {
+        color: var(--md-sys-color-primary);
+      }
+
+      /* FORMULARIO AGREGAR (FOOTER) */
+      .add-sub-section {
+        padding: 20px;
+        background: var(--card-bg);
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      .add-sub-header {
+        font-size: 1rem;
+        font-weight: bold;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--md-sys-color-primary);
+      }
+
+      /* Flexbox para formularios que no se enciman */
+      .form-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .form-grid > * {
+        flex: 1 1 180px;
+        max-width: 100%;
+      }
+
+      md-filled-text-field,
+      md-outlined-select {
+        width: 100%;
+      }
+
+      .full-width {
+        flex: 1 1 100% !important;
+      }
+
+      .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        background: var(--header-bg);
+        padding: 8px 12px;
+        border-radius: 8px;
+        box-sizing: border-box;
       }
     `,
   ];
@@ -130,6 +239,7 @@ export class SubstitutionsCard extends LitElement {
   @query('#subOut') subOutSelect!: MdOutlinedSelect;
   @query('#subIn') subInSelect!: MdOutlinedSelect;
   @query('#subMinute') subMinuteInput!: MdFilledTextField;
+
   @query('#editSubDialog') editSubDialog!: MdDialog;
   @query('#editSubOut') editSubOutSelect!: MdOutlinedSelect;
   @query('#editSubIn') editSubInSelect!: MdOutlinedSelect;
@@ -150,189 +260,143 @@ export class SubstitutionsCard extends LitElement {
       sub,
       index,
     }));
+    const localSubs = substitutionsWithIndex.filter(
+      ({ sub }) => sub.team === 'local',
+    );
+    const visitorSubs = substitutionsWithIndex.filter(
+      ({ sub }) => sub.team === 'visitor',
+    );
+
     return html`
-      <div class="section card">
-        <h3>Cambios (${substitutions.length || 0})</h3>
-        <div class="lineup">
-          <div>
-            <h4>Local</h4>
-            ${substitutionsWithIndex
-              .filter(({ sub }) => sub.team === 'local')
-              .map(
-                ({ sub, index }) => html`
-                  <div class="substitution-entry">
-                    <div class="substitution-details">
-                      <div>
-                        <player-info
-                          .player=${this.localPlayers.find(
-                            p => p.number === sub.playerOut,
-                          )}
-                        ></player-info>
-                        <md-icon class="out">arrow_outward</md-icon>
-                      </div>
-                      <div>
-                        <player-info
-                          .player=${this.localPlayers.find(
-                            p => p.number === sub.playerIn,
-                          )}
-                        ></player-info>
-                        <md-icon class="in">arrow_insert</md-icon>
-                      </div>
-                      <span>Minuto ${sub.minute}</span>
-                    </div>
-                    <div class="substitution-actions">
-                      <md-icon-button
-                        aria-label="Editar cambio"
-                        title="Editar cambio"
-                        @click=${() => this._openEditSub(sub, index)}
-                      >
-                        <md-icon class="edit-btn">edit</md-icon>
-                      </md-icon-button>
-                      <md-icon-button
-                        aria-label="Eliminar cambio"
-                        title="Eliminar cambio"
-                        @click=${() => this._deleteSub(index)}
-                      >
-                        <md-icon class="delete-btn">delete</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </div>
-                `,
-              )}
+      <div class="card">
+        <div class="section-header">
+          <h3><md-icon>swap_horiz</md-icon> Cambios</h3>
+        </div>
+
+        <div class="teams-grid">
+          <div class="team-column">
+            <div class="team-header">
+              <span>Local</span>
+              <span class="score-pill">${localSubs.length}</span>
+            </div>
+            ${localSubs.length === 0
+              ? html`<div
+                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                >
+                  Sin cambios
+                </div>`
+              : ''}
+            ${localSubs.map(({ sub, index }) =>
+              this.renderSubEntry(sub, index, 'local'),
+            )}
           </div>
-          <div>
-            <h4>Visitante</h4>
-            ${substitutionsWithIndex
-              .filter(({ sub }) => sub.team === 'visitor')
-              .map(
-                ({ sub, index }) =>
-                  html`<div class="substitution-entry">
-                    <div class="substitution-details">
-                      <div>
-                        <player-info
-                          .player=${this.visitorPlayers.find(
-                            p => p.number === sub.playerOut,
-                          )}
-                        ></player-info>
-                        <md-icon class="out">arrow_outward</md-icon>
-                      </div>
-                      <div>
-                        <player-info
-                          .player=${this.visitorPlayers.find(
-                            p => p.number === sub.playerIn,
-                          )}
-                        ></player-info>
-                        <md-icon class="in">arrow_insert</md-icon>
-                      </div>
-                      <span>Minuto ${sub.minute}</span>
-                    </div>
-                    <div class="substitution-actions">
-                      <md-icon-button
-                        aria-label="Editar cambio"
-                        title="Editar cambio"
-                        @click=${() => this._openEditSub(sub, index)}
-                      >
-                        <md-icon class="edit-btn">edit</md-icon>
-                      </md-icon-button>
-                      <md-icon-button
-                        aria-label="Eliminar cambio"
-                        title="Eliminar cambio"
-                        @click=${() => this._deleteSub(index)}
-                      >
-                        <md-icon class="delete-btn">delete</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </div>`,
-              )}
+
+          <div class="team-column">
+            <div class="team-header">
+              <span>Visitante</span>
+              <span class="score-pill">${visitorSubs.length}</span>
+            </div>
+            ${visitorSubs.length === 0
+              ? html`<div
+                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                >
+                  Sin cambios
+                </div>`
+              : ''}
+            ${visitorSubs.map(({ sub, index }) =>
+              this.renderSubEntry(sub, index, 'visitor'),
+            )}
           </div>
         </div>
-        <div class="add-substitution-form">
-          <md-filled-text-field
-            aria-label="Minuto del cambio"
-            label="Minuto"
-            type="number"
-            inputmode="numeric"
-            id="subMinute"
-            class="minute-input"
-            min="0"
-            max="90"
-            @change=${this._validateAddSub}
-          ></md-filled-text-field>
-          <div role="radiogroup" aria-label="Equipo del cambio">
-            <label>
-            <md-radio
-              name="subTeam"
-              value="local"
-              ?checked=${side === 'local'}
-              @change=${() => {
-                this.subTeam = 'local';
-                this._onSubTeamChange();
-              }}
-              ></md-radio>
-              Local
-            </label>
-            <label>
-            <md-radio
-              name="subTeam"
-              value="visitor"
-              ?checked=${side === 'visitor'}
-              @change=${() => {
-                this.subTeam = 'visitor';
-                this._onSubTeamChange();
-              }}
-              ></md-radio>
-              Visitante
-              <label>
+
+        <div class="add-sub-section">
+          <div class="add-sub-header">
+            <md-icon>add_circle</md-icon> Registrar Cambio
           </div>
-          <md-outlined-select
-            id="subOut"
-            aria-label="Jugador que sale"
-            title="Jugador que sale"
-            @change=${this._validateAddSub}
-          >
-            <md-select-option value="" disabled selected
-              >Selecciona jugador</md-select-option
+
+          <div class="form-grid">
+            <div class="radio-group full-width">
+              <label
+                ><md-radio
+                  name="subTeam"
+                  value="local"
+                  ?checked=${side === 'local'}
+                  @change=${() => {
+                    this.subTeam = 'local';
+                    this._onSubTeamChange();
+                  }}
+                ></md-radio>
+                Local</label
+              >
+              <label
+                ><md-radio
+                  name="subTeam"
+                  value="visitor"
+                  ?checked=${side === 'visitor'}
+                  @change=${() => {
+                    this.subTeam = 'visitor';
+                    this._onSubTeamChange();
+                  }}
+                ></md-radio>
+                Visitante</label
+              >
+            </div>
+
+            <md-filled-text-field
+              label="Minuto"
+              type="number"
+              id="subMinute"
+              min="0"
+              max="90"
+              @change=${this._validateAddSub}
+            ></md-filled-text-field>
+
+            <md-outlined-select
+              id="subOut"
+              label="Sale (-)"
+              @change=${this._validateAddSub}
             >
-            ${this._getActivePlayers(side).map(
-              p =>
-                html`<md-select-option value=${p.number}
-                  >${p.name}</md-select-option
-                >`,
-            )}
-          </md-outlined-select>
-          <md-outlined-select
-            id="subIn"
-            aria-label="Jugador que entra"
-            title="Jugador que entra"
-            @change=${this._validateAddSub}
-          >
-            <md-select-option value="" disabled selected
-              >Selecciona jugador</md-select-option
+              <md-select-option value="" disabled selected></md-select-option>
+              ${this._getActivePlayers(side).map(
+                p =>
+                  html`<md-select-option value=${p.number}
+                    >${p.name}</md-select-option
+                  >`,
+              )}
+            </md-outlined-select>
+
+            <md-outlined-select
+              id="subIn"
+              label="Entra (+)"
+              @change=${this._validateAddSub}
             >
-            ${this._getSubstitutePlayers(side).map(
-              p =>
-                html`<md-select-option value=${p.number}
-                  >${p.name}</md-select-option
-                >`,
-            )}
-          </md-outlined-select>
-          <md-filled-button
-            class="action-btn"
-            aria-label="Agregar cambio"
-            title="Agregar cambio"
-            ?disabled=${this.disableAddSub}
-            @click=${this._addSub}
-            ><md-icon>swap_horiz</md-icon
-            ><span class="btn-label">Agregar cambio</span></md-filled-button
-          >
+              <md-select-option value="" disabled selected></md-select-option>
+              ${this._getSubstitutePlayers(side).map(
+                p =>
+                  html`<md-select-option value=${p.number}
+                    >${p.name}</md-select-option
+                  >`,
+              )}
+            </md-outlined-select>
+
+            <md-filled-button
+              id="addSubButton"
+              class="action-btn"
+              ?disabled=${this.disableAddSub}
+              @click=${this._addSub}
+            >
+              <md-icon slot="icon">swap_horiz</md-icon> Agregar
+            </md-filled-button>
+          </div>
         </div>
       </div>
+
       <md-dialog id="editSubDialog" type="modal">
         <div slot="headline">Editar cambio</div>
-        <div slot="content">
-          <div class="edit-substitution-form">
-            <div role="radiogroup" aria-label="Equipo del cambio">
-              <md-radio
+        <div slot="content" class="form-grid" style="margin-top: 8px;">
+          <div class="radio-group full-width">
+            <label
+              ><md-radio
                 name="editSubTeam"
                 value="local"
                 ?checked=${this.editSubTeam === 'local'}
@@ -340,9 +404,11 @@ export class SubstitutionsCard extends LitElement {
                   this.editSubTeam = 'local';
                   this._validateEditForm();
                 }}
-                >Local</md-radio
-              >
-              <md-radio
+              ></md-radio>
+              Local</label
+            >
+            <label
+              ><md-radio
                 name="editSubTeam"
                 value="visitor"
                 ?checked=${this.editSubTeam === 'visitor'}
@@ -350,70 +416,108 @@ export class SubstitutionsCard extends LitElement {
                   this.editSubTeam = 'visitor';
                   this._validateEditForm();
                 }}
-                >Visitante</md-radio
-              >
-            </div>
-            <md-outlined-select
-              id="editSubOut"
-              aria-label="Jugador que sale"
-              title="Jugador que sale"
-              @change=${this._validateEditForm}
+              ></md-radio>
+              Visitante</label
             >
-              <md-select-option value="" disabled selected
-                >Selecciona jugador</md-select-option
-              >
-              ${this.editOutPlayers.map(
-                p =>
-                  html`<md-select-option value=${p.number}
-                    >${p.name}</md-select-option
-                  >`,
-              )}
-            </md-outlined-select>
-            <md-outlined-select
-              id="editSubIn"
-              aria-label="Jugador que entra"
-              title="Jugador que entra"
-              @change=${this._validateEditForm}
-            >
-              <md-select-option value="" disabled selected
-                >Selecciona jugador</md-select-option
-              >
-              ${this.editInPlayers.map(
-                p =>
-                  html`<md-select-option value=${p.number}
-                    >${p.name}</md-select-option
-                  >`,
-              )}
-            </md-outlined-select>
-            <md-filled-text-field
-              aria-label="Minuto del cambio"
-              label="Minuto"
-              type="number"
-              inputmode="numeric"
-              id="editSubMinute"
-              class="minute-input"
-              min="0"
-              max="90"
-              @change=${this._validateEditForm}
-            ></md-filled-text-field>
           </div>
+
+          <md-filled-text-field
+            label="Minuto"
+            type="number"
+            id="editSubMinute"
+            min="0"
+            max="90"
+            @change=${this._validateEditForm}
+          ></md-filled-text-field>
+
+          <md-outlined-select
+            id="editSubOut"
+            label="Sale (-)"
+            @change=${this._validateEditForm}
+          >
+            ${this.editOutPlayers.map(
+              p =>
+                html`<md-select-option value=${p.number}
+                  >${p.name}</md-select-option
+                >`,
+            )}
+          </md-outlined-select>
+
+          <md-outlined-select
+            id="editSubIn"
+            label="Entra (+)"
+            @change=${this._validateEditForm}
+          >
+            ${this.editInPlayers.map(
+              p =>
+                html`<md-select-option value=${p.number}
+                  >${p.name}</md-select-option
+                >`,
+            )}
+          </md-outlined-select>
         </div>
         <div slot="actions">
-          <md-filled-button
-            aria-label="Cancelar edición de cambio"
-            title="Cancelar edición de cambio"
-            @click=${this._closeEditDialog}
+          <md-filled-button class="action-btn" @click=${this._closeEditDialog}
             >Cancelar</md-filled-button
           >
           <md-filled-button
-            aria-label="Guardar cambio editado"
-            title="Guardar cambio editado"
-            ?disabled=${this.disableSaveEditedSub}
             @click=${this._saveEditedSub}
+            ?disabled=${this.disableSaveEditedSub}
             >Guardar</md-filled-button
           >
         </div>
       </md-dialog>
+    `;
+  }
+
+  // Helper para renderizar cada fila de cambio
+  private renderSubEntry(sub: Substitution, index: number, teamSide: TeamSide) {
+    const playersPool =
+      teamSide === 'local' ? this.localPlayers : this.visitorPlayers;
+    const playerOut = playersPool.find(p => p.number === sub.playerOut);
+    const playerIn = playersPool.find(p => p.number === sub.playerIn);
+
+    return html`
+      <div class="sub-entry">
+        <div class="minute-bubble">${sub.minute}'</div>
+
+        <div class="sub-info">
+          <div class="player-row in">
+            <md-icon title="Entra">arrow_upward</md-icon>
+            <div class="player-wrapper">
+              ${playerIn
+                ? html`<player-info .player=${playerIn}></player-info>`
+                : html`<span style="font-weight: 500;"
+                    >Jugador #${sub.playerIn}</span
+                  >`}
+            </div>
+          </div>
+
+          <div class="player-row out">
+            <md-icon title="Sale">arrow_downward</md-icon>
+            <div class="player-wrapper">
+              ${playerOut
+                ? html`<player-info .player=${playerOut}></player-info>`
+                : html`<span style="font-weight: 500;"
+                    >Jugador #${sub.playerOut}</span
+                  >`}
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-actions">
+          <md-icon-button
+            @click=${() => this._openEditSub(sub, index)}
+            title="Editar"
+            ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+          >
+          <md-icon-button
+            @click=${() => this._deleteSub(index)}
+            title="Eliminar"
+            ><md-icon class="delete-btn">delete</md-icon></md-icon-button
+          >
+        </div>
+      </div>
     `;
   }
 
@@ -622,6 +726,7 @@ export class SubstitutionsCard extends LitElement {
     const playerIn = Number(this.editSubInSelect.value);
     const minute = Number(this.editSubMinuteInput.value);
     const updatedSub: Substitution = { team, playerOut, playerIn, minute };
+
     const substitutions = [...(this.match.substitutions || [])];
     substitutions[this.editingSubIndex] = updatedSub;
     this._updateSubstitutions(substitutions);

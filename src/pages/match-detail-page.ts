@@ -34,18 +34,190 @@ export class MatchDetailPage extends LitElement {
       :host {
         display: block;
         padding: 16px;
-        --md-icon-button-icon-color: #e0e0e0;
-        --md-icon-button-hover-icon-color: #a5d6a7;
+        /* Colores base para la página */
+        --card-bg: var(--md-sys-color-surface, #ffffff);
+        --header-bg: var(--md-sys-color-surface-container, #f8fafc);
       }
-      .phase-events {
-        margin: 16px 0 24px;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+
+      /* --- HEADER DEL PARTIDO (MARCADOR) --- */
+      .match-header-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 24px 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      /* Efecto de fondo sutil para el header */
+      .match-header-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: var(--md-sys-color-primary);
+      }
+
+      /* Barra de navegación superior (Back & Edit) */
+      .top-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 8px;
+        background: var(--header-bg);
+        border-radius: 24px;
+        padding: 4px;
+      }
+
+      /* Duelo Principal */
+      .duel-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .team-side {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .team-side img {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+      }
+
+      .team-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--md-sys-color-on-surface);
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      /* El Marcador */
+      .score-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .score-numbers {
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: var(--md-sys-color-primary);
+        letter-spacing: -2px;
+        line-height: 1;
+        background: var(--header-bg);
+        padding: 8px 16px;
+        border-radius: 16px;
+      }
+
+      /* Información de Tiempo y Lugar */
+      .match-meta {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 24px;
+        font-size: 0.9rem;
+        color: var(--md-sys-color-on-surface-variant);
+        flex-wrap: wrap;
+      }
+
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--header-bg);
+        padding: 6px 12px;
+        border-radius: 8px;
+      }
+
+      /* Modo Edición */
+      .edit-form {
+        display: flex;
+        flex-wrap: wrap;
         gap: 12px;
-        align-items: end;
+        justify-content: center;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px dashed var(--md-sys-color-outline-variant);
       }
-      .phase-actions h3 {
-        margin: 0 0 8px;
+      .edit-form > * {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      /* --- GRID DE COMPONENTES HIJOS --- */
+      .match-components-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      @media (min-width: 900px) {
+        .match-components-grid {
+          /* En escritorio: 2 columnas */
+          grid-template-columns: 1fr 1fr;
+          align-items: start;
+        }
+
+        /* La línea de tiempo siempre ocupa todo el ancho arriba */
+        events-timeline {
+          grid-column: 1 / -1;
+        }
+
+        /* Las alineaciones (que suelen ser largas) a la izquierda */
+        lineups-card {
+          grid-column: 1;
+          grid-row: 2 / span 3; /* Ocupa varias filas hacia abajo */
+        }
+
+        /* Los demás a la derecha apilados */
+        goals-card {
+          grid-column: 2;
+          grid-row: 2;
+        }
+        cards-card {
+          grid-column: 2;
+          grid-row: 3;
+        }
+        substitutions-card {
+          grid-column: 2;
+          grid-row: 4;
+        }
+      }
+
+      /* Ajustes móviles para escudos */
+      @media (max-width: 600px) {
+        .team-side img {
+          width: 60px;
+          height: 60px;
+        }
+        .score-numbers {
+          font-size: 2.5rem;
+        }
+        .team-name {
+          font-size: 1rem;
+        }
+        .match-meta {
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
       }
     `,
   ];
@@ -74,124 +246,147 @@ export class MatchDetailPage extends LitElement {
 
   override render() {
     if (!this.match) {
-      return html`<p>Cargando detalles del partido</p>`;
+      return html`<p style="text-align:center; padding: 40px;">
+        Cargando detalles del partido...
+      </p>`;
     }
     this._updatePlayerLists();
 
     const { local, visitante, fecha, hora, estadio, golLocal, golVisitante } =
       this.match;
+    const isPlayed = this.match.phaseEvents?.some(e => e.phase === 'start');
 
     return html`
-      <section class="match-detail-header">
-        <h2>
-          ${getTeamImage(local)} ${local} vs ${visitante}
-          ${getTeamImage(visitante)}
-        </h2>
-        <h2>${golLocal} - ${golVisitante}</h2>
-        <div id="matchTitleActions">
-          <md-icon-button
-            id="backButton"
-            @click=${this._goBack}
-            title="Volver"
-            aria-label="Volver"
-          >
+      <section class="match-header-card">
+        <div class="top-nav">
+          <md-icon-button @click=${this._goBack} aria-label="Volver">
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
-          ${this.isEditing
-            ? html`
-                <md-icon-button
-                  id="saveMatchInfoButton"
-                  @click=${this.editMatchInfo}
-                  title="Guardar información del partido"
-                  aria-label="Guardar información del partido"
-                >
-                  <md-icon>save</md-icon>
-                </md-icon-button>
-                <md-icon-button
-                  id="cancelEditMatchInfoButton"
-                  @click=${() => (this.isEditing = false)}
-                  title="Cancelar edición"
-                  aria-label="Cancelar edición"
-                >
-                  <md-icon>cancel</md-icon>
-                </md-icon-button>
-              `
-            : html`
-                <md-icon-button
-                  id="editMatchInfoButton"
-                  @click=${() => (this.isEditing = true)}
-                  title="Editar información del partido"
-                  aria-label="Editar información del partido"
-                >
-                  <md-icon>edit</md-icon>
-                </md-icon-button>
-              `}
-          ${this.renderPhaseButton()}
+
+          <div class="action-buttons">
+            ${this.renderPhaseButton()}
+            ${this.isEditing
+              ? html`
+                  <md-icon-button @click=${this.editMatchInfo} title="Guardar"
+                    ><md-icon>save</md-icon></md-icon-button
+                  >
+                  <md-icon-button
+                    @click=${() => (this.isEditing = false)}
+                    title="Cancelar"
+                    ><md-icon>cancel</md-icon></md-icon-button
+                  >
+                `
+              : html`
+                  <md-icon-button
+                    @click=${() => (this.isEditing = true)}
+                    title="Editar información"
+                    ><md-icon>edit</md-icon></md-icon-button
+                  >
+                `}
+          </div>
         </div>
+
+        <div class="duel-container">
+          <div class="team-side">
+            ${getTeamImage(local)}
+            <span class="team-name">${local}</span>
+          </div>
+
+          <div class="score-center">
+            ${isPlayed
+              ? html`<div class="score-numbers">
+                  ${golLocal} - ${golVisitante}
+                </div>`
+              : html`<div
+                  class="score-numbers"
+                  style="font-size: 2rem; color: var(--md-sys-color-on-surface-variant)"
+                >
+                  VS
+                </div>`}
+          </div>
+
+          <div class="team-side">
+            ${getTeamImage(visitante)}
+            <span class="team-name">${visitante}</span>
+          </div>
+        </div>
+
         ${this.isEditing
           ? html`
-              <md-filled-text-field
-                label="Fecha"
-                aria-label="Fecha"
-                id="fechaInput"
-                type="date"
-                .value=${formatDateYYYYMMDD(fecha as Date)}
-              ></md-filled-text-field>
-              <md-filled-text-field
-                label="Hora"
-                aria-label="Hora"
-                id="horaInput"
-                type="time"
-                .value=${hora}
-              ></md-filled-text-field>
-              <md-filled-select
-                label="Estadio"
-                aria-label="Estadio"
-                id="estadioSelect"
-                .value=${estadio}
-              >
-                ${this.stadiums.map(
-                  stadium =>
-                    html`<md-select-option value=${stadium}
-                      >${stadium}</md-select-option
-                    >`,
-                )}
-              </md-filled-select>
+              <div class="edit-form">
+                <md-filled-text-field
+                  label="Fecha"
+                  id="fechaInput"
+                  type="date"
+                  .value=${formatDateYYYYMMDD(fecha as Date)}
+                ></md-filled-text-field>
+                <md-filled-text-field
+                  label="Hora"
+                  id="horaInput"
+                  type="time"
+                  .value=${hora}
+                ></md-filled-text-field>
+                <md-filled-select
+                  label="Estadio"
+                  id="estadioSelect"
+                  .value=${estadio}
+                >
+                  ${this.stadiums.map(
+                    stadium =>
+                      html`<md-select-option value=${stadium}
+                        >${stadium}</md-select-option
+                      >`,
+                  )}
+                </md-filled-select>
+              </div>
             `
           : html`
-              <p>
-                <strong>Fecha:</strong> ${formatDateDDMMYYYY(fecha as Date)}
-                &nbsp;|&nbsp; <strong>Hora:</strong> ${hora} &nbsp;|&nbsp;
-                <strong>Estadio:</strong> ${estadio}
-              </p>
+              <div class="match-meta">
+                <div class="meta-item">
+                  <md-icon style="font-size: 18px">calendar_today</md-icon>
+                  ${formatDateDDMMYYYY(fecha as Date)}
+                </div>
+                <div class="meta-item">
+                  <md-icon style="font-size: 18px">schedule</md-icon> ${hora}
+                </div>
+                <div class="meta-item">
+                  <md-icon style="font-size: 18px">stadium</md-icon> ${estadio}
+                </div>
+              </div>
             `}
       </section>
 
-      <events-timeline
-        .match=${this.match}
-        .localPlayers=${this.localPlayers}
-        .visitorPlayers=${this.visitorPlayers}
-      ></events-timeline>
-      <goals-card
-        .match=${this.match}
-        .localPlayers=${this.localPlayers}
-        .visitorPlayers=${this.visitorPlayers}
-      ></goals-card>
-      <lineups-card
-        .match=${this.match}
-        .localPlayers=${this.localPlayers}
-        .visitorPlayers=${this.visitorPlayers}
-      ></lineups-card>
-      <substitutions-card
-        .match=${this.match}
-        .localPlayers=${this.localPlayers}
-        .visitorPlayers=${this.visitorPlayers}
-      ></substitutions-card>
-      <cards-card
-        .match=${this.match}
-        .localPlayers=${this.localPlayers}
-        .visitorPlayers=${this.visitorPlayers}
-      ></cards-card>
+      <div class="match-components-grid">
+        <events-timeline
+          .match=${this.match}
+          .localPlayers=${this.localPlayers}
+          .visitorPlayers=${this.visitorPlayers}
+        ></events-timeline>
+
+        <lineups-card
+          .match=${this.match}
+          .localPlayers=${this.localPlayers}
+          .visitorPlayers=${this.visitorPlayers}
+        ></lineups-card>
+
+        <goals-card
+          .match=${this.match}
+          .localPlayers=${this.localPlayers}
+          .visitorPlayers=${this.visitorPlayers}
+        ></goals-card>
+
+        <cards-card
+          .match=${this.match}
+          .localPlayers=${this.localPlayers}
+          .visitorPlayers=${this.visitorPlayers}
+        ></cards-card>
+
+        <substitutions-card
+          .match=${this.match}
+          .localPlayers=${this.localPlayers}
+          .visitorPlayers=${this.visitorPlayers}
+        ></substitutions-card>
+      </div>
     `;
   }
 

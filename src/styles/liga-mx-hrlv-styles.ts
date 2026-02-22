@@ -23,15 +23,6 @@ export default css`
     );
     font-size: 14px;
 
-    /* Design tokens (mezcla marca + M3) */
-    --color-primary: #4caf50; /* marca */
-    --color-on-primary: #ffffff;
-    --color-surface: #f7f7f7;
-    --color-surface-variant: #e0e0e0;
-    --color-on-surface: #1a2b42;
-    --color-outline: #d0d7de;
-    --table-row-alt: #d0e4f5;
-
     /* Espaciado y radios */
     --space-2: 2px;
     --space-4: 4px;
@@ -43,23 +34,112 @@ export default css`
     --radius-s: 6px;
     --radius-m: 12px;
 
-    /* Map a tokens de Material Web */
-    --md-sys-color-primary: var(--color-primary);
-    --md-sys-color-on-primary: var(--color-on-primary);
-    /* RGB helper for translucent accents (use as: rgba(var(--color-primary-rgb), .06)) */
-    --color-primary-rgb: 76, 175, 80;
-    --md-sys-color-surface: var(--color-surface);
-    --md-sys-color-on-surface: var(--color-on-surface);
-    --md-sys-color-surface-container-highest: var(--color-surface-variant);
-    --md-filled-select-text-field-container-color: var(--color-surface-variant);
-    --md-sys-color-secondary-container: var(--color-primary);
-    --md-menu-item-label-text-color: var(--color-on-surface);
-    --md-menu-container-color: var(--color-surface-variant);
-    --md-filled-select-text-field-input-text-color: var(--color-on-surface);
-    --md-dialog-container-color: var(--color-surface-variant);
+    /* Colores de marca */
+    /* Colores de Marca */
+    --md-sys-color-primary: #008744; /* Verde pasto intenso (estilo Google/Sports) */
+    --md-sys-color-on-primary: #ffffff; /* Texto en botones primarios */
+    --md-sys-color-primary-container: #d6f5d6; /* Fondo suave para elementos activos */
+    --md-sys-color-on-primary-container: #003314; /* Texto sobre el fondo suave */
+    --md-sys-color-outline-variant: #cbd5e1; /* Líneas de contorno suaves */
+    --md-sys-color-surface-variant: #e2e8f0; /* Superficie secundaria (fondo de tarjetas) */
+    --md-sys-color-surface-container: #f8fafc; /* Contenedor de superficie (tarjetas) */
+    --md-sys-color-background: #f5f7fa; /* Un gris muy sutil, casi blanco, para profundidad */
+    --md-sys-color-surface: #ffffff; /* Tarjetas blancas limpias */
+    --md-sys-color-on-surface: #1a1c1e; /* Texto principal casi negro */
+    --md-sys-color-on-surface-variant: #475569; /* Texto secundario (fechas, estadios) */
+    --md-sys-color-surface-container-lowest: #ffffff;
+    --md-sys-color-variant: #c5c5c5;
 
-    background-color: var(--color-surface);
-    color: var(--color-on-surface);
+    --row-hover: rgba(0, 0, 0, 0.04);
+
+    --md-filled-select-text-field-container-color: #f0f4f8; /* Fondo del input */
+    --md-filled-text-field-container-color: #f0f4f8; /* Fondo del input */
+
+    --md-sys-color-secondary-container: var(--md-sys-color-primary-container);
+    --md-menu-item-label-text-color: var(--md-sys-color-on-surface);
+    --md-menu-container-color: var(--md-sys-color-surface);
+    --md-filled-select-text-field-input-text-color: var(
+      --md-sys-color-on-surface
+    );
+    --md-dialog-container-color: var(--md-sys-color-surface);
+    --md-dialog-title-text-color: var(--md-sys-color-on-surface);
+    --md-dialog-content-text-color: var(--md-sys-color-on-surface-variant);
+    --md-filled-select-text-field-active-indicator-color: var(
+      --md-sys-color-primary
+    );
+    --md-filled-select-text-field-focus-active-indicator-color: var(
+      --md-sys-color-primary
+    );
+    /* Acentos de Futbol */
+    --app-color-whistle: #607d8b; /* Gris metálico para íconos neutros o bordes */
+    --app-color-warning: #ffc107; /* Amarillo tarjeta */
+    --app-color-danger: #d32f2f; /* Rojo tarjeta */
+
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-surface);
+  }
+
+  /* Dark mode automático */
+  @media (prefers-color-scheme: dark) {
+    :host {
+      /* Colores de Marca */
+      --md-sys-color-primary: #4ade80; /* Un verde neón más brillante para resaltar en lo oscuro */
+      --md-sys-color-on-primary: #003314;
+      --md-sys-color-primary-container: #005229;
+      --md-sys-color-on-primary-container: #d6f5d6;
+
+      /* Colores de Fondo */
+      --md-sys-color-background: #0f172a; /* Un azul muy oscuro (tipo noche) en vez de negro plano */
+      --md-sys-color-surface: #1e293b; /* Tarjetas un poco más claras */
+      --md-sys-color-on-surface: #e2e8f0; /* Texto blanco suave */
+      --md-sys-color-on-surface-variant: #94a3b8; /* Texto secundario */
+      --md-sys-color-surface-variant: #334155;
+      --md-sys-color-surface-container: #1e293b;
+      --md-sys-color-outline-variant: #475569;
+      --row-hover: rgba(255, 255, 255, 0.06);
+      --md-sys-color-surface-container-lowest: #0b1120;
+
+      /* Fondo del input (un poco más claro que el fondo de la app) */
+      --md-filled-select-text-field-container-color: #334155;
+      --md-filled-text-field-container-color: #334155;
+
+      /* Color de fondo selección (Verde bosque oscuro) */
+      --md-sys-color-secondary-container: #005229;
+
+      /* Texto claro pero no blanco quemante */
+      --md-menu-item-label-text-color: #e2e8f0;
+
+      /* Fondo del menú (igual a las tarjetas) */
+      --md-menu-container-color: #1e293b;
+
+      /* Texto del input */
+      --md-filled-select-text-field-input-text-color: #e2e8f0;
+
+      /* Fondo del diálogo */
+      --md-dialog-container-color: #1e293b;
+
+      /* Texto del diálogo */
+      --md-dialog-title-text-color: #e2e8f0;
+      --md-dialog-content-text-color: #e2e8f0;
+      /* Acentos de Futbol */
+      --app-color-whistle: #90a4ae; /* Gris metálico más claro para mejor contraste */
+      --app-color-warning: #ffb300; /* Amarillo tarjeta más oscuro para mejor visibilidad */
+      --app-color-danger: #c62828; /* Rojo tarjeta más oscuro para mejor visibilidad */
+
+      --md-filled-select-text-field-active-indicator-color: var(
+        --md-sys-color-primary
+      );
+      --md-filled-select-text-field-focus-active-indicator-color: var(
+        --md-sys-color-primary
+      );
+    }
+    table.greyGridTable thead {
+      background: var(--color-surface-variant);
+    }
+    table.greyGridTable thead th {
+      color: var(--md-sys-color-on-surface);
+      border-left: 2px solid var(--md-sys-color-outline-variant);
+    }
   }
 
   main {
@@ -91,7 +171,10 @@ export default css`
     background: var(--table-row-alt);
   }
   table.greyGridTable thead {
-    background: #ffffff;
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    font-weight: bold;
+    font-size: 0.85rem;
     /* make header sticky */
     position: sticky;
     top: 0;
@@ -158,7 +241,7 @@ export default css`
   /* Generic card + section used across components */
   .card,
   .app-card {
-    background: var(--md-sys-color-surface-container-highest);
+    background: var(--md-sys-color-surface);
     border-radius: var(--radius-m);
     padding: var(--space-12);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
@@ -305,41 +388,6 @@ export default css`
 
   button:hover {
     background-color: #45a049;
-  }
-
-  .qualified {
-    background-color: var(--color-primary) !important;
-    color: var(--color-on-primary);
-  }
-
-  .playin {
-    background-color: #ff9800 !important;
-    color: white;
-  }
-
-  .eliminated {
-    background-color: #f44336 !important;
-    color: white;
-  }
-
-  /* Dark mode automático */
-  @media (prefers-color-scheme: dark) {
-    :host {
-      --color-surface: #0f1115;
-
-      --color-surface-variant: #1a2028;
-      --color-on-surface: #e6e6e6;
-      --table-row-alt: #19202a;
-      background-color: var(--color-surface);
-      color: var(--color-on-surface);
-    }
-    table.greyGridTable thead {
-      background: var(--color-surface-variant);
-    }
-    table.greyGridTable thead th {
-      color: var(--color-on-surface);
-      border-left: 2px solid var(--color-outline);
-    }
   }
 
   #scrollTopButton {

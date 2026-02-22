@@ -29,92 +29,221 @@ export class CardsCard extends LitElement {
         display: block;
         width: 100%;
         box-sizing: border-box;
-        contain: content;
+        --card-bg: var(--md-sys-color-surface);
+        --header-bg: var(--md-sys-color-surface-container);
+        --event-bg: var(--md-sys-color-surface-variant);
       }
-      .lineup {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 24px;
-        align-items: start;
-      }
-      .lineup > div {
-        width: 100%;
-      }
-      .card-entry {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .card-details {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1 1 auto;
-        min-width: 0;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .card-actions {
-        display: flex;
-        gap: 4px;
-      }
-      .yellow-card {
-        color: yellow;
-        font-variation-settings: 'FILL' 1;
-      }
-      .red-card {
-        color: red;
-        font-variation-settings: 'FILL' 1;
-      }
-      .delete-btn {
-        color: var(--md-sys-color-error, #b00020);
-      }
-      .edit-btn {
-        color: var(--md-sys-color-primary, #6200ee);
-      }
-      .badge {
-        background: var(--md-sys-color-secondary-container, #e8def8);
-        color: var(--md-sys-color-on-secondary-container, #1d192b);
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-size: 0.8em;
-      }
-      @media (max-width: 600px) {
-        .lineup {
-          grid-template-columns: 1fr;
-        }
-        .card-actions {
-          margin-top: 4px;
-        }
-      }
-      player-info {
-        flex: 1 1 auto;
-        min-width: 0;
-        margin: 0;
-      }
-      .add-card-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        margin-top: 16px;
-        justify-content: center;
-      }
-      .edit-card-form {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-        margin-top: 8px;
-      }
-      div[role='radiogroup'] {
+
+      /* LA TARJETA */
+      .card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+      }
+
+      /* CABECERA GENERAL */
+      .section-header {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      .section-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--md-sys-color-on-surface);
+      }
+
+      /* GRID DE DOS COLUMNAS (LOCAL VS VISITANTE) */
+      .teams-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      @media (min-width: 600px) {
+        .teams-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .team-column:first-child {
+          border-right: 1px solid var(--md-sys-color-outline-variant);
+        }
+      }
+
+      .team-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .team-header {
+        background: var(--header-bg);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+      }
+
+      .team-header span.score-pill {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+      }
+
+      /* EVENTO TARJETA */
+      .card-entry {
+        display: flex;
+        align-items: stretch;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        transition: background 0.2s;
+        gap: 16px;
+      }
+
+      .card-entry:hover {
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .minute-bubble {
+        background: var(--event-bg);
+        color: var(--md-sys-color-on-surface);
+        font-weight: bold;
+        padding: 6px;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        align-self: center;
+      }
+
+      .card-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
         gap: 4px;
+        min-width: 0;
+        justify-content: center;
+      }
+
+      .player-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .player-wrapper {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        margin-top: 4px;
+        /* Alineamos con la foto del player-info saltando el ícono de 18px + 8px de gap */
+        padding-left: 26px;
+      }
+
+      @media (max-width: 600px) {
+        .card-meta {
+          padding-left: 0;
+        }
+      }
+
+      .badge {
+        background: var(--md-sys-color-secondary-container);
+        color: var(--md-sys-color-on-secondary-container);
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .card-actions {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .card-actions md-icon-button {
+        --md-icon-button-icon-size: 20px;
+        width: 32px;
+        height: 32px;
+      }
+
+      .delete-btn {
+        color: var(--app-color-danger, #d32f2f);
+      }
+      .edit-btn {
+        color: var(--md-sys-color-primary);
+      }
+
+      /* FORMULARIOS (FLEXBOX FLUIDO) */
+      .add-card-section {
+        padding: 20px;
+        background: var(--card-bg);
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+      }
+
+      .add-card-header {
+        font-size: 1rem;
+        font-weight: bold;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--md-sys-color-primary);
+      }
+
+      .form-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .form-grid > * {
+        flex: 1 1 180px;
+        max-width: 100%;
+      }
+
+      md-filled-text-field,
+      md-outlined-select {
+        width: 100%;
+      }
+
+      .full-width {
+        flex: 1 1 100% !important;
+      }
+
+      .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        background: var(--header-bg);
+        padding: 8px 12px;
+        border-radius: 8px;
+        box-sizing: border-box;
       }
     `,
   ];
@@ -154,342 +283,360 @@ export class CardsCard extends LitElement {
       editCardTypeSelected,
       this.editCardFoulTypeSelect?.value as FoulType,
     );
+
     const cardsWithIndex = cards.map((card, index) => ({ card, index }));
+    const localCards = cardsWithIndex.filter(
+      ({ card }) => card.team === 'local',
+    );
+    const visitorCards = cardsWithIndex.filter(
+      ({ card }) => card.team === 'visitor',
+    );
+
     return html`
-      <div class="section card">
-        <h3>Tarjetas (${cards.length || 0})</h3>
-        <div class="lineup">
-          <div id="cardsCountLocal">
-            <h4>Local: ${cards.filter(c => c.team === 'local').length || 0}</h4>
-            ${cardsWithIndex
-              .filter(({ card }) => card.team === 'local')
-              .map(
-                ({ card, index }) => html`
-                  <div class="card-entry">
-                    <div class="card-details">
-                      <player-info
-                        .player=${this.localPlayers.find(
-                          p => p.number === card.player,
-                        )}
-                      ></player-info>
-                      <md-icon
-                        class="${card.cardType === 'yellow'
-                          ? 'yellow-card'
-                          : 'red-card'}"
-                        >crop_portrait</md-icon
-                      ><span>Minuto: ${card.minute}</span>
-                      ${card.foulType
-                        ? html`<span class="badge"
-                            >${FOUL_TYPE_LABELS[card.foulType] ||
-                            card.foulType}</span
-                          >`
-                        : null}
-                    </div>
-                    <div class="card-actions">
-                      <md-icon-button
-                        aria-label="Editar tarjeta"
-                        title="Editar tarjeta"
-                        @click=${() => this._openEditCard(card, index)}
-                      >
-                        <md-icon class="edit-btn">edit</md-icon>
-                      </md-icon-button>
-                      <md-icon-button
-                        aria-label="Eliminar tarjeta"
-                        title="Eliminar tarjeta"
-                        @click=${() => this._deleteCard(index)}
-                      >
-                        <md-icon class="delete-btn">delete</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </div>
-                `,
-              )}
+      <div class="card">
+        <div class="section-header">
+          <h3><md-icon>style</md-icon> Tarjetas</h3>
+        </div>
+
+        <div class="teams-grid">
+          <div class="team-column">
+            <div class="team-header">
+              <span>Local</span>
+              <span class="score-pill">${localCards.length}</span>
+            </div>
+            ${localCards.length === 0
+              ? html`<div
+                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                >
+                  Sin tarjetas
+                </div>`
+              : ''}
+            ${localCards.map(({ card, index }) =>
+              this.renderCardEntry(card, index, 'local'),
+            )}
           </div>
-          <div id="cardsCountVisitor">
-            <h4>
-              Visitante: ${cards.filter(c => c.team === 'visitor').length || 0}
-            </h4>
-            ${cardsWithIndex
-              .filter(({ card }) => card.team === 'visitor')
-              .map(
-                ({ card, index }) => html`
-                  <div class="card-entry">
-                    <div class="card-details">
-                      <player-info
-                        .player=${this.visitorPlayers.find(
-                          p => p.number === card.player,
-                        )}
-                      ></player-info>
-                      <md-icon
-                        class="${card.cardType === 'yellow'
-                          ? 'yellow-card'
-                          : 'red-card'}"
-                        >crop_portrait</md-icon
-                      ><span>Minuto: ${card.minute}</span>
-                      ${card.foulType
-                        ? html`<span class="badge"
-                            >${FOUL_TYPE_LABELS[card.foulType] ||
-                            card.foulType}</span
-                          >`
-                        : null}
-                    </div>
-                    <div class="card-actions">
-                      <md-icon-button
-                        aria-label="Editar tarjeta"
-                        title="Editar tarjeta"
-                        @click=${() => this._openEditCard(card, index)}
-                      >
-                        <md-icon class="edit-btn">edit</md-icon>
-                      </md-icon-button>
-                      <md-icon-button
-                        aria-label="Eliminar tarjeta"
-                        title="Eliminar tarjeta"
-                        @click=${() => this._deleteCard(index)}
-                      >
-                        <md-icon class="delete-btn">delete</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </div>
-                `,
-              )}
+
+          <div class="team-column">
+            <div class="team-header">
+              <span>Visitante</span>
+              <span class="score-pill">${visitorCards.length}</span>
+            </div>
+            ${visitorCards.length === 0
+              ? html`<div
+                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                >
+                  Sin tarjetas
+                </div>`
+              : ''}
+            ${visitorCards.map(({ card, index }) =>
+              this.renderCardEntry(card, index, 'visitor'),
+            )}
           </div>
         </div>
 
-        <div class="add-card-form">
-          <md-filled-text-field
-            aria-label="Minuto de la tarjeta"
-            label="Minuto"
-            type="number"
-            inputmode="numeric"
-            id="cardMinute"
-            class="minute-input"
-            min="0"
-            max="90"
-            @change=${this._validateAddCard}
-          ></md-filled-text-field>
-          <div role="radiogroup" aria-label="Equipo tarjeta">
-            <label>
-              <md-radio
-                name="cardTeam"
-                value="local"
-                .checked=${this.cardTeam === 'local'}
-                @change=${(e: Event) => {
-                  this.cardTeam = (e.target as MdRadio).value as TeamSide;
-                  this._onCardTeamChange();
-                }}
-              ></md-radio>
-              Local
-            </label>
-            <label>
-              <md-radio
-                name="cardTeam"
-                value="visitor"
-                .checked=${this.cardTeam === 'visitor'}
-                @change=${(e: Event) => {
-                  this.cardTeam = (e.target as MdRadio).value as TeamSide;
-                  this._onCardTeamChange();
-                }}
-              ></md-radio>
-              Visitante
-            </label>
+        <div class="add-card-section">
+          <div class="add-card-header">
+            <md-icon>add_circle</md-icon> Registrar Tarjeta
           </div>
-          <md-outlined-select
-            id="cardPlayer"
-            aria-label="Jugador tarjeta"
-            title="Jugador tarjeta"
-            @change=${this._validateAddCard}
-          >
-            <md-select-option value="" disabled selected
-              >Selecciona jugador</md-select-option
-            >
-            ${(cardSide === 'local'
-              ? this.localPlayers
-              : this.visitorPlayers
-            ).map(
-              p =>
-                html`<md-select-option value=${p.number}
-                  >${p.name}</md-select-option
-                >`,
-            )}
-          </md-outlined-select>
-          <div role="radiogroup" aria-label="Tipo de tarjeta">
-            <label>
-              <md-radio
-                name="cardType"
-                value="yellow"
-                .checked=${this.cardTypeState === 'yellow'}
-                @change=${(e: Event) => {
-                  this.cardTypeState = (e.target as MdRadio).value as CardType;
-                  this._onCardTypeChange();
-                }}
-              ></md-radio>
-              Amarilla
-            </label>
-            <label>
-              <md-radio
-                name="cardType"
-                value="red"
-                .checked=${this.cardTypeState === 'red'}
-                @change=${(e: Event) => {
-                  this.cardTypeState = (e.target as MdRadio).value as CardType;
-                  this._onCardTypeChange();
-                }}
-              ></md-radio>
-              Roja
-            </label>
-          </div>
-          <md-outlined-select
-            id="cardFoulType"
-            aria-label="Tipo de falta"
-            title="Tipo de falta"
-            @change=${this._validateAddCard}
-            ?disabled=${!cardTypeSelected}
-          >
-            <md-select-option value="" disabled selected
-              >Selecciona tipo de falta</md-select-option
-            >
-            ${addFoulOptions.map(
-              option =>
-                html`<md-select-option value=${option.value}
-                  >${option.label}</md-select-option
-                >`,
-            )}
-          </md-outlined-select>
-          <md-filled-button
-            class="action-btn"
-            aria-label="Agregar tarjeta"
-            title="Agregar tarjeta"
-            ?disabled=${this.disableAddCard}
-            @click=${this._addCard}
-            ><md-icon>warning</md-icon
-            ><span class="btn-label">Agregar Tarjeta</span></md-filled-button
-          >
-        </div>
-      </div>
-      <md-dialog id="editCardDialog" type="modal">
-        <div slot="headline">Editar tarjeta</div>
-        <div slot="content">
-          <div class="edit-card-form">
-            <div role="radiogroup" aria-label="Equipo tarjeta">
-              <label>
-                <md-radio
-                  name="editCardTeam"
-                  value="local"
-                  .checked=${this.editCardTeamState === 'local'}
-                  @change=${(e: Event) => {
-                    this.editCardTeamState = (e.target as MdRadio)
-                      .value as TeamSide;
-                    this._onCardTeamChange();
-                  }}
-                ></md-radio>
-                Local
-              </label>
-              <label>
-                <md-radio
-                  name="editCardTeam"
-                  value="visitor"
-                  .checked=${this.editCardTeamState === 'visitor'}
-                  @change=${(e: Event) => {
-                    this.editCardTeamState = (e.target as MdRadio)
-                      .value as TeamSide;
-                    this._onCardTeamChange();
-                  }}
-                ></md-radio>
-                Visitante
-              </label>
-            </div>
-            <md-outlined-select
-              id="editCardPlayer"
-              aria-label="Jugador tarjeta"
-              title="Jugador tarjeta"
-              @change=${this._validateEditForm}
-            >
-              <md-select-option value="" disabled selected
-                >Selecciona jugador</md-select-option
+
+          <div class="form-grid">
+            <div class="radio-group full-width">
+              <span
+                style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                >Equipo:</span
               >
-              ${this.editPlayers.map(
+              <label
+                ><md-radio
+                  name="cardTeam"
+                  value="local"
+                  .checked=${this.cardTeam === 'local'}
+                  @change=${(e: Event) => {
+                    this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                    this._onCardTeamChange();
+                  }}
+                ></md-radio>
+                Local</label
+              >
+              <label
+                ><md-radio
+                  name="cardTeam"
+                  value="visitor"
+                  .checked=${this.cardTeam === 'visitor'}
+                  @change=${(e: Event) => {
+                    this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                    this._onCardTeamChange();
+                  }}
+                ></md-radio>
+                Visitante</label
+              >
+            </div>
+
+            <md-filled-text-field
+              label="Minuto"
+              type="number"
+              id="cardMinute"
+              min="0"
+              max="90"
+              @change=${this._validateAddCard}
+              required
+            ></md-filled-text-field>
+
+            <md-outlined-select
+              id="cardPlayer"
+              label="Jugador"
+              @change=${this._validateAddCard}
+              required
+            >
+              <md-select-option value="" disabled selected></md-select-option>
+              ${(cardSide === 'local'
+                ? this.localPlayers
+                : this.visitorPlayers
+              ).map(
                 p =>
                   html`<md-select-option value=${p.number}
                     >${p.name}</md-select-option
                   >`,
               )}
             </md-outlined-select>
-            <md-filled-text-field
-              aria-label="Minuto de la tarjeta"
-              label="Minuto"
-              type="number"
-              inputmode="numeric"
-              id="editCardMinute"
-              class="minute-input"
-              min="0"
-              max="90"
-              @change=${this._validateEditForm}
-            ></md-filled-text-field>
-            <div role="radiogroup" aria-label="Tipo de tarjeta">
-              <label>
-                <md-radio
-                  name="editCardType"
-                  value="yellow"
-                  .checked=${this.editCardTypeState === 'yellow'}
-                  @change=${(e: Event) => {
-                    this.editCardTypeState = (e.target as MdRadio)
-                      .value as CardType;
-                    this._onEditCardTypeChange();
-                  }}
-                ></md-radio>
-                Amarilla
-              </label>
-              <label>
-                <md-radio
-                  name="editCardType"
-                  value="red"
-                  .checked=${this.editCardTypeState === 'red'}
-                  @change=${(e: Event) => {
-                    this.editCardTypeState = (e.target as MdRadio)
-                      .value as CardType;
-                    this._onEditCardTypeChange();
-                  }}
-                ></md-radio>
-                Roja
-              </label>
-            </div>
-            <md-outlined-select
-              id="editCardFoulType"
-              aria-label="Tipo de falta"
-              title="Tipo de falta"
-              @change=${this._validateEditForm}
-              ?disabled=${!editCardTypeSelected}
-            >
-              <md-select-option value="" disabled selected
-                >Selecciona tipo de falta</md-select-option
+
+            <div class="radio-group">
+              <span
+                style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                >Tipo:</span
               >
-              ${editFoulOptions.map(
+              <label
+                ><md-radio
+                  name="cardType"
+                  value="yellow"
+                  .checked=${this.cardTypeState === 'yellow'}
+                  @change=${(e: Event) => {
+                    this.cardTypeState = (e.target as MdRadio)
+                      .value as CardType;
+                    this._onCardTypeChange();
+                  }}
+                ></md-radio>
+                Amarilla</label
+              >
+              <label
+                ><md-radio
+                  name="cardType"
+                  value="red"
+                  .checked=${this.cardTypeState === 'red'}
+                  @change=${(e: Event) => {
+                    this.cardTypeState = (e.target as MdRadio)
+                      .value as CardType;
+                    this._onCardTypeChange();
+                  }}
+                ></md-radio>
+                Roja</label
+              >
+            </div>
+
+            <md-outlined-select
+              id="cardFoulType"
+              label="Motivo (Opcional)"
+              @change=${this._validateAddCard}
+              ?disabled=${!cardTypeSelected}
+            >
+              <md-select-option value="" disabled selected></md-select-option>
+              ${addFoulOptions.map(
                 option =>
                   html`<md-select-option value=${option.value}
                     >${option.label}</md-select-option
                   >`,
               )}
             </md-outlined-select>
+
+            <md-filled-button
+              class="action-btn full-width"
+              ?disabled=${this.disableAddCard}
+              @click=${this._addCard}
+            >
+              <md-icon slot="icon">warning</md-icon> Agregar Tarjeta
+            </md-filled-button>
           </div>
         </div>
+      </div>
+
+      <md-dialog id="editCardDialog" type="modal">
+        <div slot="headline">Editar tarjeta</div>
+        <div slot="content" class="form-grid" style="margin-top: 8px;">
+          <div class="radio-group full-width">
+            <span
+              style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+              >Equipo:</span
+            >
+            <label
+              ><md-radio
+                name="editCardTeam"
+                value="local"
+                .checked=${this.editCardTeamState === 'local'}
+                @change=${(e: Event) => {
+                  this.editCardTeamState = (e.target as MdRadio)
+                    .value as TeamSide;
+                  this._onCardTeamChange();
+                }}
+              ></md-radio>
+              Local</label
+            >
+            <label
+              ><md-radio
+                name="editCardTeam"
+                value="visitor"
+                .checked=${this.editCardTeamState === 'visitor'}
+                @change=${(e: Event) => {
+                  this.editCardTeamState = (e.target as MdRadio)
+                    .value as TeamSide;
+                  this._onCardTeamChange();
+                }}
+              ></md-radio>
+              Visitante</label
+            >
+          </div>
+
+          <md-filled-text-field
+            label="Minuto"
+            type="number"
+            id="editCardMinute"
+            min="0"
+            max="90"
+            @change=${this._validateEditForm}
+            required
+          ></md-filled-text-field>
+
+          <md-outlined-select
+            id="editCardPlayer"
+            label="Jugador"
+            @change=${this._validateEditForm}
+            required
+          >
+            ${this.editPlayers.map(
+              p =>
+                html`<md-select-option value=${p.number}
+                  >${p.name}</md-select-option
+                >`,
+            )}
+          </md-outlined-select>
+
+          <div class="radio-group full-width">
+            <span
+              style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+              >Tipo:</span
+            >
+            <label
+              ><md-radio
+                name="editCardType"
+                value="yellow"
+                .checked=${this.editCardTypeState === 'yellow'}
+                @change=${(e: Event) => {
+                  this.editCardTypeState = (e.target as MdRadio)
+                    .value as CardType;
+                  this._onEditCardTypeChange();
+                }}
+              ></md-radio>
+              Amarilla</label
+            >
+            <label
+              ><md-radio
+                name="editCardType"
+                value="red"
+                .checked=${this.editCardTypeState === 'red'}
+                @change=${(e: Event) => {
+                  this.editCardTypeState = (e.target as MdRadio)
+                    .value as CardType;
+                  this._onEditCardTypeChange();
+                }}
+              ></md-radio>
+              Roja</label
+            >
+          </div>
+
+          <md-outlined-select
+            id="editCardFoulType"
+            label="Motivo (Opcional)"
+            @change=${this._validateEditForm}
+            ?disabled=${!editCardTypeSelected}
+            class="full-width"
+          >
+            <md-select-option value="" disabled selected></md-select-option>
+            ${editFoulOptions.map(
+              option =>
+                html`<md-select-option value=${option.value}
+                  >${option.label}</md-select-option
+                >`,
+            )}
+          </md-outlined-select>
+        </div>
         <div slot="actions">
-          <md-filled-button
-            aria-label="Cancelar edición"
-            title="Cancelar edición"
-            @click=${this._closeEditDialog}
+          <md-filled-button class="action-btn" @click=${this._closeEditDialog}
             >Cancelar</md-filled-button
           >
           <md-filled-button
-            aria-label="Guardar tarjeta editada"
-            title="Guardar tarjeta editada"
-            ?disabled=${this.disableSaveEditedCard}
             @click=${this._saveEditedCard}
+            ?disabled=${this.disableSaveEditedCard}
             >Guardar</md-filled-button
           >
         </div>
       </md-dialog>
     `;
   }
+
+  // Helper para renderizar cada fila de tarjeta limpiamente
+  private renderCardEntry(card: Card, index: number, teamSide: TeamSide) {
+    const playersPool =
+      teamSide === 'local' ? this.localPlayers : this.visitorPlayers;
+    const playerInfo = playersPool.find(p => p.number === card.player);
+    const isYellow = card.cardType === 'yellow';
+
+    return html`
+      <div class="card-entry">
+        <div class="minute-bubble">${card.minute}'</div>
+
+        <div class="card-info">
+          <div class="player-row">
+            <md-icon
+              style="font-size: 20px; color: ${isYellow
+                ? '#FBC02D'
+                : '#D32F2F'}; font-variation-settings: 'FILL' 1;"
+            >
+              style
+            </md-icon>
+            <div class="player-wrapper">
+              ${playerInfo
+                ? html`<player-info .player=${playerInfo}></player-info>`
+                : html`<span style="font-weight: 500;"
+                    >Jugador #${card.player}</span
+                  >`}
+            </div>
+          </div>
+
+          <div class="card-meta">
+            ${card.foulType
+              ? html`<span class="badge"
+                  >${FOUL_TYPE_LABELS[card.foulType] || card.foulType}</span
+                >`
+              : ''}
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <md-icon-button
+            @click=${() => this._openEditCard(card, index)}
+            title="Editar"
+            ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+          >
+          <md-icon-button
+            @click=${() => this._deleteCard(index)}
+            title="Eliminar"
+            ><md-icon class="delete-btn">delete</md-icon></md-icon-button
+          >
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Toda la lógica original sigue exactamente igual abajo de esto ---
+
   private _addCard() {
     if (!this.match) return;
     const team = this.cardTeam;

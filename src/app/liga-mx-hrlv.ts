@@ -1,4 +1,4 @@
-import { html, LitElement, PropertyValues } from 'lit';
+import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
 // Firebase imports
@@ -6,9 +6,11 @@ import { FirebaseApp, initializeApp } from 'firebase/app';
 import { Auth, getAuth, User } from 'firebase/auth';
 import { Unsubscribe } from 'firebase/database';
 
-//Material Web imports
+// Material Web imports
 import '@material/web/icon/icon.js';
 import '@material/web/tabs/primary-tab.js';
+import { MdTabs } from '@material/web/tabs/tabs.js';
+import { MdDialog } from '@material/web/dialog/dialog.js';
 
 // Styles and components
 import '../pages/login-page.js';
@@ -18,8 +20,6 @@ import '../pages/stats-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 
 // Utility imports
-import { MdDialog } from '@material/web/dialog/dialog.js';
-import { MdTabs } from '@material/web/tabs/tabs.js';
 import {
   fetchMatches,
   fetchPlayers,
@@ -39,7 +39,79 @@ import '../utils/material.js';
  */
 @customElement('liga-mx-hrlv')
 export class LigaMxHrlv extends LitElement {
-  static override readonly styles = [styles];
+  static override readonly styles = [
+    styles,
+    css`
+      /* EL CASCARÓN DE LA APP */
+      :host {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        /* Fondo gris súper claro para que resalten las tarjetas blancas */
+        background-color: var(--md-sys-color-surface-container-lowest, #f4f6f8);
+      }
+
+      /* HEADER PEGAJOSO (STICKY) */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--md-sys-color-surface, #ffffff);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Sombra elegante */
+      }
+
+      /* TABS CENTRADOS EN PC */
+      md-tabs {
+        max-width: 800px;
+        margin: 0 auto;
+        --md-primary-tab-container-color: transparent;
+      }
+
+      /* ÁREA DE CONTENIDO */
+      main {
+        flex: 1;
+        width: 100%;
+        max-width: 1200px; /* La app no crece a lo loco en pantallas ultra-anchas */
+        margin: 0 auto;
+        padding: 16px 0; /* Padding superior para separar del header */
+        box-sizing: border-box;
+      }
+
+      /* BOTÓN SUBIR */
+      .scrollTopButton {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 99;
+        background: var(--md-sys-color-primary-container, #eaddff);
+        color: var(--md-sys-color-on-primary-container, #21005d);
+        border-radius: 50%;
+        padding: 12px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .scrollTopButton:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      /* FOOTER */
+      .app-footer {
+        text-align: center;
+        padding: 24px 16px;
+        font-size: 0.85rem;
+        color: var(--md-sys-color-on-surface-variant, #757575);
+        margin: 0;
+      }
+      .app-footer span {
+        font-weight: bold;
+        color: var(--md-sys-color-primary);
+      }
+    `,
+  ];
 
   private readonly app: FirebaseApp;
 
@@ -73,35 +145,54 @@ export class LigaMxHrlv extends LitElement {
       ${this.selectedTab === 'Login'
         ? html``
         : html`
-            <md-tabs
-              .activeTabIndex=${this._getTabIndex(this.selectedTab)}
-              @change=${this._onTabsChange}
-            >
-              <md-primary-tab aria-label="Calendario"
-                >Calendario</md-primary-tab
+            <header>
+              <md-tabs
+                .activeTabIndex=${this._getTabIndex(this.selectedTab)}
+                @change=${this._onTabsChange}
               >
-              <md-primary-tab aria-label="Tabla General"
-                >Tabla General</md-primary-tab
-              >
-              <md-primary-tab aria-label="Estadísticas"
-                >Estadísticas</md-primary-tab
-              >
-            </md-tabs>
+                <md-primary-tab aria-label="Calendario">
+                  <md-icon slot="icon">calendar_month</md-icon>
+                  Calendario
+                </md-primary-tab>
+                <md-primary-tab aria-label="Tabla General">
+                  <md-icon slot="icon">format_list_numbered</md-icon>
+                  Tabla
+                </md-primary-tab>
+                <md-primary-tab aria-label="Estadísticas">
+                  <md-icon slot="icon">bar_chart</md-icon>
+                  Estadísticas
+                </md-primary-tab>
+              </md-tabs>
+            </header>
           `}
+
       <main>${this._getTab()}</main>
-      <md-icon
-        id="scrollTopButton"
-        class="scrollTopButton material-icons-outlined"
-        title="Scroll to top"
-        @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        >keyboard_control_key</md-icon
-      >
+
+      ${this.selectedTab === 'Login'
+        ? ''
+        : html`
+            <md-icon
+              id="scrollTopButton"
+              class="scrollTopButton material-icons-outlined"
+              title="Volver arriba"
+              @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              arrow_upward
+            </md-icon>
+          `}
+
       <p class="app-footer">
         Made with love by HRLV - <span>v${APP_VERSION}</span>
       </p>
+
       <md-dialog id="dialogLiga" type="alert">
         <div slot="headline">${this.titleError}</div>
         <div slot="content">${this.contentError}</div>
+        <div slot="actions">
+          <md-text-button @click=${() => this.dialog.close()}
+            >Cerrar</md-text-button
+          >
+        </div>
       </md-dialog>
     `;
   }
@@ -184,10 +275,6 @@ export class LigaMxHrlv extends LitElement {
     this._unsubscribePlayers?.();
   }
 
-  /**
-   * Updates the selected match
-   * @param {Event} e
-   */
   private _editMatch(e: CustomEvent<Record<string, unknown>>) {
     saveUpdates(e.detail);
   }
@@ -211,7 +298,6 @@ export class LigaMxHrlv extends LitElement {
     const tabNames = ['Calendario', 'Tabla General', 'Estadísticas'];
     const next = tabNames[index] || 'Calendario';
     if (this.selectedTab !== next) {
-      // Scroll al inicio para mantener UX consistente
       window.scrollTo({ top: 0, behavior: 'smooth' });
       this.selectedTab = next;
     }
