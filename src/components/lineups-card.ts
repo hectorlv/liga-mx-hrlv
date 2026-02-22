@@ -511,6 +511,13 @@ export class LineupsCard extends LitElement {
 
     const updates: FirebaseUpdates = {};
     updates[`/players/${this._getTeamKey(this.addPlayerSide)}`] = updatedList;
+
+    // Guardamos el estado actual de los checkboxes para no perder el progreso
+    updates[`/matches/${this.match.idMatch}/lineupLocal`] =
+      this.match.lineupLocal || [];
+    updates[`/matches/${this.match.idMatch}/lineupVisitor`] =
+      this.match.lineupVisitor || [];
+
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
 
     this.dialogAddPlayer?.close();
