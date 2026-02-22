@@ -154,9 +154,13 @@ export class MatchesPage extends LitElement {
       @media (min-width: 800px) {
         .matches-grid {
           display: grid;
-          /* Columnas: Fecha | Local | Score | Visitante | Estadio */
-          grid-template-columns: 180px 1fr 100px 1fr 200px;
+          /* Columnas: Jornada | Fecha | Local | Score | Visitante | Estadio */
+          grid-template-columns: 55px 170px minmax(0, 1fr) 81px minmax(
+              0,
+              1fr
+            ) 185px;
           gap: 0;
+          align-items: center;
           background: var(--card-bg);
           border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -207,8 +211,7 @@ export class MatchesPage extends LitElement {
         }
         .cell-local {
           grid-column: 3;
-          flex-direction: row-reverse;
-          text-align: right;
+          flex-direction: row;
         }
         .cell-score {
           grid-column: 4;
@@ -218,7 +221,6 @@ export class MatchesPage extends LitElement {
         .cell-visit {
           grid-column: 5;
           flex-direction: row;
-          text-align: left;
         }
         .cell-stadium {
           grid-column: 6;
@@ -233,7 +235,10 @@ export class MatchesPage extends LitElement {
           margin: 0 12px;
         }
         .team-name {
-          font-size: 1rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: block;
         }
 
         /* Hover en la fila "virtual" */
