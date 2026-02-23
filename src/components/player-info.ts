@@ -78,7 +78,7 @@ export class PlayerInfo extends LitElement {
         <div class="player-details">
           <h3 class="player-name">${this.player.name}</h3>
           <p class="player-position">Posición: ${this.player.position}</p>
-          <p class="player-number">Número de Jersey: ${this.player.number}</p>
+          <p class="player-number">Número: ${this.player.number}</p>
         </div>
       </div>
     `;
