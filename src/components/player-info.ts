@@ -19,6 +19,7 @@ export class PlayerInfo extends LitElement {
         align-items: center;
         gap: 12px;
         width: 100%;
+        min-width:0;
       }
 
       .player-photo {
@@ -34,6 +35,7 @@ export class PlayerInfo extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 2px;
+        overflow: hidden;
       }
 
       .player-name {
@@ -46,6 +48,7 @@ export class PlayerInfo extends LitElement {
         overflow: hidden;
         text-overflow: ellipsis;
         line-height: 1.2;
+        width: 100%;
       }
 
       .player-position,
@@ -55,6 +58,10 @@ export class PlayerInfo extends LitElement {
         font-size: 0.875em;
         line-height: 1.2;
         color: var(--md-sys-color-on-surface);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
       }
     `,
   ];
