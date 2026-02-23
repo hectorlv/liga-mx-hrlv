@@ -146,6 +146,8 @@ export class GoalsCard extends LitElement {
         display: flex;
         align-items: center;
         width: 100%;
+        min-width: 0;
+        max-width: 100%;
       }
 
       .goal-meta {
