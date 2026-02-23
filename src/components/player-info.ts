@@ -11,6 +11,7 @@ export class PlayerInfo extends LitElement {
         align-items: center;
         flex: 1 1 auto;
         min-width: 0;
+        max-width: 100%;
         height: auto;
         --md-icon-size: 60px;
       }
@@ -19,7 +20,8 @@ export class PlayerInfo extends LitElement {
         align-items: center;
         gap: 12px;
         width: 100%;
-        min-width:0;
+        min-width: 0;
+        max-width: 100%;
       }
 
       .player-photo {
