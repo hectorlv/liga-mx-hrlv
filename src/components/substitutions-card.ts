@@ -80,6 +80,7 @@ export class SubstitutionsCard extends LitElement {
       .team-column {
         display: flex;
         flex-direction: column;
+        min-width: 0;
       }
 
       .team-header {
