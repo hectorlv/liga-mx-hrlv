@@ -46,11 +46,8 @@ export class PlayerInfo extends LitElement {
         font-size: 1em;
         font-weight: 500;
         color: var(--md-sys-color-on-surface);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
         line-height: 1.2;
-        width: 100%;
       }
 
       .player-position,
@@ -60,10 +57,7 @@ export class PlayerInfo extends LitElement {
         font-size: 0.875em;
         line-height: 1.2;
         color: var(--md-sys-color-on-surface);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        width: 100%;
+        white-space: normal;
       }
     `,
   ];
