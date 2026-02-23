@@ -168,7 +168,7 @@ export class MatchDetailPage extends LitElement {
         gap: 24px;
       }
 
-      @media (min-width: 900px) {
+      @media (min-width: 1300px) {
         .match-components-grid {
           /* En escritorio: 2 columnas */
           grid-template-columns: 1fr 1fr;
