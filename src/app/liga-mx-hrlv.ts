@@ -71,7 +71,7 @@ export class LigaMxHrlv extends LitElement {
       main {
         flex: 1;
         width: 100%;
-        max-width: 1200px; /* La app no crece a lo loco en pantallas ultra-anchas */
+        max-width: max-content;
         margin: 0 auto;
         padding: 16px 0; /* Padding superior para separar del header */
         box-sizing: border-box;
