@@ -512,7 +512,7 @@ export class MatchesPage extends LitElement {
             <span>Solo partidos de Liguilla</span>
           </div>
         </div>
-        ${{this.matchesRender.length === 0
+        ${this.matchesRender.length === 0
           ? html`
              <div class="empty-state">
                 <md-icon>event_busy</md-icon>
@@ -537,6 +537,7 @@ export class MatchesPage extends LitElement {
                   ${this.matchesRender.map(match => this.renderMatchItem(match))}
                 </div>
               `
+        }
 
         ${this.championLegend
           ? html`<div class="champion-legend" role="note">
