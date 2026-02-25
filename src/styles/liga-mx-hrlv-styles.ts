@@ -3,7 +3,6 @@ import { css } from 'lit';
 export default css`
   :host {
     /* Layout base */
-    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
