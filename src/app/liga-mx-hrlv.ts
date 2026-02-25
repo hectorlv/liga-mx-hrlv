@@ -77,6 +77,23 @@ export class LigaMxHrlv extends LitElement {
         box-sizing: border-box;
       }
 
+      /* ANIMACIÓN SUAVE PARA EL CAMBIO DE TABS */
+      main > * {
+        animation: tabFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        display: block;
+      }
+
+      @keyframes tabFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(15px); /* Empieza un poquito abajo */
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0); /* Sube a su lugar original */
+        }
+      }
+
       /* BOTÓN SUBIR */
       .scrollTopButton {
         position: fixed;

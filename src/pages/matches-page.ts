@@ -32,9 +32,35 @@ export class MatchesPage extends LitElement {
       :host {
         display: block;
         padding: 16px;
+        width: 100%;
+        box-sizing: border-box;
         /* Tus variables globales ya deberían estar aplicadas en el index.html o componente padre */
         --card-bg: var(--md-sys-color-surface, #fff);
         --header-bg: var(--md-sys-color-surface-variant, #f0f0f0);
+      }
+
+      .empty-state {
+        display:flex;
+        flex:direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 64px 24px;
+        text-align: center
+        color: var(--md-sys-color-surface-variant);
+        gap: 12px;
+      }
+
+      .empy-state md-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--md-sys-color-outline-variant);
+      }
+
+      .empty-state h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--md-sys-color-on-surface);
       }
 
       /* --- SECCIÓN DE FILTROS --- */
@@ -486,21 +512,32 @@ export class MatchesPage extends LitElement {
             <span>Solo partidos de Liguilla</span>
           </div>
         </div>
-        <div class="matches-grid">
-          <div class="table-headers">
-            <div class="table-header">Jornada</div>
-            <div class="table-header">Fecha</div>
-            <div class="table-header" style="justify-content: flex-end">
-              Local
-            </div>
-            <div class="table-header" style="justify-content: center">
-              Marcador
-            </div>
-            <div class="table-header">Visitante</div>
-            <div class="table-header">Estadio</div>
-          </div>
-          ${this.matchesRender.map(match => this.renderMatchItem(match))}
-        </div>
+        ${this.matchesRender.length === 0
+          ? html`
+             <div class="empty-state">
+                <md-icon>event_busy</md-icon>
+                <h3>No hay partidos hoy</h3>
+                <p>Intenta cambiar los filtros o selecciona otra jornada.</p>
+              </div>
+            `
+          : html`
+                <div class="matches-grid">
+                  <div class="table-headers">
+                    <div class="table-header">Jornada</div>
+                    <div class="table-header">Fecha</div>
+                    <div class="table-header" style="justify-content: flex-end">
+                      Local
+                    </div>
+                    <div class="table-header" style="justify-content: center">
+                      Marcador
+                    </div>
+                    <div class="table-header">Visitante</div>
+                    <div class="table-header">Estadio</div>
+                  </div>
+                  ${this.matchesRender.map(match => this.renderMatchItem(match))}
+                </div>
+              `
+        }
 
         ${this.championLegend
           ? html`<div class="champion-legend" role="note">

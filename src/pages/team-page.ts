@@ -49,6 +49,21 @@ export class TeamPage extends LitElement {
         display: block;
         padding: 16px;
         --card-bg: var(--md-sys-color-surface);
+        animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+      }
+      
+      :host(.closing) {
+        animation: slideOut 0.25s ease-in forwards;
+      }
+
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0.5; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
       }
 
       .header-container {
@@ -335,7 +350,7 @@ export class TeamPage extends LitElement {
       <main>
         <div class="header-container">
           <md-icon-button
-            @click=${() => this.dispatchEvent(new CustomEvent('back'))}
+            @click=${this._goBack}
             title="Volver"
           >
             <md-icon>arrow_back</md-icon>
@@ -574,9 +589,19 @@ export class TeamPage extends LitElement {
     // 2. El deslizamiento hacia la derecha debe ser de al menos 60px
     // 3. El movimiento debe ser más horizontal que vertical (para no confundirlo con el scroll de leer la página)
     if (this.touchStartX < 50 && deltaX > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-      this.dispatchEvent(new CustomEvent('back'));
+      this._goBack();
     }
   };
+
+  private _goBack() {
+    // Le ponemos la clase que activa la animación de salida
+    this.classList.add('closing');
+    
+    // Esperamos 250 milisegundos a que la animación casi termine y avisamos al padre
+    setTimeout(() => {
+      this.dispatchEvent(new CustomEvent('back'));
+    }, 250);
+  }
 
   // --- LÓGICA DE EDICIÓN ---
 
