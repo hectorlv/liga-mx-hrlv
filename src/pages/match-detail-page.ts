@@ -37,6 +37,21 @@ export class MatchDetailPage extends LitElement {
         /* Colores base para la página */
         --card-bg: var(--md-sys-color-surface, #ffffff);
         --header-bg: var(--md-sys-color-surface-container, #f8fafc);
+        animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+      }
+
+      :host(.closing) {
+        animation: slideOut 0.25s ease-in forwards;
+      }
+
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0.5; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
       }
 
       /* --- HEADER DEL PARTIDO (MARCADOR) --- */
@@ -431,9 +446,10 @@ export class MatchDetailPage extends LitElement {
   }
 
   private _goBack() {
-    this.dispatchEvent(
-      new CustomEvent('back-to-calendar', { bubbles: true, composed: true }),
-    );
+    this.classList.add('closing');
+    setTimeout(() => {
+    this.dispatchEvent(new CustomEvent('back-to-calendar', { bubbles: true, composed: true }));
+    }, 250)
   }
 
   private editMatchInfo() {
