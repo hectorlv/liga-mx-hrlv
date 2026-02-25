@@ -229,6 +229,46 @@ export class MatchDetailPage extends LitElement {
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
+ // --- VARIABLES PARA EL GESTO DE DESLIZAR ---
+  private touchStartX = 0;
+  private touchStartY = 0;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    /* ¡OJO! Si ya tenías un connectedCallback (como en team-page), 
+       solo agrégale estas dos líneas al que ya tienes: */
+    this.addEventListener('touchstart', this._handleTouchStart, { passive: true });
+    this.addEventListener('touchend', this._handleTouchEnd, { passive: true });
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    /* Igual aquí, si ya tenías disconnectedCallback, solo agrega estas dos líneas: */
+    this.removeEventListener('touchstart', this._handleTouchStart);
+    this.removeEventListener('touchend', this._handleTouchEnd);
+  }
+
+  // Usamos "arrow functions" (=>) para no perder la referencia a 'this'
+  private _handleTouchStart = (e: TouchEvent) => {
+    this.touchStartX = e.changedTouches[0].screenX;
+    this.touchStartY = e.changedTouches[0].screenY;
+  };
+
+  private _handleTouchEnd = (e: TouchEvent) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    
+    const deltaX = touchEndX - this.touchStartX;
+    const deltaY = touchEndY - this.touchStartY;
+
+    // LÓGICA DEL GESTO "BACK" TIPO IOS/ANDROID:
+    // 1. El toque inicial debe ser en el borde izquierdo (los primeros 50px de la pantalla)
+    // 2. El deslizamiento hacia la derecha debe ser de al menos 60px
+    // 3. El movimiento debe ser más horizontal que vertical (para no confundirlo con el scroll de leer la página)
+    if (this.touchStartX < 50 && deltaX > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      this.dispatchEvent(new CustomEvent('back'));
+    }
+  };
 
   private _updatePlayerLists() {
     if (!this.match || !this.teams.length) return;
