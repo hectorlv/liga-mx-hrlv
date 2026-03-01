@@ -56,6 +56,13 @@ export function replaceDateSeparator(date: string) {
   return date.replaceAll('-', '/');
 }
 
+export function isMatchLive(phaseEvents?: PhaseEvent[]): boolean {
+  const hasStart = phaseEvents?.some(event => event.phase === 'start') ?? false;
+  const hasFulltime =
+    phaseEvents?.some(event => event.phase === 'fulltime') ?? false;
+  return hasStart && !hasFulltime;
+}
+
 export function getMatchRowClass(
   fecha: Date,
   phaseEvents?: PhaseEvent[],
@@ -69,10 +76,7 @@ export function getMatchRowClass(
   ) {
     className += ' todayMatch';
   }
-  if (
-    phaseEvents?.some(event => event.phase === 'start') &&
-    phaseEvents?.some(event => event.phase === 'fulltime') === false
-  ) {
+  if (isMatchLive(phaseEvents)) {
     className += ' activeMatch';
   }
   return className.trim();
