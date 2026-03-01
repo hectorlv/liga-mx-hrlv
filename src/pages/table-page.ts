@@ -2,6 +2,7 @@ import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
+import { isMatchLive } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import './team-page.js';
 
@@ -105,6 +106,35 @@ export class TablePage extends LitElement {
         font-weight: bold;
         color: var(--md-sys-color-on-surface-variant);
         font-size: 0.9rem;
+        position: relative;
+      }
+      .live-dot {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background-color: var(--app-color-danger, #f44336);
+        box-shadow: 0 0 0 2px var(--md-sys-color-surface);
+        animation: live-dot-blink 1.2s ease-in-out infinite;
+      }
+
+      @keyframes live-dot-blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+
+      /* En móvil desplazamos el punto hacia la esquina de la fila
+         para que no quede encima del número de posición. */
+      .table-row .cell-pos .live-dot {
+        top: -5px;
+        right: -9px;
       }
       .cell-logo {
         grid-area: logo;
@@ -204,6 +234,10 @@ export class TablePage extends LitElement {
         .cell-pos, .cell-logo, .cell-team, .cell-pts {
           grid-area: auto;
         }
+        .table-row .cell-pos .live-dot {
+          top: 6px;
+          right: 6px;
+        }
         .cell {
           padding: 8px;
           border-bottom: 1px solid var(--md-sys-color-outline-variant);
@@ -233,9 +267,6 @@ export class TablePage extends LitElement {
         .table-row:hover .cell {
           background-color: var(--row-hover);
           cursor: pointer;
-        }
-        .cell-pos {
-          position: relative;
         }
         .qualified .cell-pos::before {
           content: "";
@@ -339,13 +370,19 @@ export class TablePage extends LitElement {
 
           ${this.table.map((team, index) => {
             const statusClass = this.getClass(index);
+            const hasLiveMatch = this.teamHasLiveMatch(team.equipo);
             return html`
               <div
                 class="table-row ${statusClass}"
                 @click=${() => this.selectTeam(team.equipo)}
               >
                 <div class="indicator-bar"></div>
-                <div class="cell cell-pos">${index + 1}</div>
+                <div class="cell cell-pos">
+                  ${index + 1}
+                  ${hasLiveMatch
+                    ? html`<span class="live-dot" title="Partido en curso"></span>`
+                    : ''}
+                </div>
                 <div class="cell cell-logo">${getTeamImage(team.equipo)}</div>
                 <div class="cell cell-team">${team.equipo}</div>
 
@@ -410,6 +447,14 @@ export class TablePage extends LitElement {
       return 'eliminated';
     }
     return '';
+  }
+
+  private teamHasLiveMatch(teamName: string): boolean {
+    return this.matchesList.some(
+      match =>
+        (match.local === teamName || match.visitante === teamName) &&
+        isMatchLive(match.phaseEvents),
+    );
   }
 
   private selectTeam(teamName: string) {

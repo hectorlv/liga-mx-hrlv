@@ -19,7 +19,7 @@ import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
 import { Match, PlayerTeam } from '../types/index.js';
 import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
-import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
+import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 /**
  * Page for show the fixture
@@ -142,6 +142,32 @@ export class MatchesPage extends LitElement {
         color: var(--md-sys-color-on-surface-variant);
         display: flex;
         justify-content: space-between;
+      }
+
+      .cell-jornada {
+        position: relative;
+      }
+
+      .live-dot {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background-color: var(--app-color-danger, #f44336);
+        box-shadow: 0 0 0 2px var(--card-bg);
+        animation: live-dot-blink 1.2s ease-in-out infinite;
+      }
+
+      @keyframes live-dot-blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
       }
 
       .team-block {
@@ -549,6 +575,8 @@ export class MatchesPage extends LitElement {
   }
 
   private renderMatchItem(match: Match) {
+    const isLive = isMatchLive(match.phaseEvents);
+
     return html`
       <div
         class="match-card"
@@ -559,6 +587,7 @@ export class MatchesPage extends LitElement {
       >
         <div class="cell-jornada">
           <span>${match.jornada}</span>
+          ${isLive ? html`<span class="live-dot" title="Partido en curso"></span>` : ''}
         </div>
         <div class="cell-date">
           <span
