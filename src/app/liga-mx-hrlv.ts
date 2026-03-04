@@ -252,6 +252,7 @@ export class LigaMxHrlv extends LitElement {
             .table="${this.table}"
             .teams="${this.teams}"
             .players="${this.players}"
+            @edit-match="${this._editMatch}"
           ></table-page>
         `;
       case 'Estadísticas':
