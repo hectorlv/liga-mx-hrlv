@@ -651,7 +651,7 @@ export class TeamPage extends LitElement {
 
     // Buscamos al jugador original en el array global
     const updatedPlayers = this.players.map(p => {
-      if (p.number === this.editingPlayer!.number) {
+      if (p.number === this.editingPlayer?.number) {
         return {
           ...p,
           name,
