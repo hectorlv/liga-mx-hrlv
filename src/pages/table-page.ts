@@ -5,6 +5,7 @@ import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { isMatchLive } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import './team-page.js';
+import { getPhaseEvents } from '../utils/functionUtils.js';
 
 /**
  * Page for the table of positions
@@ -453,7 +454,7 @@ export class TablePage extends LitElement {
     return this.matchesList.some(
       match =>
         (match.local === teamName || match.visitante === teamName) &&
-        isMatchLive(match.phaseEvents),
+        isMatchLive(getPhaseEvents(match.events)),
     );
   }
 

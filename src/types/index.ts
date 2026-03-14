@@ -10,10 +10,7 @@ export interface Match {
   golVisitante: number;
   lineupLocal: PlayerGame[];
   lineupVisitor: PlayerGame[];
-  goals: Goal[];
-  substitutions: Substitution[];
-  cards: Card[];
-  phaseEvents?: PhaseEvent[];
+  events: MatchEvent[];
 }
 
 export interface PlayerGame {
@@ -52,34 +49,46 @@ export type CardType = 'yellow' | 'red';
 export type TeamSide = 'local' | 'visitor';
 export type TeamSideOptional = TeamSide | '';
 
-export interface Goal {
+export type MatchEventType = 'goal' | 'card' | 'substitution' | 'phase';
+export type MatchPeriod = '1T' | '2T' | '1TE' | '2TE' | 'PEN';
+
+export interface BaseMatchEvent {
+  id: string;
+  type: MatchEventType;
+  team: TeamSideOptional;
   minute: number;
+  addedTime?: number;
+  period: MatchPeriod;
+  sequence: number;
+}
+
+export interface GoalMatchEvent extends BaseMatchEvent {
+  type: 'goal';
   player: number;
-  team: TeamSide;
   ownGoal?: boolean;
   goalType?: GoalType;
   assist?: number | null;
 }
 
-export interface Substitution {
-  minute: number;
+export interface SubstitutionMatchEvent extends BaseMatchEvent {
+  type: 'substitution';
   playerIn: number;
   playerOut: number;
-  team: TeamSide;
 }
 
-export interface Card {
-  minute: number;
+export interface CardMatchEvent extends BaseMatchEvent {
+  type: 'card';
   player: number;
   cardType: CardType;
-  team: TeamSide;
   foulType?: FoulType;
 }
-
-export interface PhaseEvent {
+export interface PhaseMatchEvent extends BaseMatchEvent {
   minute: number;
   phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
 }
+
+export type MatchEvent = GoalMatchEvent | SubstitutionMatchEvent | CardMatchEvent | PhaseMatchEvent;
+
 
 export type FirebaseUpdates = Record<string, unknown>;
 
@@ -105,18 +114,3 @@ export type FoulType =
   | 'dogso'
   | 'lenguajeOfensivo'
   | 'dobleAmarilla';
-
-export type TimelineItem =
-  | { kind: 'goal'; minute: number; team: TeamSide; goal: Goal }
-  | { kind: 'card'; minute: number; team: TeamSide; card: Card }
-  | {
-      kind: 'sub';
-      minute: number;
-      team: TeamSide;
-      sub: Substitution;
-    }
-  | {
-      kind: 'phase';
-      minute: number;
-      phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
-    };

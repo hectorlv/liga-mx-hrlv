@@ -1,4 +1,4 @@
-import { PhaseEvent } from '../types';
+import { PhaseMatchEvent } from '../types';
 
 const todayDate = new Date();
 
@@ -56,7 +56,7 @@ export function replaceDateSeparator(date: string) {
   return date.replaceAll('-', '/');
 }
 
-export function isMatchLive(phaseEvents?: PhaseEvent[]): boolean {
+export function isMatchLive(phaseEvents?: PhaseMatchEvent[]): boolean {
   const hasStart = phaseEvents?.some(event => event.phase === 'start') ?? false;
   const hasFulltime =
     phaseEvents?.some(event => event.phase === 'fulltime') ?? false;
@@ -65,14 +65,13 @@ export function isMatchLive(phaseEvents?: PhaseEvent[]): boolean {
 
 export function getMatchRowClass(
   fecha: Date,
-  phaseEvents?: PhaseEvent[],
+  phaseEvents?: PhaseMatchEvent[],
 ): string {
   let className = '';
   if (
-    fecha &&
-    fecha.getFullYear() === todayDate.getFullYear() &&
-    fecha.getMonth() === todayDate.getMonth() &&
-    fecha.getDate() === todayDate.getDate()
+    fecha?.getFullYear() === todayDate.getFullYear() &&
+    fecha?.getMonth() === todayDate.getMonth() &&
+    fecha?.getDate() === todayDate.getDate()
   ) {
     className += ' todayMatch';
   }

@@ -3,24 +3,24 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
-  Goal,
+  GoalMatchEvent,
   Match,
   Player,
   PlayerGame,
   TableEntry,
   TeamSide,
 } from '../types/index.js';
+import { dispatchEventMatchUpdated, getCardEvents, getGoalEvents, getSubstitutionEvents } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { dispatchEventMatchUpdated } from '../utils/functionUtils.js';
 
 // Imports de Material para el formulario de edición
-import { MdDialog } from '@material/web/dialog/dialog.js';
-import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
-import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
-import '@material/web/iconbutton/icon-button.js';
+import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
+import '@material/web/iconbutton/icon-button.js';
+import { MdFilledSelect } from '@material/web/select/filled-select.js';
+import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 
 interface PlayerStats {
   number: number;
@@ -572,12 +572,12 @@ export class TeamPage extends LitElement {
   }
 
   // Usamos "arrow functions" (=>) para no perder la referencia a 'this'
-  private _handleTouchStart = (e: TouchEvent) => {
+  private readonly _handleTouchStart = (e: TouchEvent) => {
     this.touchStartX = e.changedTouches[0].screenX;
     this.touchStartY = e.changedTouches[0].screenY;
   };
 
-  private _handleTouchEnd = (e: TouchEvent) => {
+  private readonly _handleTouchEnd = (e: TouchEvent) => {
     const touchEndX = e.changedTouches[0].screenX;
     const touchEndY = e.changedTouches[0].screenY;
     
@@ -760,7 +760,7 @@ export class TeamPage extends LitElement {
   ): number {
     if (!playerGame.entroDeCambio) return 0;
     return (
-      match.substitutions?.find(
+      getSubstitutionEvents(match.events)?.find(
         s => s.playerIn === playerGame.number && s.team === teamTag,
       )?.minute ?? 0
     );
@@ -773,12 +773,12 @@ export class TeamPage extends LitElement {
   ): number {
     if (playerGame.salioDeCambio) {
       return (
-        match.substitutions?.find(
+        getSubstitutionEvents(match.events)?.find(
           s => s.playerOut === playerGame.number && s.team === teamTag,
         )?.minute ?? 90
       );
     }
-    const redCard = match.cards?.find(
+    const redCard = getCardEvents(match.events)?.find(
       c =>
         c.player === playerGame.number &&
         c.team === teamTag &&
@@ -793,7 +793,7 @@ export class TeamPage extends LitElement {
     isLocal: boolean,
   ) {
     const teamTag = isLocal ? 'local' : 'visitor';
-    for (const goal of match.goals || []) {
+    for (const goal of getGoalEvents(match.events)) {
       const playerTeam = this.getGoalPlayerTeam(goal);
       if (playerTeam !== teamTag) continue;
       this.applyGoalToPlayer(statsMap, goal);
@@ -801,12 +801,12 @@ export class TeamPage extends LitElement {
     }
   }
 
-  private getGoalPlayerTeam(goal: Goal): TeamSide {
+  private getGoalPlayerTeam(goal: GoalMatchEvent): TeamSide {
     if (goal.ownGoal) return goal.team === 'local' ? 'visitor' : 'local';
-    return goal.team;
+    return goal.team as TeamSide;
   }
 
-  private applyGoalToPlayer(statsMap: Map<number, PlayerStats>, goal: Goal) {
+  private applyGoalToPlayer(statsMap: Map<number, PlayerStats>, goal: GoalMatchEvent) {
     const playerStats = statsMap.get(goal.player);
     if (!playerStats) return;
     if (goal.ownGoal) {
@@ -816,7 +816,7 @@ export class TeamPage extends LitElement {
     }
   }
 
-  private applyAssistToPlayer(statsMap: Map<number, PlayerStats>, goal: Goal) {
+  private applyAssistToPlayer(statsMap: Map<number, PlayerStats>, goal: GoalMatchEvent) {
     if (!goal.assist) return;
     const assistStats = statsMap.get(goal.assist);
     if (assistStats) assistStats.assists += 1;
@@ -828,7 +828,7 @@ export class TeamPage extends LitElement {
     isLocal: boolean,
   ) {
     const teamTag = isLocal ? 'local' : 'visitor';
-    for (const card of match.cards || []) {
+    for (const card of getCardEvents(match.events) || []) {
       if (card.team !== teamTag) continue;
       const playerStats = statsMap.get(card.player);
       if (!playerStats) continue;
