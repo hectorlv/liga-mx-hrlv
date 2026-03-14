@@ -1,6 +1,7 @@
 import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
+import { MdRadio } from '@material/web/radio/radio.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import '@material/web/textfield/filled-text-field.js';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
@@ -9,17 +10,23 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import { FOUL_TYPE_LABELS, FOUL_TYPES_BY_CARD } from '../constants';
 import {
-  Card,
+  CardMatchEvent,
   CardType,
   FirebaseUpdates,
   FoulType,
   Match,
+  MatchEvent,
   Player,
   TeamSide,
   TeamSideOptional,
 } from '../types';
-import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import { MdRadio } from '@material/web/radio/radio.js';
+import {
+  buildCardEvent,
+  dispatchEventMatchUpdated,
+  formatMatchMinute,
+  getCardEvents,
+  inferMatchPeriod,
+} from '../utils/functionUtils';
 
 @customElement('cards-card')
 export class CardsCard extends LitElement {
@@ -257,12 +264,15 @@ export class CardsCard extends LitElement {
   @query('#cardPlayer') cardPlayerSelect!: MdOutlinedSelect;
   @query('#cardMinute') cardMinuteInput!: MdFilledTextField;
   @query('#cardFoulType') cardFoulTypeSelect!: MdOutlinedSelect;
+  @query('#addedTime') addedTimeInput!: MdFilledTextField;
   @query('#editCardDialog') editCardDialog!: MdDialog;
   @query('#editCardPlayer') editCardPlayerSelect!: MdOutlinedSelect;
   @query('#editCardMinute') editCardMinuteInput!: MdFilledTextField;
   @query('#editCardType') editCardTypeSelect!: MdOutlinedSelect;
   @query('#editCardFoulType') editCardFoulTypeSelect!: MdOutlinedSelect;
   @query('#editCardTeam') editCardTeamRadio!: MdRadio;
+  @query('#editAddedTime') editAddedTimeInput!: MdFilledTextField;
+  @query('#sequence') sequenceInput!: MdFilledTextField;
 
   @state() editingCardIndex: number | null = null;
   @state() editPlayers: Player[] = [];
@@ -272,9 +282,11 @@ export class CardsCard extends LitElement {
   @state() cardTypeState: CardType = 'yellow';
   @state() editCardTeamState: TeamSideOptional = '';
   @state() editCardTypeState: CardType = 'yellow';
+  @state() showAddedTime = false;
+  @state() showEditAddedTime = false;
 
   override render() {
-    const cards = this.match?.cards || [];
+    const cards = getCardEvents(this.match?.events || []);
     const cardSide = this.cardTeam || 'local';
     const cardTypeSelected = this.cardTypeState;
     const addFoulOptions = this._getFoulOptions(
@@ -384,6 +396,19 @@ export class CardsCard extends LitElement {
               required
             ></md-filled-text-field>
 
+            ${this.showAddedTime
+              ? html`
+                  <md-filled-text-field
+                    label="Tiempo Adicional"
+                    type="number"
+                    id="addedTime"
+                    min="0"
+                    max="30"
+                    @change=${this._validateAddCard}
+                  ></md-filled-text-field>
+                `
+              : ''}
+
             <md-outlined-select
               id="cardPlayer"
               label="Jugador"
@@ -450,6 +475,14 @@ export class CardsCard extends LitElement {
               )}
             </md-outlined-select>
 
+            <md-filled-text-field
+              id="sequenceInput"
+              label="Secuencia"
+              type="number"
+              min="1"
+              @change=${this._validateAddCard}
+            ></md-filled-text-field>
+
             <md-filled-button
               class="action-btn full-width"
               ?disabled=${this.disableAddCard}
@@ -506,6 +539,19 @@ export class CardsCard extends LitElement {
             @change=${this._validateEditForm}
             required
           ></md-filled-text-field>
+
+          ${this.showEditAddedTime
+            ? html`
+                <md-filled-text-field
+                  label="Tiempo Adicional"
+                  type="number"
+                  id="editAddedTime"
+                  min="0"
+                  max="30"
+                  @change=${this._validateEditForm}
+                ></md-filled-text-field>
+              `
+            : ''}
 
           <md-outlined-select
             id="editCardPlayer"
@@ -585,7 +631,11 @@ export class CardsCard extends LitElement {
   }
 
   // Helper para renderizar cada fila de tarjeta limpiamente
-  private renderCardEntry(card: Card, index: number, teamSide: TeamSide) {
+  private renderCardEntry(
+    card: CardMatchEvent,
+    index: number,
+    teamSide: TeamSide,
+  ) {
     const playersPool =
       teamSide === 'local' ? this.localPlayers : this.visitorPlayers;
     const playerInfo = playersPool.find(p => p.number === card.player);
@@ -593,7 +643,9 @@ export class CardsCard extends LitElement {
 
     return html`
       <div class="card-entry">
-        <div class="minute-bubble">${card.minute}'</div>
+        <div class="minute-bubble">
+          ${formatMatchMinute(card.minute, card.addedTime)}
+        </div>
 
         <div class="card-info">
           <div class="player-row">
@@ -645,6 +697,9 @@ export class CardsCard extends LitElement {
     const team = this.cardTeam;
     const player = Number(this.cardPlayerSelect.value);
     const minute = Number(this.cardMinuteInput.value);
+    const addedTime = this.showAddedTime
+      ? Number(this.addedTimeInput.value)
+      : 0;
     let cardType = this.cardTypeState;
     let foulType = this.cardFoulTypeSelect?.value as '' | FoulType;
     if (cardType === 'yellow' && this._hasPreviousYellow(team, player)) {
@@ -652,14 +707,18 @@ export class CardsCard extends LitElement {
       globalThis.alert('Doble amarilla: se registra como tarjeta roja.');
       foulType = 'dobleAmarilla';
     }
-    const newCard: Card = {
+    const newCard: CardMatchEvent = buildCardEvent({
+      id: crypto.randomUUID(),
       team,
       player,
       minute,
+      addedTime,
       cardType,
       foulType: foulType || undefined,
-    };
-    const cards = [...(this.match.cards || []), newCard];
+      sequence: this.match.events.length + 1,
+      period: inferMatchPeriod(minute),
+    });
+    const cards = [...(this.match.events || []), newCard];
     this._updateCards(cards);
     this.cardTeam = 'local';
     this.cardPlayerSelect.value = '';
@@ -669,15 +728,15 @@ export class CardsCard extends LitElement {
     this._validateAddCard();
   }
 
-  private _updateCards(cards: Card[]) {
+  private _updateCards(cards: MatchEvent[]) {
     if (!this.match) return;
     const updatedMatch: FirebaseUpdates = {};
-    updatedMatch[`/matches/${this.match.idMatch}/cards`] = cards;
+    updatedMatch[`/matches/${this.match.idMatch}/events`] = cards;
     this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
     this.requestUpdate();
   }
 
-  private _openEditCard(card: Card, index: number) {
+  private _openEditCard(card: CardMatchEvent, index: number) {
     this.editingCardIndex = index;
     this.editPlayers = this._getPlayersForTeam(card.team, card.player);
     this.updateComplete.then(() => {
@@ -689,6 +748,10 @@ export class CardsCard extends LitElement {
       if (this.editCardTypeSelect) this.editCardTypeState = card.cardType;
       if (this.editCardFoulTypeSelect)
         this.editCardFoulTypeSelect.value = card.foulType || '';
+      if (this.sequenceInput)
+        this.sequenceInput.value = String(card.sequence);
+      if (this.editAddedTimeInput)
+        this.editAddedTimeInput.value = String(card.addedTime || 0);
       this._validateEditForm();
       this.editCardDialog?.show();
     });
@@ -728,6 +791,7 @@ export class CardsCard extends LitElement {
       Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
       Number(minute) > 90;
+    this.showEditAddedTime = minute === '45' || minute === '90';
   }
 
   private _saveEditedCard() {
@@ -750,14 +814,20 @@ export class CardsCard extends LitElement {
       globalThis.alert('Doble amarilla: se registra como tarjeta roja.');
       foulType = 'dobleAmarilla';
     }
-    const updatedCard: Card = {
+    const updatedCard: CardMatchEvent = buildCardEvent({
+      id: this.match.events[this.editingCardIndex].id,
       team,
       player,
       minute,
       cardType,
       foulType: foulType || undefined,
-    };
-    const cards = [...(this.match.cards || [])];
+      sequence: Number(this.sequenceInput.value) || 0,
+      addedTime: this.showEditAddedTime
+        ? Number(this.editAddedTimeInput.value) || 0
+        : 0,
+      period: inferMatchPeriod(minute),
+    });
+    const cards = [...(this.match.events || [])];
     cards[this.editingCardIndex] = updatedCard;
     this._updateCards(cards);
     this._closeEditDialog();
@@ -769,12 +839,16 @@ export class CardsCard extends LitElement {
       '¿Seguro que deseas eliminar esta tarjeta?',
     );
     if (!confirmed) return;
-    const cards = [...(this.match.cards || [])];
-    cards.splice(index, 1);
+    const cards = getCardEvents(this.match.events || []).filter(
+      (_, idx) => idx !== index,
+    );
     this._updateCards(cards);
   }
 
-  private _getPlayersForTeam(side: TeamSide, currentPlayer?: number): Player[] {
+  private _getPlayersForTeam(
+    side: TeamSideOptional,
+    currentPlayer?: number,
+  ): Player[] {
     const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
     const players = [...list];
     if (currentPlayer) {
@@ -801,6 +875,7 @@ export class CardsCard extends LitElement {
       Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
       Number(minute) > 90;
+    this.showAddedTime = minute === '45' || minute === '90';
   }
 
   private _onCardTeamChange() {
@@ -848,10 +923,12 @@ export class CardsCard extends LitElement {
     player: number,
     ignoreIndex?: number,
   ): boolean {
-    const cards = this.match?.cards || [];
+    const cards = getCardEvents(this.match?.events || []).filter(
+      c => c.cardType === 'yellow',
+    );
     return cards.some((c, idx) => {
       if (ignoreIndex !== undefined && idx === ignoreIndex) return false;
-      return c.team === team && c.player === player && c.cardType === 'yellow';
+      return c.team === team && c.player === player;
     });
   }
 }

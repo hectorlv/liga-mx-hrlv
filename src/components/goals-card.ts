@@ -3,6 +3,7 @@ import { MdCheckbox } from '@material/web/checkbox/checkbox.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
+import { MdRadio } from '@material/web/radio/radio.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
 import '@material/web/select/select-option.js';
 import '@material/web/textfield/filled-text-field.js';
@@ -13,16 +14,22 @@ import '../components/player-info.js';
 import { GOAL_TYPE_LABELS, GOAL_TYPES } from '../constants';
 import {
   FirebaseUpdates,
-  Goal,
+  GoalMatchEvent,
   GoalType,
   Match,
+  MatchEvent,
   Player,
   TeamSide,
   TeamSideOptional,
 } from '../types';
-import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import { MdRadio } from '@material/web/radio/radio.js';
-
+import {
+  buildGoalEvent,
+  calculateSequenceForNewEvent,
+  dispatchEventMatchUpdated,
+  formatMatchMinute,
+  getGoalEvents,
+  inferMatchPeriod,
+} from '../utils/functionUtils';
 @customElement('goals-card')
 export class GoalsCard extends LitElement {
   static override readonly styles = [
@@ -267,6 +274,8 @@ export class GoalsCard extends LitElement {
   @state() editingGoalIndex: number | null = null;
   @state() goalTeamState: TeamSideOptional = '';
   @state() editGoalTeamState: TeamSideOptional = '';
+  @state() showAddedTime = false;
+  @state() showEditAddedTime = false;
 
   @query('#goalTeam') goalTeamSelect!: MdOutlinedSelect;
   @query('#newGoalPlayer') newGoalPlayerSelect!: MdOutlinedSelect;
@@ -275,6 +284,7 @@ export class GoalsCard extends LitElement {
   @query('#newGoalType') newGoalTypeSelect!: MdOutlinedSelect;
   @query('#newGoalAssist') newGoalAssistSelect!: MdOutlinedSelect;
   @query('#addGoalButton') addGoalButton!: MdFilledButton;
+  @query('#addedTime') addedTimeInput!: MdFilledTextField;
 
   @query('#editGoalDialog') editGoalDialog!: MdDialog;
   @query('#editGoalTeam') editGoalTeamRadios!: NodeListOf<MdRadio>;
@@ -283,9 +293,11 @@ export class GoalsCard extends LitElement {
   @query('#editGoalOwn') editGoalOwnCheckbox!: MdCheckbox;
   @query('#editGoalType') editGoalTypeSelect!: MdOutlinedSelect;
   @query('#editGoalAssist') editGoalAssistSelect!: MdOutlinedSelect;
+  @query('#editAddedTime') editAddedTimeInput!: MdFilledTextField;
+  @query('#sequenceInput') sequenceInput!: MdFilledTextField;
 
   override render() {
-    const goals = this.match?.goals || [];
+    const goals = getGoalEvents(this.match?.events || []);
     const goalsWithIndex = goals.map((goal, index) => ({ goal, index }));
     const localGoals = goalsWithIndex.filter(
       ({ goal }) => goal.team === 'local',
@@ -387,6 +399,17 @@ export class GoalsCard extends LitElement {
               @change=${this._validateForm}
               required
             ></md-filled-text-field>
+
+            ${this.showAddedTime
+              ? html`<md-filled-text-field
+                  label="Tiempo agregado"
+                  type="number"
+                  id="addedTime"
+                  min="0"
+                  max="30"
+                  @change=${this._validateForm}
+                ></md-filled-text-field>`
+              : ''}
 
             <md-outlined-select
               id="newGoalPlayer"
@@ -495,6 +518,17 @@ export class GoalsCard extends LitElement {
             required
           ></md-filled-text-field>
 
+          ${this.showEditAddedTime
+            ? html`<md-filled-text-field
+                label="Tiempo agregado"
+                type="number"
+                id="editAddedTime"
+                min="0"
+                max="30"
+                @change=${this._validateEditForm}
+              ></md-filled-text-field>`
+            : ''}
+
           <md-outlined-select
             id="editGoalPlayer"
             label="Anotador"
@@ -536,6 +570,14 @@ export class GoalsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
+
+          <md-filled-text-field
+            id="sequenceInput"
+            label="Secuencia"
+            type="number"
+            min="1"
+            @change=${this._validateEditForm}
+          ></md-filled-text-field>
         </div>
         <div slot="actions">
           <md-filled-button class="action-btn" @click=${this._closeEditDialog}
@@ -552,7 +594,11 @@ export class GoalsCard extends LitElement {
   }
 
   // Método auxiliar para limpiar el render principal
-  private renderGoalEntry(goal: Goal, index: number, cardSide: TeamSide) {
+  private renderGoalEntry(
+    goal: GoalMatchEvent,
+    index: number,
+    cardSide: TeamSide,
+  ) {
     // Si es autogol, el jugador pertenece al equipo contrario
     const ownGoalPlayerPool =
       cardSide === 'local' ? this.visitorPlayers : this.localPlayers;
@@ -569,7 +615,9 @@ export class GoalsCard extends LitElement {
 
     return html`
       <div class="goal-entry">
-        <div class="minute-bubble">${goal.minute}'</div>
+        <div class="minute-bubble">
+          ${formatMatchMinute(goal.minute, goal.addedTime)}
+        </div>
 
         <div class="goal-info">
           <div class="goal-player">
@@ -612,7 +660,7 @@ export class GoalsCard extends LitElement {
     `;
   }
 
-  private _getActivePlayers(side: TeamSide): Player[] {
+  private _getActivePlayers(side: TeamSideOptional): Player[] {
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
     const lineup =
@@ -633,13 +681,29 @@ export class GoalsCard extends LitElement {
     const team = this.goalTeamState as TeamSide;
     const player = Number(this.newGoalPlayerSelect.value);
     const minute = Number(this.newGoalMinuteInput.value);
+    const addedTime = Number(this.addedTimeInput?.value) || 0;
     const ownGoal = this.newGoalOwnCheckbox.checked;
     const goalType = this.newGoalTypeSelect.value as GoalType;
     const assistValue = this.newGoalAssistSelect.value;
     const assist =
       ownGoal || !assistValue ? null : Number(this.newGoalAssistSelect.value);
-    const newGoal: Goal = { team, player, minute, ownGoal, goalType, assist };
-    const goals = [...(this.match.goals || []), newGoal];
+    const newGoal: GoalMatchEvent = buildGoalEvent({
+      id: crypto.randomUUID(),
+      team,
+      minute,
+      addedTime,
+      period: inferMatchPeriod(minute),
+      sequence: calculateSequenceForNewEvent(
+        this.match.events || [],
+        minute,
+        addedTime,
+      ),
+      player,
+      ownGoal,
+      goalType,
+      assist,
+    });
+    const goals = [...(this.match.events || []), newGoal];
     this._updateGoals(goals);
 
     // Reset form
@@ -652,15 +716,15 @@ export class GoalsCard extends LitElement {
     this._validateForm();
   }
 
-  private _updateGoals(goals: Goal[]) {
+  private _updateGoals(events: MatchEvent[]) {
     if (!this.match) return;
     const updatedMatch: FirebaseUpdates = {};
-    updatedMatch[`/matches/${this.match.idMatch}/goals`] = goals;
-    updatedMatch[`/matches/${this.match.idMatch}/golLocal`] = goals.filter(
-      g => g.team === 'local',
+    updatedMatch[`/matches/${this.match.idMatch}/events`] = events;
+    updatedMatch[`/matches/${this.match.idMatch}/golLocal`] = events.filter(
+      g => g.type === 'goal' && g.team === 'local',
     ).length;
-    updatedMatch[`/matches/${this.match.idMatch}/golVisitante`] = goals.filter(
-      g => g.team === 'visitor',
+    updatedMatch[`/matches/${this.match.idMatch}/golVisitante`] = events.filter(
+      g => g.type === 'goal' && g.team === 'visitor',
     ).length;
     this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
     this.requestUpdate();
@@ -714,18 +778,20 @@ export class GoalsCard extends LitElement {
       Number.isNaN(Number(minuteValue)) ||
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 120;
+
+    this.showAddedTime = minuteValue === '45' || minuteValue === '90';
   }
 
   private _resolvePlayerTeam(
-    selectedTeam: TeamSide,
+    selectedTeam: TeamSideOptional,
     ownGoal: boolean,
-  ): TeamSide {
+  ): TeamSideOptional {
     if (!ownGoal) return selectedTeam;
     return selectedTeam === 'local' ? 'visitor' : 'local';
   }
 
   private _getPlayersForTeam(
-    side: TeamSide,
+    side: TeamSideOptional,
     currentPlayerNumber?: number | null,
   ): Player[] {
     const players = [...this._getActivePlayers(side)];
@@ -739,7 +805,7 @@ export class GoalsCard extends LitElement {
     return players;
   }
 
-  private async _openEditGoal(goal: Goal, index: number) {
+  private async _openEditGoal(goal: GoalMatchEvent, index: number) {
     this.editingGoalIndex = index;
     const teamForPlayers = this._resolvePlayerTeam(goal.team, !!goal.ownGoal);
     this.editActivePlayers = this._getPlayersForTeam(
@@ -769,6 +835,10 @@ export class GoalsCard extends LitElement {
       this.editGoalTypeSelect.value = goal.goalType;
     if (this.editGoalAssistSelect)
       this.editGoalAssistSelect.value = goal.assist ? String(goal.assist) : '';
+    if (this.editAddedTimeInput)
+      this.editAddedTimeInput.value = String(goal.addedTime || '');
+    if (this.sequenceInput)
+      this.sequenceInput.value = String(goal.sequence || '');
 
     this._validateEditForm();
     this.editGoalDialog?.show();
@@ -819,6 +889,8 @@ export class GoalsCard extends LitElement {
       Number.isNaN(Number(minuteValue)) ||
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 120;
+
+    this.showEditAddedTime = minuteValue === '45' || minuteValue === '90';
   }
 
   private _saveEditedGoal() {
@@ -831,16 +903,22 @@ export class GoalsCard extends LitElement {
     const assistValue = this.editGoalAssistSelect.value;
     const assist =
       ownGoal || !assistValue ? null : Number(this.editGoalAssistSelect.value);
+    const sequence = Number(this.sequenceInput.value);
+    const addedTime = Number(this.editAddedTimeInput?.value) || 0;
 
-    const updatedGoal: Goal = {
+    const updatedGoal: GoalMatchEvent = buildGoalEvent({
+      id: getGoalEvents(this.match.events || [])[this.editingGoalIndex].id,
       team,
       player,
       minute,
+      addedTime,
+      period: inferMatchPeriod(minute),
       ownGoal,
       goalType,
       assist,
-    };
-    const goals = [...(this.match.goals || [])];
+      sequence,
+    });
+    const goals = [...(this.match.events || [])];
     goals[this.editingGoalIndex] = updatedGoal;
 
     this._updateGoals(goals);
@@ -853,8 +931,13 @@ export class GoalsCard extends LitElement {
       '¿Seguro que deseas eliminar este gol?',
     );
     if (!confirmed) return;
-    const goals = [...(this.match.goals || [])];
-    goals.splice(index, 1);
-    this._updateGoals(goals);
+    const goals = getGoalEvents(this.match.events || []).filter(
+      (_, i) => i !== index,
+    );
+    // Recalcular secuencia
+    const updatedGoals = goals.map((g, i) =>
+      g.type === 'goal' ? { ...g, sequence: i + 1 } : g,
+    );
+    this._updateGoals(updatedGoals);
   }
 }

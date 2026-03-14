@@ -1,7 +1,8 @@
+import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
-import '@material/web/textfield/filled-text-field.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
+import '@material/web/textfield/filled-text-field.js';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
@@ -9,13 +10,20 @@ import '../components/player-info.js';
 import {
   FirebaseUpdates,
   Match,
+  MatchEvent,
   Player,
   PlayerGame,
-  Substitution,
+  SubstitutionMatchEvent,
   TeamSide,
+  TeamSideOptional,
 } from '../types';
-import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import { MdDialog } from '@material/web/dialog/dialog.js';
+import {
+  buildSubstitutionEvent,
+  dispatchEventMatchUpdated,
+  formatMatchMinute,
+  getSubstitutionEvents,
+  inferMatchPeriod,
+} from '../utils/functionUtils';
 
 @customElement('substitutions-card')
 export class SubstitutionsCard extends LitElement {
@@ -242,11 +250,14 @@ export class SubstitutionsCard extends LitElement {
   @query('#subOut') subOutSelect!: MdOutlinedSelect;
   @query('#subIn') subInSelect!: MdOutlinedSelect;
   @query('#subMinute') subMinuteInput!: MdFilledTextField;
+  @query('#addedTime') addedTimeInput!: MdFilledTextField;
 
   @query('#editSubDialog') editSubDialog!: MdDialog;
   @query('#editSubOut') editSubOutSelect!: MdOutlinedSelect;
   @query('#editSubIn') editSubInSelect!: MdOutlinedSelect;
   @query('#editSubMinute') editSubMinuteInput!: MdFilledTextField;
+  @query('#editAddedTime') editAddedTimeInput!: MdFilledTextField;
+  @query('#sequence') sequenceInput!: MdFilledTextField;
 
   @state() editingSubIndex: number | null = null;
   @state() editOutPlayers: Player[] = [];
@@ -255,9 +266,11 @@ export class SubstitutionsCard extends LitElement {
   @state() disableAddSub = true;
   @state() subTeam: TeamSide = 'local';
   @state() editSubTeam: TeamSide = 'local';
+  @state() showAddedTime = false;
+  @state() showEditAddedTime = false;
 
   override render() {
-    const substitutions = this.match?.substitutions || [];
+    const substitutions = getSubstitutionEvents(this.match?.events || []);
     const side = this.subTeam || 'local';
     const substitutionsWithIndex = substitutions.map((sub, index) => ({
       sub,
@@ -354,6 +367,17 @@ export class SubstitutionsCard extends LitElement {
               @change=${this._validateAddSub}
             ></md-filled-text-field>
 
+            ${this.showAddedTime
+              ? html`<md-filled-text-field
+                  label="Minutos adicionales"
+                  type="number"
+                  id="addedTime"
+                  min="0"
+                  max="30"
+                  @change=${this._validateAddSub}
+                ></md-filled-text-field>`
+              : ''}
+
             <md-outlined-select
               id="subOut"
               label="Sale (-)"
@@ -433,6 +457,17 @@ export class SubstitutionsCard extends LitElement {
             @change=${this._validateEditForm}
           ></md-filled-text-field>
 
+          ${this.showEditAddedTime
+            ? html`<md-filled-text-field
+                label="Minutos adicionales"
+                type="number"
+                id="editAddedTime"
+                min="0"
+                max="30"
+                @change=${this._validateEditForm}
+              ></md-filled-text-field>`
+            : ''}
+
           <md-outlined-select
             id="editSubOut"
             label="Sale (-)"
@@ -474,7 +509,11 @@ export class SubstitutionsCard extends LitElement {
   }
 
   // Helper para renderizar cada fila de cambio
-  private renderSubEntry(sub: Substitution, index: number, teamSide: TeamSide) {
+  private renderSubEntry(
+    sub: SubstitutionMatchEvent,
+    index: number,
+    teamSide: TeamSide,
+  ) {
     const playersPool =
       teamSide === 'local' ? this.localPlayers : this.visitorPlayers;
     const playerOut = playersPool.find(p => p.number === sub.playerOut);
@@ -482,7 +521,9 @@ export class SubstitutionsCard extends LitElement {
 
     return html`
       <div class="sub-entry">
-        <div class="minute-bubble">${sub.minute}'</div>
+        <div class="minute-bubble">
+          ${formatMatchMinute(sub.minute, sub.addedTime)}
+        </div>
 
         <div class="sub-info">
           <div class="player-row in">
@@ -530,16 +571,20 @@ export class SubstitutionsCard extends LitElement {
     const playerOut = Number(this.subOutSelect.value);
     const playerIn = Number(this.subInSelect.value);
     const minute = Number(this.subMinuteInput.value);
-    const newSubstitution: Substitution = {
+    const addedTime = this.showAddedTime
+      ? Number(this.addedTimeInput.value)
+      : 0;
+    const newSubstitution: SubstitutionMatchEvent = buildSubstitutionEvent({
       team,
       playerOut,
       playerIn,
       minute,
-    };
-    const substitutions = [
-      ...(this.match.substitutions || []),
-      newSubstitution,
-    ];
+      addedTime,
+      id: crypto.randomUUID(),
+      period: inferMatchPeriod(minute),
+      sequence: this.match.events.length + 1,
+    });
+    const substitutions = [...(this.match.events || []), newSubstitution];
 
     this._updateSubstitutions(substitutions);
     this.subTeam = 'local';
@@ -549,13 +594,18 @@ export class SubstitutionsCard extends LitElement {
     this._validateAddSub();
   }
 
-  private _updateSubstitutions(substitutions: Substitution[]) {
+  private _updateSubstitutions(events: MatchEvent[]) {
     if (!this.match) return;
-    const lineupLocal = this._computeLineupForSide('local', substitutions);
-    const lineupVisitor = this._computeLineupForSide('visitor', substitutions);
+    const lineupLocal = this._computeLineupForSide(
+      'local',
+      events as SubstitutionMatchEvent[],
+    );
+    const lineupVisitor = this._computeLineupForSide(
+      'visitor',
+      events as SubstitutionMatchEvent[],
+    );
     const updatedMatch: FirebaseUpdates = {};
-    updatedMatch['/matches/' + this.match.idMatch + '/substitutions'] =
-      substitutions;
+    updatedMatch['/matches/' + this.match.idMatch + '/events'] = events;
     updatedMatch['/matches/' + this.match.idMatch + '/lineupLocal'] =
       lineupLocal;
     updatedMatch['/matches/' + this.match.idMatch + '/lineupVisitor'] =
@@ -565,7 +615,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   // Obtener los jugadores activos considerando los cambios realizados
-  private _getActivePlayers(side: TeamSide): Player[] {
+  private _getActivePlayers(side: TeamSideOptional): Player[] {
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
     const lineup =
@@ -583,7 +633,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   // Obtener los jugadores que pueden entrar como sustitutos
-  private _getSubstitutePlayers(side: TeamSide): Player[] {
+  private _getSubstitutePlayers(side: TeamSideOptional): Player[] {
     const teamPlayers =
       side === 'local' ? this.localPlayers : this.visitorPlayers;
     const lineup =
@@ -598,7 +648,7 @@ export class SubstitutionsCard extends LitElement {
     );
   }
 
-  private _getInitialLineupForSide(side: TeamSide): PlayerGame[] {
+  private _getInitialLineupForSide(side: TeamSideOptional): PlayerGame[] {
     const lineup =
       side === 'local'
         ? this.match?.lineupLocal || []
@@ -609,12 +659,14 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _computeLineupForSide(
-    side: TeamSide,
-    substitutions: Substitution[],
+    side: TeamSideOptional,
+    substitutions: SubstitutionMatchEvent[],
   ): PlayerGame[] {
     const base = this._getInitialLineupForSide(side);
     const lineup = base.map(p => ({ ...p }));
-    const subsForSide = substitutions.filter(sub => sub.team === side);
+    const subsForSide = substitutions.filter(
+      sub => sub.type === 'substitution' && sub.team === side,
+    );
     subsForSide.forEach(sub => {
       const outIdx = lineup.findIndex(p => p.number === sub.playerOut);
       if (outIdx !== -1) {
@@ -634,18 +686,24 @@ export class SubstitutionsCard extends LitElement {
     return lineup;
   }
 
-  private _openEditSub(sub: Substitution, index: number) {
+  private _openEditSub(sub: SubstitutionMatchEvent, index: number) {
     this.editingSubIndex = index;
     this.editOutPlayers = this._getPlayersForOut(sub.team, sub.playerOut);
     this.editInPlayers = this._getPlayersForIn(sub.team, sub.playerIn);
+    this.showEditAddedTime = sub.minute === 45 || sub.minute === 90;
+
     this.updateComplete.then(() => {
-      this.editSubTeam = sub.team;
+      this.editSubTeam = sub.team as TeamSide;
       if (this.editSubOutSelect)
         this.editSubOutSelect.value = String(sub.playerOut);
       if (this.editSubInSelect)
         this.editSubInSelect.value = String(sub.playerIn);
       if (this.editSubMinuteInput)
         this.editSubMinuteInput.value = String(sub.minute);
+      if (this.editAddedTimeInput)
+        this.editAddedTimeInput.value = String(sub.addedTime);
+      if (this.sequenceInput) 
+        this.sequenceInput.value = String(sub.sequence);
       this._validateEditForm();
       this.editSubDialog?.show();
     });
@@ -659,7 +717,10 @@ export class SubstitutionsCard extends LitElement {
     this.editInPlayers = [];
   }
 
-  private _getPlayersForOut(side: TeamSide, currentPlayer?: number): Player[] {
+  private _getPlayersForOut(
+    side: TeamSideOptional,
+    currentPlayer?: number,
+  ): Player[] {
     const players = [...this._getActivePlayers(side)];
     if (currentPlayer) {
       const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
@@ -671,7 +732,10 @@ export class SubstitutionsCard extends LitElement {
     return players;
   }
 
-  private _getPlayersForIn(side: TeamSide, currentPlayer?: number): Player[] {
+  private _getPlayersForIn(
+    side: TeamSideOptional,
+    currentPlayer?: number,
+  ): Player[] {
     const players = [...this._getSubstitutePlayers(side)];
     if (currentPlayer) {
       const list = side === 'local' ? this.localPlayers : this.visitorPlayers;
@@ -715,6 +779,8 @@ export class SubstitutionsCard extends LitElement {
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 90 ||
       playerOut === playerIn;
+    this.showEditAddedTime = minuteValue === '45' || minuteValue === '90';
+
   }
 
   private _saveEditedSub() {
@@ -728,9 +794,24 @@ export class SubstitutionsCard extends LitElement {
     const playerOut = Number(this.editSubOutSelect.value);
     const playerIn = Number(this.editSubInSelect.value);
     const minute = Number(this.editSubMinuteInput.value);
-    const updatedSub: Substitution = { team, playerOut, playerIn, minute };
+    const addedTime = this.showEditAddedTime
+      ? Number(this.editAddedTimeInput.value)
+      : 0;
+    const sequence = Number(this.sequenceInput.value);
+    
+    const updatedSub: SubstitutionMatchEvent = buildSubstitutionEvent({
+      team,
+      playerOut,
+      playerIn,
+      minute,
+      id: getSubstitutionEvents(this.match?.events || [])[this.editingSubIndex]
+        .id,
+      period: inferMatchPeriod(minute),
+      sequence,
+      addedTime,
+    });
 
-    const substitutions = [...(this.match.substitutions || [])];
+    const substitutions = [...(this.match.events || [])];
     substitutions[this.editingSubIndex] = updatedSub;
     this._updateSubstitutions(substitutions);
     this._closeEditDialog();
@@ -742,8 +823,9 @@ export class SubstitutionsCard extends LitElement {
       '¿Seguro que deseas eliminar este cambio?',
     );
     if (!confirmed) return;
-    const substitutions = [...(this.match.substitutions || [])];
-    substitutions.splice(index, 1);
+    const substitutions = getSubstitutionEvents(this.match.events || []).filter(
+      (_, idx) => idx !== index,
+    );
     this._updateSubstitutions(substitutions);
   }
 
@@ -761,6 +843,7 @@ export class SubstitutionsCard extends LitElement {
       Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
       Number(minute) > 90;
+    this.showAddedTime = minute === '45' || minute === '90';
   }
 
   private _onSubTeamChange() {

@@ -21,6 +21,7 @@ import { Match, PlayerTeam } from '../types/index.js';
 import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
 import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { getPhaseEvents } from '../utils/functionUtils.js';
 /**
  * Page for show the fixture
  */
@@ -575,7 +576,7 @@ export class MatchesPage extends LitElement {
   }
 
   private renderMatchItem(match: Match) {
-    const isLive = isMatchLive(match.phaseEvents);
+    const isLive = isMatchLive(getPhaseEvents(match.events));
 
     return html`
       <div
