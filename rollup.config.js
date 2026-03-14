@@ -5,7 +5,7 @@ import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 import _esbuild from 'rollup-plugin-esbuild';
 import { generateSW } from 'rollup-plugin-workbox';
 import path from 'node:path';
-import image from 'rollup-plugin-image';
+import image from '@rollup/plugin-image';
 import json from '@rollup/plugin-json';
 
 const esbuild = _esbuild.default || _esbuild;
