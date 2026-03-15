@@ -2,7 +2,7 @@ import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/button/filled-button.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/cards-card.js';
 import '../components/events-timeline.js';
 import '../components/goals-card.js';
@@ -12,6 +12,7 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
   Match,
+  MatchEvent,
   PhaseMatchEvent,
   Player,
   PlayerTeam,
@@ -244,6 +245,8 @@ export class MatchDetailPage extends LitElement {
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
+  @query('#halftimeMinuteInput') halftimeMinuteInput!: MdFilledTextField;
+
  // --- VARIABLES PARA EL GESTO DE DESLIZAR ---
   private touchStartX = 0;
   private touchStartY = 0;
@@ -492,6 +495,13 @@ export class MatchDetailPage extends LitElement {
       !getPhaseEvents(this.match.events).some(event => event.phase === 'halftime')
     ) {
       return html`
+        <md-filled-text-field
+          id="halftimeMinuteInput"
+          label="Minutos agregados"
+          type="number"
+          min="0"
+          max="30"
+        ></md-filled-text-field>
         <md-icon-button
           id="halftimeButton"
           @click=${() => this._savePhaseEvent('halftime')}
@@ -520,6 +530,13 @@ export class MatchDetailPage extends LitElement {
       !getPhaseEvents(this.match.events).some(event => event.phase === 'fulltime')
     ) {
       return html`
+        <md-filled-text-field
+          id="fulltimeMinuteInput"
+          label="Minutos agregados"
+          type="number"
+          min="0"
+          max="30"
+        ></md-filled-text-field>
         <md-icon-button
           id="fulltimeButton"
           @click=${() => this._savePhaseEvent('fulltime')}
@@ -541,7 +558,7 @@ export class MatchDetailPage extends LitElement {
     const startMinute = this._phaseMinuteValue('start');
     if (startMinute !== null) {
       updates[`/matches/${this.match.idMatch}/events`] =
-        this._phaseEventsWithUpdate('start', startMinute);
+        this._phaseEventsWithUpdate('start', startMinute, 0);
     }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
@@ -550,22 +567,33 @@ export class MatchDetailPage extends LitElement {
     if (!this.match) return;
     const minute = this._phaseMinuteValue(phase);
     if (minute === null) return;
+    let addedTime = 0;
+    if (phase === 'halftime') {
+      const addedTimeInput = this.renderRoot.querySelector(
+        '#halftimeMinuteInput',
+      ) as MdFilledTextField;
+      addedTime= Number(addedTimeInput.value) || 0;
+    } else if (phase === 'fulltime') {
+      const addedTimeInput = this.renderRoot.querySelector(
+        '#fulltimeMinuteInput',
+      ) as MdFilledTextField;
+      addedTime = Number(addedTimeInput.value) || 0;
+    }
     const updates: FirebaseUpdates = {};
-    updates[`/matches/${this.match.idMatch}/phaseEvents`] =
-      this._phaseEventsWithUpdate(phase, minute);
+    updates[`/matches/${this.match.idMatch}/events`] =
+      this._phaseEventsWithUpdate(phase, minute, addedTime);
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
-  private _phaseEventsWithUpdate(phase: PhaseMatchEvent['phase'], minute: number): PhaseMatchEvent[] {
-    const events = getPhaseEvents(this.match?.events || []);
-    const filtered = events.filter(event => event.phase !== phase);
+  private _phaseEventsWithUpdate(phase: PhaseMatchEvent['phase'], minute: number, addedTime: number): MatchEvent[] {
     const newPhaseEvent: PhaseMatchEvent = buildPhaseEvent({
       id: crypto.randomUUID(),
       phase,
       minute,
+      addedTime,
       sequence: calculateSequenceForNewEvent(this.match?.events || [], minute)
     });
-    const next = [...filtered, newPhaseEvent];
+    const next = [...this.match?.events || [], newPhaseEvent];
     return next;
   }
 

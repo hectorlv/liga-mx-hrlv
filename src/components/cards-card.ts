@@ -475,14 +475,6 @@ export class CardsCard extends LitElement {
               )}
             </md-outlined-select>
 
-            <md-filled-text-field
-              id="sequenceInput"
-              label="Secuencia"
-              type="number"
-              min="1"
-              @change=${this._validateAddCard}
-            ></md-filled-text-field>
-
             <md-filled-button
               class="action-btn full-width"
               ?disabled=${this.disableAddCard}
@@ -615,6 +607,14 @@ export class CardsCard extends LitElement {
                 >`,
             )}
           </md-outlined-select>
+
+          <md-filled-text-field
+            id="sequenceInput"
+            label="Secuencia"
+            type="number"
+            min="1"
+            @change=${this._validateAddCard}
+          ></md-filled-text-field>
         </div>
         <div slot="actions">
           <md-filled-button class="action-btn" @click=${this._closeEditDialog}
@@ -748,8 +748,7 @@ export class CardsCard extends LitElement {
       if (this.editCardTypeSelect) this.editCardTypeState = card.cardType;
       if (this.editCardFoulTypeSelect)
         this.editCardFoulTypeSelect.value = card.foulType || '';
-      if (this.sequenceInput)
-        this.sequenceInput.value = String(card.sequence);
+      if (this.sequenceInput) this.sequenceInput.value = String(card.sequence);
       if (this.editAddedTimeInput)
         this.editAddedTimeInput.value = String(card.addedTime || 0);
       this._validateEditForm();
