@@ -3,6 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { Match, Player, PlayerGame, PlayerTeam, TeamSide } from '../types';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { getCardEvents, getGoalEvents, getPhaseEvents, getSubstitutionEvents } from '../utils/functionUtils';
 
 interface PlayerStats {
   key: string;
@@ -484,18 +485,18 @@ export class StatsPage extends LitElement {
       lineup.forEach(player => {
         const stat = ensurePlayer(teamName, player.number, playerList);
         const inMinute = player.entroDeCambio
-          ? (match.substitutions?.find(
+           ? (getSubstitutionEvents(match.events)?.find(
               s => s.playerIn === player.number && s.team === teamTag,
             )?.minute ?? 0)
           : 0;
         let outMinute = 90;
         if (player.salioDeCambio) {
           outMinute =
-            match.substitutions?.find(
+            getSubstitutionEvents(match.events)?.find(
               s => s.playerOut === player.number && s.team === teamTag,
             )?.minute ?? 90;
         } else if (
-          match.cards?.some(
+          getCardEvents(match.events)?.some(
             c =>
               c.player === player.number &&
               c.team === teamTag &&
@@ -503,7 +504,7 @@ export class StatsPage extends LitElement {
           )
         ) {
           outMinute =
-            match.cards?.find(
+            getCardEvents(match.events)?.find(
               c =>
                 c.player === player.number &&
                 c.team === teamTag &&
@@ -538,18 +539,18 @@ export class StatsPage extends LitElement {
         if (u23Players.some(p => p.number === playerGame.number)) {
           u23PlayersSet(teamName).add(playerGame.number);
           const inMinute = playerGame.entroDeCambio
-            ? (match.substitutions?.find(
+            ? (getSubstitutionEvents(match.events)?.find(
                 s => s.playerIn === playerGame.number && s.team === teamTag,
               )?.minute ?? 0)
             : 0;
           let outMinute = 90;
           if (playerGame.salioDeCambio) {
             outMinute =
-              match.substitutions?.find(
+              getSubstitutionEvents(match.events)?.find(
                 s => s.playerOut === playerGame.number && s.team === teamTag,
               )?.minute ?? 90;
           } else if (
-            match.cards?.some(
+            getCardEvents(match.events)?.some(
               c =>
                 c.player === playerGame.number &&
                 c.team === teamTag &&
@@ -557,7 +558,7 @@ export class StatsPage extends LitElement {
             )
           ) {
             outMinute =
-              match.cards?.find(
+              getCardEvents(match.events)?.find(
                 c =>
                   c.player === playerGame.number &&
                   c.team === teamTag &&
@@ -586,7 +587,7 @@ export class StatsPage extends LitElement {
       const visitorPlayers = this.players.get(visitorKey) || [];
 
       // Goals and assists
-      (match.goals || []).forEach(goal => {
+      getGoalEvents(match.events)?.forEach(goal => {
         const creditedTeam =
           goal.team === 'local' ? match.local : match.visitante;
         const opponent = goal.team === 'local' ? match.visitante : match.local;
@@ -610,7 +611,7 @@ export class StatsPage extends LitElement {
       });
 
       // Cards
-      (match.cards || []).forEach(card => {
+      getCardEvents(match.events)?.forEach(card => {
         const teamName = card.team === 'local' ? match.local : match.visitante;
         const teamPlayers =
           card.team === 'local' ? localPlayers : visitorPlayers;
@@ -625,7 +626,7 @@ export class StatsPage extends LitElement {
       });
 
       // Minutes played
-      if (match.phaseEvents?.some(e => e.phase === 'fulltime')) {
+      if (getPhaseEvents(match.events)?.some(e => e.phase === 'fulltime')) {
         addLineupMinutes(
           match,
           match.lineupLocal || [],
@@ -642,7 +643,7 @@ export class StatsPage extends LitElement {
         );
       }
       // U23 Minutes
-      if (match.phaseEvents?.some(e => e.phase === 'fulltime')) {
+      if (getPhaseEvents(match.events)?.some(e => e.phase === 'fulltime')) {
         calculateU23Minutes(
           match,
           match.lineupLocal || [],

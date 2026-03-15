@@ -2,7 +2,7 @@ import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/button/filled-button.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/cards-card.js';
 import '../components/events-timeline.js';
 import '../components/goals-card.js';
@@ -12,7 +12,8 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
   Match,
-  PhaseEvent,
+  MatchEvent,
+  PhaseMatchEvent,
   Player,
   PlayerTeam,
 } from '../types/index.js';
@@ -22,7 +23,7 @@ import {
   replaceDateSeparator,
 } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { dispatchEventMatchUpdated } from '../utils/functionUtils.js';
+import { buildPhaseEvent, calculateSequenceForNewEvent, dispatchEventMatchUpdated, getPhaseEvents } from '../utils/functionUtils.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -244,6 +245,8 @@ export class MatchDetailPage extends LitElement {
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
+  @query('#halftimeMinuteInput') halftimeMinuteInput!: MdFilledTextField;
+
  // --- VARIABLES PARA EL GESTO DE DESLIZAR ---
   private touchStartX = 0;
   private touchStartY = 0;
@@ -264,12 +267,12 @@ export class MatchDetailPage extends LitElement {
   }
 
   // Usamos "arrow functions" (=>) para no perder la referencia a 'this'
-  private _handleTouchStart = (e: TouchEvent) => {
+  private readonly _handleTouchStart = (e: TouchEvent) => {
     this.touchStartX = e.changedTouches[0].screenX;
     this.touchStartY = e.changedTouches[0].screenY;
   };
 
-  private _handleTouchEnd = (e: TouchEvent) => {
+  private readonly _handleTouchEnd = (e: TouchEvent) => {
     const touchEndX = e.changedTouches[0].screenX;
     const touchEndY = e.changedTouches[0].screenY;
     
@@ -309,7 +312,7 @@ export class MatchDetailPage extends LitElement {
 
     const { local, visitante, fecha, hora, estadio, golLocal, golVisitante } =
       this.match;
-    const isPlayed = this.match.phaseEvents?.some(e => e.phase === 'start');
+    const isPlayed = getPhaseEvents(this.match.events).some(e => e.phase === 'start');
 
     return html`
       <section class="match-header-card">
@@ -476,7 +479,7 @@ export class MatchDetailPage extends LitElement {
 
   private renderPhaseButton() {
     if (!this.match) return null;
-    if (this.match.phaseEvents?.length === 0 || !this.match.phaseEvents) {
+    if (getPhaseEvents(this.match.events).length === 0 || !getPhaseEvents(this.match.events)) {
       return html`
         <md-icon-button
           id="startMatchButton"
@@ -488,10 +491,17 @@ export class MatchDetailPage extends LitElement {
         </md-icon-button>
       `;
     } else if (
-      this.match.phaseEvents?.some(event => event.phase === 'start') &&
-      !this.match.phaseEvents?.some(event => event.phase === 'halftime')
+      getPhaseEvents(this.match.events).some(event => event.phase === 'start') &&
+      !getPhaseEvents(this.match.events).some(event => event.phase === 'halftime')
     ) {
       return html`
+        <md-filled-text-field
+          id="halftimeMinuteInput"
+          label="Minutos agregados"
+          type="number"
+          min="0"
+          max="30"
+        ></md-filled-text-field>
         <md-icon-button
           id="halftimeButton"
           @click=${() => this._savePhaseEvent('halftime')}
@@ -502,8 +512,8 @@ export class MatchDetailPage extends LitElement {
         </md-icon-button>
       `;
     } else if (
-      this.match.phaseEvents?.some(event => event.phase === 'halftime') &&
-      !this.match.phaseEvents?.some(event => event.phase === 'secondHalf')
+      getPhaseEvents(this.match.events).some(event => event.phase === 'halftime') &&
+      !getPhaseEvents(this.match.events).some(event => event.phase === 'secondHalf')
     ) {
       return html`
         <md-icon-button
@@ -516,10 +526,17 @@ export class MatchDetailPage extends LitElement {
         </md-icon-button>
       `;
     } else if (
-      this.match.phaseEvents?.some(event => event.phase === 'secondHalf') &&
-      !this.match.phaseEvents?.some(event => event.phase === 'fulltime')
+      getPhaseEvents(this.match.events).some(event => event.phase === 'secondHalf') &&
+      !getPhaseEvents(this.match.events).some(event => event.phase === 'fulltime')
     ) {
       return html`
+        <md-filled-text-field
+          id="fulltimeMinuteInput"
+          label="Minutos agregados"
+          type="number"
+          min="0"
+          max="30"
+        ></md-filled-text-field>
         <md-icon-button
           id="fulltimeButton"
           @click=${() => this._savePhaseEvent('fulltime')}
@@ -540,37 +557,48 @@ export class MatchDetailPage extends LitElement {
     updates[`/matches/${this.match.idMatch}/golVisitante`] = 0;
     const startMinute = this._phaseMinuteValue('start');
     if (startMinute !== null) {
-      updates[`/matches/${this.match.idMatch}/phaseEvents`] =
-        this._phaseEventsWithUpdate('start', startMinute);
+      updates[`/matches/${this.match.idMatch}/events`] =
+        this._phaseEventsWithUpdate('start', startMinute, 0);
     }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
-  private _savePhaseEvent(phase: PhaseEvent['phase']) {
+  private _savePhaseEvent(phase: PhaseMatchEvent['phase']) {
     if (!this.match) return;
     const minute = this._phaseMinuteValue(phase);
     if (minute === null) return;
+    let addedTime = 0;
+    if (phase === 'halftime') {
+      const addedTimeInput = this.renderRoot.querySelector(
+        '#halftimeMinuteInput',
+      ) as MdFilledTextField;
+      addedTime= Number(addedTimeInput.value) || 0;
+    } else if (phase === 'fulltime') {
+      const addedTimeInput = this.renderRoot.querySelector(
+        '#fulltimeMinuteInput',
+      ) as MdFilledTextField;
+      addedTime = Number(addedTimeInput.value) || 0;
+    }
     const updates: FirebaseUpdates = {};
-    updates[`/matches/${this.match.idMatch}/phaseEvents`] =
-      this._phaseEventsWithUpdate(phase, minute);
+    updates[`/matches/${this.match.idMatch}/events`] =
+      this._phaseEventsWithUpdate(phase, minute, addedTime);
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
-  private _phaseEventsWithUpdate(phase: PhaseEvent['phase'], minute: number) {
-    const order: PhaseEvent['phase'][] = [
-      'start',
-      'halftime',
-      'secondHalf',
-      'fulltime',
-    ];
-    const events = this.match?.phaseEvents || [];
-    const filtered = events.filter(event => event.phase !== phase);
-    const next = [...filtered, { phase, minute }];
-    return next.sort((a, b) => order.indexOf(a.phase) - order.indexOf(b.phase));
+  private _phaseEventsWithUpdate(phase: PhaseMatchEvent['phase'], minute: number, addedTime: number): MatchEvent[] {
+    const newPhaseEvent: PhaseMatchEvent = buildPhaseEvent({
+      id: crypto.randomUUID(),
+      phase,
+      minute,
+      addedTime,
+      sequence: calculateSequenceForNewEvent(this.match?.events || [], minute)
+    });
+    const next = [...this.match?.events || [], newPhaseEvent];
+    return next;
   }
 
-  private _phaseMinuteValue(phase: PhaseEvent['phase']): number {
-    const existing = this.match?.phaseEvents?.find(
+  private _phaseMinuteValue(phase: PhaseMatchEvent['phase']): number {
+    const existing = getPhaseEvents(this.match?.events || []).find(
       event => event.phase === phase,
     );
     if (existing) return existing.minute;

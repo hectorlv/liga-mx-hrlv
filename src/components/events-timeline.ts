@@ -1,9 +1,22 @@
 import '@material/web/icon/icon.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { Match, Player, TeamSide, TimelineItem } from '../types';
-import { FOUL_TYPE_LABELS, GOAL_TYPE_LABELS } from '../constants';
 import '../components/player-info.js';
+import { FOUL_TYPE_LABELS, GOAL_TYPE_LABELS } from '../constants';
+import {
+  CardMatchEvent,
+  GoalMatchEvent,
+  Match,
+  MatchEvent,
+  PhaseMatchEvent,
+  Player,
+  SubstitutionMatchEvent,
+  TeamSideOptional
+} from '../types';
+import {
+  formatMatchMinute,
+  getPeriodWeight
+} from '../utils/functionUtils';
 
 @customElement('events-timeline')
 export class EventsTimeline extends LitElement {
@@ -282,14 +295,14 @@ export class EventsTimeline extends LitElement {
     `;
   }
 
-  private _renderItem(item: TimelineItem) {
-    switch (item.kind) {
+  private _renderItem(item: MatchEvent) {
+    switch (item.type) {
       case 'goal':
-        return this._renderGoalItem(item);
+        return this._renderGoalItem(item as GoalMatchEvent);
       case 'card':
-        return this._renderCardItem(item);
-      case 'sub':
-        return this._renderSubItem(item);
+        return this._renderCardItem(item as CardMatchEvent);
+      case 'substitution':
+        return this._renderSubItem(item as SubstitutionMatchEvent);
       case 'phase':
         return this._renderPhaseItem(item);
       default:
@@ -297,36 +310,35 @@ export class EventsTimeline extends LitElement {
     }
   }
 
-  private _renderGoalItem(item: TimelineItem) {
-    if (item.kind !== 'goal') return null;
+  private _renderGoalItem(item: GoalMatchEvent) {
     const isLocal = item.team === 'local';
     const ownGoalTeam = isLocal ? 'visitor' : 'local';
-    const playerTeam = item.goal.ownGoal ? ownGoalTeam : item.team;
+    const playerTeam = item.ownGoal ? ownGoalTeam : item.team;
     const alignClass = isLocal ? 'team-local' : 'team-visitor';
 
     return html`
       <div class="event-item ${alignClass}">
-        <div class="minute-bubble">${item.minute}'</div>
+        <div class="minute-bubble">${formatMatchMinute(item.minute, item.addedTime)}</div>
         <div class="event-content">
           <div class="badge-row">
-            <span class="badge ${item.goal.ownGoal ? 'goal-own' : 'goal'}">
+            <span class="badge ${item.ownGoal ? 'goal-own' : 'goal'}">
               <md-icon>sports_soccer</md-icon>
-              ${item.goal.ownGoal ? 'Autogol' : 'Gol'}
+              ${item.ownGoal ? 'Autogol' : 'Gol'}
             </span>
-            ${item.goal.goalType
+            ${item.goalType
               ? html`<span
                   class="badge"
                   style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
-                  >${GOAL_TYPE_LABELS[item.goal.goalType]}</span
+                  >${GOAL_TYPE_LABELS[item.goalType]}</span
                 >`
               : ''}
           </div>
           <div class="event-text">
-            ${this._playerName(playerTeam, item.goal.player)}
+            ${this._playerName(playerTeam, item.player)}
           </div>
-          ${item.goal.assist
+          ${item.assist
             ? html`<div class="event-subtext">
-                A: ${this._playerName(item.team, item.goal.assist)}
+                A: ${this._playerName(item.team, item.assist)}
               </div>`
             : ''}
         </div>
@@ -334,15 +346,14 @@ export class EventsTimeline extends LitElement {
     `;
   }
 
-  private _renderCardItem(item: TimelineItem) {
-    if (item.kind !== 'card') return null;
+  private _renderCardItem(item: CardMatchEvent) {
     const isLocal = item.team === 'local';
     const alignClass = isLocal ? 'team-local' : 'team-visitor';
-    const isYellow = item.card.cardType === 'yellow';
+    const isYellow = item.cardType === 'yellow';
 
     return html`
       <div class="event-item ${alignClass}">
-        <div class="minute-bubble">${item.minute}'</div>
+        <div class="minute-bubble">${formatMatchMinute(item.minute, item.addedTime)}</div>
         <div class="event-content">
           <div class="badge-row">
             <span class="badge ${isYellow ? 'card-yellow' : 'card-red'}">
@@ -351,31 +362,29 @@ export class EventsTimeline extends LitElement {
               >
               ${isYellow ? 'Amarilla' : 'Roja'}
             </span>
-            ${item.card.foulType
+            ${item.foulType
               ? html`<span
                   class="badge"
                   style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
-                  >${FOUL_TYPE_LABELS[item.card.foulType] ||
-                  item.card.foulType}</span
+                  >${FOUL_TYPE_LABELS[item.foulType] || item.foulType}</span
                 >`
               : ''}
           </div>
           <div class="event-text">
-            ${this._playerName(item.team, item.card.player)}
+            ${this._playerName(item.team, item.player)}
           </div>
         </div>
       </div>
     `;
   }
 
-  private _renderSubItem(item: TimelineItem) {
-    if (item.kind !== 'sub') return null;
+  private _renderSubItem(item: SubstitutionMatchEvent) {
     const isLocal = item.team === 'local';
     const alignClass = isLocal ? 'team-local' : 'team-visitor';
 
     return html`
       <div class="event-item ${alignClass}">
-        <div class="minute-bubble">${item.minute}'</div>
+        <div class="minute-bubble">${formatMatchMinute(item.minute, item.addedTime)}</div>
         <div class="event-content">
           <div class="badge-row">
             <span class="badge sub">
@@ -383,79 +392,44 @@ export class EventsTimeline extends LitElement {
             </span>
           </div>
           <div class="event-text" style="color: var(--md-sys-color-primary)">
-            + ${this._playerName(item.team, item.sub.playerIn)}
+            + ${this._playerName(item.team, item.playerIn)}
           </div>
           <div
             class="event-text"
             style="color: var(--app-color-danger, #D32F2F); opacity: 0.8;"
           >
-            - ${this._playerName(item.team, item.sub.playerOut)}
+            - ${this._playerName(item.team, item.playerOut)}
           </div>
         </div>
       </div>
     `;
   }
 
-  private _renderPhaseItem(item: TimelineItem) {
-    if (item.kind !== 'phase') return null;
+  private _renderPhaseItem(item: PhaseMatchEvent) {
     return html`
       <div class="event-item phase-item">
-        <div class="minute-bubble mobile-only">${item.minute}'</div>
+        <div class="minute-bubble mobile-only">${formatMatchMinute(item.minute, item.addedTime)}</div>
         <div class="event-content">
           <md-icon style="vertical-align: middle; margin-right: 4px;"
             >schedule</md-icon
           >
-          ${item.minute}' - ${this._phaseLabel(item.phase)}
+          ${formatMatchMinute(item.minute, item.addedTime)} - ${this._phaseLabel(item.phase)}
         </div>
       </div>
     `;
   }
 
-  private _buildTimelineItems(): TimelineItem[] {
+  private _buildTimelineItems(): MatchEvent[] {
     if (!this.match) return [];
-    const {
-      goals = [],
-      cards = [],
-      substitutions = [],
-      phaseEvents = [],
-    } = this.match;
-    const goalItems: TimelineItem[] = goals.map(goal => ({
-      kind: 'goal',
-      minute: goal.minute,
-      team: goal.team,
-      goal,
-    }));
-    const cardItems: TimelineItem[] = cards.map(card => ({
-      kind: 'card',
-      minute: card.minute,
-      team: card.team,
-      card,
-    }));
-    const subItems: TimelineItem[] = substitutions.map(sub => ({
-      kind: 'sub',
-      minute: sub.minute,
-      team: sub.team,
-      sub,
-    }));
-    const phaseItems: TimelineItem[] = phaseEvents.map(phase => ({
-      kind: 'phase',
-      minute: phase.minute,
-      phase: phase.phase,
-    }));
-    return [...phaseItems, ...goalItems, ...cardItems, ...subItems].sort(
-      (a, b) => {
-        if (a.minute !== b.minute) return a.minute - b.minute;
-        const priority = (item: TimelineItem) => {
-          if (item.kind == 'phase') {
-            const p = item.phase;
-            if (p === 'start' || p === 'secondHalf') return 0;
-            if (p === 'halftime' || p === 'fulltime') return 2;
-          }
-          return 1;
-        };
-        return priority(a) - priority(b);
-      },
-    );
+    return this.match.events.sort((a, b) => {
+      const periodDiff = getPeriodWeight(a.period) - getPeriodWeight(b.period);
+      if (periodDiff !== 0) return periodDiff;
+      const minuteDiff = a.minute - b.minute;
+      if (minuteDiff !== 0) return minuteDiff;
+      const addedTimeDiff = (a.addedTime || 0) - (b.addedTime || 0);
+      if (addedTimeDiff !== 0) return addedTimeDiff;
+      return a.sequence - b.sequence;
+    });
   }
 
   private _phaseLabel(phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime') {
@@ -473,7 +447,7 @@ export class EventsTimeline extends LitElement {
     }
   }
 
-  private _playerName(team: TeamSide, number: number) {
+  private _playerName(team: TeamSideOptional, number: number) {
     const list = team === 'local' ? this.localPlayers : this.visitorPlayers;
     return list.find(p => p.number === number)?.name || `#${number}`;
   }
