@@ -26,6 +26,7 @@ import {
   formatMatchMinute,
   getCardEvents,
   inferMatchPeriod,
+  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('cards-card')
@@ -715,7 +716,11 @@ export class CardsCard extends LitElement {
       addedTime,
       cardType,
       foulType: foulType || undefined,
-      sequence: this.match.events.length + 1,
+      sequence: calculateSequenceForNewEvent(
+        this.match.events || [],
+        minute,
+        addedTime,
+      ),
       period: inferMatchPeriod(minute),
     });
     const cards = [...(this.match.events || []), newCard];
