@@ -23,6 +23,7 @@ import {
   formatMatchMinute,
   getSubstitutionEvents,
   inferMatchPeriod,
+  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('substitutions-card')
@@ -582,7 +583,11 @@ export class SubstitutionsCard extends LitElement {
       addedTime,
       id: crypto.randomUUID(),
       period: inferMatchPeriod(minute),
-      sequence: this.match.events.length + 1,
+      sequence: calculateSequenceForNewEvent(
+        this.match.events || [],
+        minute,
+        addedTime,
+      ),
     });
     const substitutions = [...(this.match.events || []), newSubstitution];
 
