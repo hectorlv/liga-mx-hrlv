@@ -25,6 +25,7 @@ import {
   getPhaseEvents,
   getSubstitutionEvents,
   inferMatchPeriod,
+  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('substitutions-card')

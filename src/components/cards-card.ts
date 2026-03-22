@@ -28,6 +28,7 @@ import {
   getCardEvents,
   getPhaseEvents,
   inferMatchPeriod,
+  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('cards-card')
