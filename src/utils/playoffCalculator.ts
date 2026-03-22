@@ -72,6 +72,13 @@ export function calculatePlayIn(table: TableEntry[], matches: Match[]) {
   const playIn1Match = matches.find(x => x.idMatch === LIGUILLA.playIn1.id);
   const playIn2Match = matches.find(x => x.idMatch === LIGUILLA.playIn2.id);
 
+  // Solo se calcula el play-in si ambos partidos tienen resultado, para evitar marcar equipos como eliminados antes de tiempo
+  if (!playIn1Match || !playIn2Match) return;
+  if (playIn1Match.golLocal == null || playIn1Match.golVisitante == null)
+    return;
+  if (playIn2Match.golLocal == null || playIn2Match.golVisitante == null)
+    return;
+
   handlePlayInMatch(
     playIn1Match,
     LIGUILLA.playIn1,
@@ -126,7 +133,7 @@ function createPlayoffMatches(
   return update;
 }
 
-function calculateQuarterFinal(table: TableEntry[], matches: Match[]) {
+export function calculateQuarterFinal(table: TableEntry[], matches: Match[]) {
   const quarters = table.filter(team => !team.eliminado);
   const quarter1: FirebaseUpdates = createPlayoffMatches(
     LIGUILLA.quarter1,
@@ -150,6 +157,7 @@ function calculateQuarterFinal(table: TableEntry[], matches: Match[]) {
   );
   const updates = { ...quarter1, ...quarter2, ...quarter3, ...quarter4 };
   saveUpdates(updates);
+
   calculateSemiFinal(table, matches);
 }
 
@@ -161,12 +169,10 @@ function handlePlayOffMatch(
   const idaMatch = matches.find(x => x.idMatch === playoffMatch.ida.id);
   const vueltaMatch = matches.find(x => x.idMatch === playoffMatch.vuelta.id);
   if (
-    !idaMatch ||
-    idaMatch.golLocal < 0 ||
-    idaMatch.golVisitante < 0 ||
-    !vueltaMatch ||
-    vueltaMatch.golLocal < 0 ||
-    vueltaMatch.golVisitante < 0
+    idaMatch?.golLocal == null ||
+    idaMatch?.golVisitante == null ||
+    vueltaMatch?.golLocal == null ||
+    vueltaMatch?.golVisitante == null
   )
     return;
   const match = {

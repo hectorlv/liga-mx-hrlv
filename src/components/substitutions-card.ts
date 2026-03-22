@@ -19,8 +19,10 @@ import {
 } from '../types';
 import {
   buildSubstitutionEvent,
+  calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   formatMatchMinute,
+  getPhaseEvents,
   getSubstitutionEvents,
   inferMatchPeriod,
   calculateSequenceForNewEvent
@@ -365,6 +367,7 @@ export class SubstitutionsCard extends LitElement {
               id="subMinute"
               min="0"
               max="90"
+              @input=${this._validateAddSub}
               @change=${this._validateAddSub}
             ></md-filled-text-field>
 
@@ -455,6 +458,7 @@ export class SubstitutionsCard extends LitElement {
             id="editSubMinute"
             min="0"
             max="90"
+            @input=${this._validateEditForm}
             @change=${this._validateEditForm}
           ></md-filled-text-field>
 
@@ -568,6 +572,12 @@ export class SubstitutionsCard extends LitElement {
 
   private _addSub() {
     if (!this.match) return;
+    if (!this._hasMatchStarted()) {
+      globalThis.alert(
+        'Primero debes iniciar el partido para poder agregar cambios.',
+      );
+      return;
+    }
     const team = this.subTeam;
     const playerOut = Number(this.subOutSelect.value);
     const playerIn = Number(this.subInSelect.value);
@@ -707,8 +717,7 @@ export class SubstitutionsCard extends LitElement {
         this.editSubMinuteInput.value = String(sub.minute);
       if (this.editAddedTimeInput)
         this.editAddedTimeInput.value = String(sub.addedTime);
-      if (this.sequenceInput) 
-        this.sequenceInput.value = String(sub.sequence);
+      if (this.sequenceInput) this.sequenceInput.value = String(sub.sequence);
       this._validateEditForm();
       this.editSubDialog?.show();
     });
@@ -785,7 +794,6 @@ export class SubstitutionsCard extends LitElement {
       Number(minuteValue) > 90 ||
       playerOut === playerIn;
     this.showEditAddedTime = minuteValue === '45' || minuteValue === '90';
-
   }
 
   private _saveEditedSub() {
@@ -803,7 +811,7 @@ export class SubstitutionsCard extends LitElement {
       ? Number(this.editAddedTimeInput.value)
       : 0;
     const sequence = Number(this.sequenceInput.value);
-    
+
     const updatedSub: SubstitutionMatchEvent = buildSubstitutionEvent({
       team,
       playerOut,
@@ -840,6 +848,7 @@ export class SubstitutionsCard extends LitElement {
     const playerIn = this.subInSelect?.value;
     const minute = this.subMinuteInput?.value;
     this.disableAddSub =
+      !this._hasMatchStarted() ||
       !team ||
       !playerOut ||
       !playerIn ||
@@ -854,5 +863,12 @@ export class SubstitutionsCard extends LitElement {
   private _onSubTeamChange() {
     this.requestUpdate();
     this._validateAddSub();
+  }
+
+  private _hasMatchStarted(): boolean {
+    if (!this.match) return false;
+    return getPhaseEvents(this.match.events || []).some(
+      event => event.phase === 'start',
+    );
   }
 }

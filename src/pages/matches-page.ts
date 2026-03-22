@@ -541,31 +541,29 @@ export class MatchesPage extends LitElement {
         </div>
         ${this.matchesRender.length === 0
           ? html`
-             <div class="empty-state">
+              <div class="empty-state">
                 <md-icon>event_busy</md-icon>
                 <h3>No hay partidos hoy</h3>
                 <p>Intenta cambiar los filtros o selecciona otra jornada.</p>
               </div>
             `
           : html`
-                <div class="matches-grid">
-                  <div class="table-headers">
-                    <div class="table-header">Jornada</div>
-                    <div class="table-header">Fecha</div>
-                    <div class="table-header" style="justify-content: flex-end">
-                      Local
-                    </div>
-                    <div class="table-header" style="justify-content: center">
-                      Marcador
-                    </div>
-                    <div class="table-header">Visitante</div>
-                    <div class="table-header">Estadio</div>
+              <div class="matches-grid">
+                <div class="table-headers">
+                  <div class="table-header">Jornada</div>
+                  <div class="table-header">Fecha</div>
+                  <div class="table-header" style="justify-content: flex-end">
+                    Local
                   </div>
-                  ${this.matchesRender.map(match => this.renderMatchItem(match))}
+                  <div class="table-header" style="justify-content: center">
+                    Marcador
+                  </div>
+                  <div class="table-header">Visitante</div>
+                  <div class="table-header">Estadio</div>
                 </div>
-              `
-        }
-
+                ${this.matchesRender.map(match => this.renderMatchItem(match))}
+              </div>
+            `}
         ${this.championLegend
           ? html`<div class="champion-legend" role="note">
               ${this.championLegend}
@@ -588,7 +586,9 @@ export class MatchesPage extends LitElement {
       >
         <div class="cell-jornada">
           <span>${match.jornada}</span>
-          ${isLive ? html`<span class="live-dot" title="Partido en curso"></span>` : ''}
+          ${isLive
+            ? html`<span class="live-dot" title="Partido en curso"></span>`
+            : ''}
         </div>
         <div class="cell-date">
           <span

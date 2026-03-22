@@ -95,6 +95,11 @@ const LIGUILLA = {
   },
 };
 
+const POSTSEASON_FORMAT = {
+  directQualificationSpots: 8,
+  playInSpots: 0,
+};
+
 const LOGOS = [
   { equipo: 'América', img: 'america' },
   { equipo: 'Atlas', img: 'atlas' },
@@ -124,4 +129,10 @@ const JORNADA_LIGUILLA = [
   { id: 22, descripcion: 'Final' },
 ];
 
-export { FIREBASE_CONFIG, LIGUILLA, LOGOS, JORNADA_LIGUILLA };
+export {
+  FIREBASE_CONFIG,
+  JORNADA_LIGUILLA,
+  LIGUILLA,
+  LOGOS,
+  POSTSEASON_FORMAT,
+};

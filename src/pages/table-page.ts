@@ -381,7 +381,10 @@ export class TablePage extends LitElement {
                 <div class="cell cell-pos">
                   ${index + 1}
                   ${hasLiveMatch
-                    ? html`<span class="live-dot" title="Partido en curso"></span>`
+                    ? html`<span
+                        class="live-dot"
+                        title="Partido en curso"
+                      ></span>`
                     : ''}
                 </div>
                 <div class="cell cell-logo">${getTeamImage(team.equipo)}</div>
@@ -416,35 +419,15 @@ export class TablePage extends LitElement {
       </main>
     `;
   }
-
   private getClass(i: number) {
     const team = this.table[i];
-    const team7 = this.table[6];
-    const team10 = this.table[9];
-    const team11 = this.table[10];
-    const TOTAL_MATCHES = 17;
-    if (
-      (team7.jj < TOTAL_MATCHES &&
-        team7.pts + 3 * (TOTAL_MATCHES - team7.jj) < team.pts) ||
-      (team.equipo != team7.equipo &&
-        team7.jj === TOTAL_MATCHES &&
-        i < 6 &&
-        team7.pts <= team.pts)
-    ) {
+    if (team.clasificado) {
       return 'qualified';
-    } else if (
-      (team11.jj < TOTAL_MATCHES &&
-        team11.pts + 3 * (TOTAL_MATCHES - team11.jj) < team.pts) ||
-      (i < 10 && team11.jj === TOTAL_MATCHES && team11.pts <= team.pts)
-    ) {
+    }
+    if (team.playin) {
       return 'playin';
-    } else if (
-      (team.jj < TOTAL_MATCHES &&
-        team.pts + 3 * (TOTAL_MATCHES - team.jj) < team10.pts) ||
-      (team.equipo != team10.equipo &&
-        team.jj === TOTAL_MATCHES &&
-        team.pts <= team10.pts)
-    ) {
+    }
+    if (team.eliminado) {
       return 'eliminated';
     }
     return '';
@@ -459,7 +442,6 @@ export class TablePage extends LitElement {
   }
 
   private selectTeam(teamName: string) {
-    console.log(`Selected team: ${teamName}`);
     this.selectedTeam = teamName;
   }
 }
