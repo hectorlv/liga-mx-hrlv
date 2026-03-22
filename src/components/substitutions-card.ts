@@ -19,11 +19,12 @@ import {
 } from '../types';
 import {
   buildSubstitutionEvent,
+  calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   formatMatchMinute,
+  getPhaseEvents,
   getSubstitutionEvents,
   inferMatchPeriod,
-  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('substitutions-card')
@@ -365,6 +366,7 @@ export class SubstitutionsCard extends LitElement {
               id="subMinute"
               min="0"
               max="90"
+              @input=${this._validateAddSub}
               @change=${this._validateAddSub}
             ></md-filled-text-field>
 
@@ -455,6 +457,7 @@ export class SubstitutionsCard extends LitElement {
             id="editSubMinute"
             min="0"
             max="90"
+            @input=${this._validateEditForm}
             @change=${this._validateEditForm}
           ></md-filled-text-field>
 
@@ -568,6 +571,12 @@ export class SubstitutionsCard extends LitElement {
 
   private _addSub() {
     if (!this.match) return;
+    if (!this._hasMatchStarted()) {
+      globalThis.alert(
+        'Primero debes iniciar el partido para poder agregar cambios.',
+      );
+      return;
+    }
     const team = this.subTeam;
     const playerOut = Number(this.subOutSelect.value);
     const playerIn = Number(this.subInSelect.value);
@@ -840,6 +849,7 @@ export class SubstitutionsCard extends LitElement {
     const playerIn = this.subInSelect?.value;
     const minute = this.subMinuteInput?.value;
     this.disableAddSub =
+      !this._hasMatchStarted() ||
       !team ||
       !playerOut ||
       !playerIn ||
@@ -854,5 +864,12 @@ export class SubstitutionsCard extends LitElement {
   private _onSubTeamChange() {
     this.requestUpdate();
     this._validateAddSub();
+  }
+
+  private _hasMatchStarted(): boolean {
+    if (!this.match) return false;
+    return getPhaseEvents(this.match.events || []).some(
+      event => event.phase === 'start',
+    );
   }
 }

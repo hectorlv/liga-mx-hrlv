@@ -22,11 +22,12 @@ import {
 } from '../types';
 import {
   buildCardEvent,
+  calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   formatMatchMinute,
   getCardEvents,
+  getPhaseEvents,
   inferMatchPeriod,
-  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('cards-card')
@@ -393,6 +394,7 @@ export class CardsCard extends LitElement {
               id="cardMinute"
               min="0"
               max="90"
+              @input=${this._validateAddCard}
               @change=${this._validateAddCard}
               required
             ></md-filled-text-field>
@@ -529,6 +531,7 @@ export class CardsCard extends LitElement {
             id="editCardMinute"
             min="0"
             max="90"
+            @input=${this._validateEditForm}
             @change=${this._validateEditForm}
             required
           ></md-filled-text-field>
@@ -695,6 +698,12 @@ export class CardsCard extends LitElement {
 
   private _addCard() {
     if (!this.match) return;
+    if (!this._hasMatchStarted()) {
+      globalThis.alert(
+        'Primero debes iniciar el partido para poder agregar tarjetas.',
+      );
+      return;
+    }
     const team = this.cardTeam;
     const player = Number(this.cardPlayerSelect.value);
     const minute = Number(this.cardMinuteInput.value);
@@ -864,6 +873,13 @@ export class CardsCard extends LitElement {
     return players;
   }
 
+  private _hasMatchStarted(): boolean {
+    if (!this.match) return false;
+    return getPhaseEvents(this.match.events || []).some(
+      event => event.phase === 'start',
+    );
+  }
+
   private _validateAddCard() {
     const team = this.cardTeam;
     const player = this.cardPlayerSelect?.value;
@@ -871,6 +887,7 @@ export class CardsCard extends LitElement {
     const type = this.cardTypeState;
     const foulType = this.cardFoulTypeSelect?.value;
     this.disableAddCard =
+      !this._hasMatchStarted() ||
       !team ||
       !player ||
       !minute ||
