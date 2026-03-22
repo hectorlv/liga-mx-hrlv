@@ -28,6 +28,7 @@ import {
   dispatchEventMatchUpdated,
   formatMatchMinute,
   getGoalEvents,
+  getPhaseEvents,
   inferMatchPeriod,
 } from '../utils/functionUtils';
 @customElement('goals-card')
@@ -396,6 +397,7 @@ export class GoalsCard extends LitElement {
               id="newGoalMinute"
               min="0"
               max="90"
+              @input=${this._validateForm}
               @change=${this._validateForm}
               required
             ></md-filled-text-field>
@@ -508,15 +510,16 @@ export class GoalsCard extends LitElement {
             </label>
           </div>
 
-          <md-filled-text-field
-            label="Minuto"
-            type="number"
-            id="editGoalMinute"
-            min="0"
-            max="90"
-            @change=${this._validateEditForm}
-            required
-          ></md-filled-text-field>
+            <md-filled-text-field
+              label="Minuto"
+              type="number"
+              id="editGoalMinute"
+              min="0"
+              max="90"
+              @input=${this._validateEditForm}
+              @change=${this._validateEditForm}
+              required
+            ></md-filled-text-field>
 
           ${this.showEditAddedTime
             ? html`<md-filled-text-field
@@ -676,8 +679,21 @@ export class GoalsCard extends LitElement {
     );
   }
 
+  private _hasMatchStarted(): boolean {
+    if (!this.match) return false;
+    return getPhaseEvents(this.match.events || []).some(
+      event => event.phase === 'start',
+    );
+  }
+
   private _addGoal() {
     if (!this.match) return;
+    if (!this._hasMatchStarted()) {
+      globalThis.alert(
+        'Primero debes iniciar el partido para poder agregar goles.',
+      );
+      return;
+    }
     const team = this.goalTeamState as TeamSide;
     const player = Number(this.newGoalPlayerSelect.value);
     const minute = Number(this.newGoalMinuteInput.value);
@@ -771,6 +787,7 @@ export class GoalsCard extends LitElement {
     const goalType = this.newGoalTypeSelect?.value;
 
     this.disableAddGoalButton =
+      !this._hasMatchStarted() ||
       !selectedTeam ||
       !playerSelected ||
       !goalType ||
