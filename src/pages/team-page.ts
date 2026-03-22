@@ -10,7 +10,12 @@ import {
   TableEntry,
   TeamSide,
 } from '../types/index.js';
-import { dispatchEventMatchUpdated, getCardEvents, getGoalEvents, getSubstitutionEvents } from '../utils/functionUtils.js';
+import {
+  dispatchEventMatchUpdated,
+  getCardEvents,
+  getGoalEvents,
+  getSubstitutionEvents,
+} from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 
 // Imports de Material para el formulario de edición
@@ -51,19 +56,31 @@ export class TeamPage extends LitElement {
         --card-bg: var(--md-sys-color-surface);
         animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
       }
-      
+
       :host(.closing) {
         animation: slideOut 0.25s ease-in forwards;
       }
 
       @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0.5; }
-        to { transform: translateX(0); opacity: 1; }
+        from {
+          transform: translateX(100%);
+          opacity: 0.5;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
       }
 
       @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
       }
 
       .header-container {
@@ -195,10 +212,9 @@ export class TeamPage extends LitElement {
         .players-grid {
           display: grid;
           /* Agregamos una columna extra de 50px al final para el botón de editar */
-          grid-template-columns: 60px 50px 2fr 100px 100px 80px repeat(
-              7,
-              1fr
-            ) 50px;
+          grid-template-columns:
+            60px 50px 2fr 100px 100px 80px repeat(7, 1fr)
+            50px;
           gap: 0;
           background: var(--card-bg);
           border-radius: 12px;
@@ -349,10 +365,7 @@ export class TeamPage extends LitElement {
     return html`
       <main>
         <div class="header-container">
-          <md-icon-button
-            @click=${this._goBack}
-            title="Volver"
-          >
+          <md-icon-button @click=${this._goBack} title="Volver">
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
           ${getTeamImage(this.team.equipo)}
@@ -450,7 +463,7 @@ export class TeamPage extends LitElement {
                   <div class="cell stat-item stat-tr">
                     <span class="stat-label">Rojas</span>
                     <span class="stat-value">${player.redCards}</span>
-                    </div>
+                  </div>
 
                   <div class="cell cell-action" style="display: none;">
                     <md-icon-button
@@ -560,7 +573,9 @@ export class TeamPage extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.getPlayerStats();
-    this.addEventListener('touchstart', this._handleTouchStart, { passive: true });
+    this.addEventListener('touchstart', this._handleTouchStart, {
+      passive: true,
+    });
     this.addEventListener('touchend', this._handleTouchEnd, { passive: true });
   }
 
@@ -580,7 +595,7 @@ export class TeamPage extends LitElement {
   private readonly _handleTouchEnd = (e: TouchEvent) => {
     const touchEndX = e.changedTouches[0].screenX;
     const touchEndY = e.changedTouches[0].screenY;
-    
+
     const deltaX = touchEndX - this.touchStartX;
     const deltaY = touchEndY - this.touchStartY;
 
@@ -588,7 +603,11 @@ export class TeamPage extends LitElement {
     // 1. El toque inicial debe ser en el borde izquierdo (los primeros 50px de la pantalla)
     // 2. El deslizamiento hacia la derecha debe ser de al menos 60px
     // 3. El movimiento debe ser más horizontal que vertical (para no confundirlo con el scroll de leer la página)
-    if (this.touchStartX < 50 && deltaX > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (
+      this.touchStartX < 50 &&
+      deltaX > 60 &&
+      Math.abs(deltaX) > Math.abs(deltaY)
+    ) {
       this._goBack();
     }
   };
@@ -596,7 +615,7 @@ export class TeamPage extends LitElement {
   private _goBack() {
     // Le ponemos la clase que activa la animación de salida
     this.classList.add('closing');
-    
+
     // Esperamos 250 milisegundos a que la animación casi termine y avisamos al padre
     setTimeout(() => {
       this.dispatchEvent(new CustomEvent('back'));
@@ -806,7 +825,10 @@ export class TeamPage extends LitElement {
     return goal.team as TeamSide;
   }
 
-  private applyGoalToPlayer(statsMap: Map<number, PlayerStats>, goal: GoalMatchEvent) {
+  private applyGoalToPlayer(
+    statsMap: Map<number, PlayerStats>,
+    goal: GoalMatchEvent,
+  ) {
     const playerStats = statsMap.get(goal.player);
     if (!playerStats) return;
     if (goal.ownGoal) {
@@ -816,7 +838,10 @@ export class TeamPage extends LitElement {
     }
   }
 
-  private applyAssistToPlayer(statsMap: Map<number, PlayerStats>, goal: GoalMatchEvent) {
+  private applyAssistToPlayer(
+    statsMap: Map<number, PlayerStats>,
+    goal: GoalMatchEvent,
+  ) {
     if (!goal.assist) return;
     const assistStats = statsMap.get(goal.assist);
     if (assistStats) assistStats.assists += 1;

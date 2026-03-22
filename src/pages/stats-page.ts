@@ -3,7 +3,12 @@ import { customElement, property } from 'lit/decorators.js';
 import { Match, Player, PlayerGame, PlayerTeam, TeamSide } from '../types';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { getCardEvents, getGoalEvents, getPhaseEvents, getSubstitutionEvents } from '../utils/functionUtils';
+import {
+  getCardEvents,
+  getGoalEvents,
+  getPhaseEvents,
+  getSubstitutionEvents,
+} from '../utils/functionUtils';
 
 interface PlayerStats {
   key: string;
@@ -485,7 +490,7 @@ export class StatsPage extends LitElement {
       lineup.forEach(player => {
         const stat = ensurePlayer(teamName, player.number, playerList);
         const inMinute = player.entroDeCambio
-           ? (getSubstitutionEvents(match.events)?.find(
+          ? (getSubstitutionEvents(match.events)?.find(
               s => s.playerIn === player.number && s.team === teamTag,
             )?.minute ?? 0)
           : 0;

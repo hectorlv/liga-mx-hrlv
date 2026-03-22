@@ -11,12 +11,9 @@ import {
   PhaseMatchEvent,
   Player,
   SubstitutionMatchEvent,
-  TeamSideOptional
+  TeamSideOptional,
 } from '../types';
-import {
-  formatMatchMinute,
-  getPeriodWeight
-} from '../utils/functionUtils';
+import { formatMatchMinute, getPeriodWeight } from '../utils/functionUtils';
 
 @customElement('events-timeline')
 export class EventsTimeline extends LitElement {
@@ -318,7 +315,9 @@ export class EventsTimeline extends LitElement {
 
     return html`
       <div class="event-item ${alignClass}">
-        <div class="minute-bubble">${formatMatchMinute(item.minute, item.addedTime)}</div>
+        <div class="minute-bubble">
+          ${formatMatchMinute(item.minute, item.addedTime)}
+        </div>
         <div class="event-content">
           <div class="badge-row">
             <span class="badge ${item.ownGoal ? 'goal-own' : 'goal'}">
@@ -353,7 +352,9 @@ export class EventsTimeline extends LitElement {
 
     return html`
       <div class="event-item ${alignClass}">
-        <div class="minute-bubble">${formatMatchMinute(item.minute, item.addedTime)}</div>
+        <div class="minute-bubble">
+          ${formatMatchMinute(item.minute, item.addedTime)}
+        </div>
         <div class="event-content">
           <div class="badge-row">
             <span class="badge ${isYellow ? 'card-yellow' : 'card-red'}">
@@ -384,7 +385,9 @@ export class EventsTimeline extends LitElement {
 
     return html`
       <div class="event-item ${alignClass}">
-        <div class="minute-bubble">${formatMatchMinute(item.minute, item.addedTime)}</div>
+        <div class="minute-bubble">
+          ${formatMatchMinute(item.minute, item.addedTime)}
+        </div>
         <div class="event-content">
           <div class="badge-row">
             <span class="badge sub">
@@ -408,12 +411,15 @@ export class EventsTimeline extends LitElement {
   private _renderPhaseItem(item: PhaseMatchEvent) {
     return html`
       <div class="event-item phase-item">
-        <div class="minute-bubble mobile-only">${formatMatchMinute(item.minute, item.addedTime)}</div>
+        <div class="minute-bubble mobile-only">
+          ${formatMatchMinute(item.minute, item.addedTime)}
+        </div>
         <div class="event-content">
           <md-icon style="vertical-align: middle; margin-right: 4px;"
             >schedule</md-icon
           >
-          ${formatMatchMinute(item.minute, item.addedTime)} - ${this._phaseLabel(item.phase)}
+          ${formatMatchMinute(item.minute, item.addedTime)} -
+          ${this._phaseLabel(item.phase)}
         </div>
       </div>
     `;

@@ -716,8 +716,7 @@ export class SubstitutionsCard extends LitElement {
         this.editSubMinuteInput.value = String(sub.minute);
       if (this.editAddedTimeInput)
         this.editAddedTimeInput.value = String(sub.addedTime);
-      if (this.sequenceInput) 
-        this.sequenceInput.value = String(sub.sequence);
+      if (this.sequenceInput) this.sequenceInput.value = String(sub.sequence);
       this._validateEditForm();
       this.editSubDialog?.show();
     });
@@ -794,7 +793,6 @@ export class SubstitutionsCard extends LitElement {
       Number(minuteValue) > 90 ||
       playerOut === playerIn;
     this.showEditAddedTime = minuteValue === '45' || minuteValue === '90';
-
   }
 
   private _saveEditedSub() {
@@ -812,7 +810,7 @@ export class SubstitutionsCard extends LitElement {
       ? Number(this.editAddedTimeInput.value)
       : 0;
     const sequence = Number(this.sequenceInput.value);
-    
+
     const updatedSub: SubstitutionMatchEvent = buildSubstitutionEvent({
       team,
       playerOut,

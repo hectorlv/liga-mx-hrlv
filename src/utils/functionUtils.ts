@@ -1,4 +1,16 @@
-import { CardMatchEvent, CardType, FirebaseUpdates, FoulType, GoalMatchEvent, GoalType, MatchEvent, MatchPeriod, PhaseMatchEvent, SubstitutionMatchEvent, TeamSide } from '../types';
+import {
+  CardMatchEvent,
+  CardType,
+  FirebaseUpdates,
+  FoulType,
+  GoalMatchEvent,
+  GoalType,
+  MatchEvent,
+  MatchPeriod,
+  PhaseMatchEvent,
+  SubstitutionMatchEvent,
+  TeamSide,
+} from '../types';
 
 export function dispatchEventMatchUpdated(
   detail: FirebaseUpdates,
@@ -10,7 +22,6 @@ export function dispatchEventMatchUpdated(
   });
   return event;
 }
-
 
 export function formatMatchMinute(minute: number, addedTime = 0): string {
   return addedTime > 0 ? `${minute}+${addedTime}'` : `${minute}'`;
@@ -71,21 +82,18 @@ export function inferMatchPeriod(minute: number): MatchPeriod {
   return inferredPeriod;
 }
 
-export function buildGoalEvent(
-  data: {
-    id: string;
-    team: TeamSide;
-    minute: number;
-    addedTime?: number;
-    period?: MatchPeriod;
-    sequence: number;
-    player: number;
-    ownGoal: boolean;
-    goalType: GoalType;
-    assist?: number | null;
-  },
-): GoalMatchEvent {
-  
+export function buildGoalEvent(data: {
+  id: string;
+  team: TeamSide;
+  minute: number;
+  addedTime?: number;
+  period?: MatchPeriod;
+  sequence: number;
+  player: number;
+  ownGoal: boolean;
+  goalType: GoalType;
+  assist?: number | null;
+}): GoalMatchEvent {
   return {
     id: data.id,
     type: 'goal',
@@ -101,19 +109,17 @@ export function buildGoalEvent(
   };
 }
 
-export function buildCardEvent(
-  data: {
-    id: string;
-    team: TeamSide;
-    minute: number;
-    addedTime?: number;
-    period?: MatchPeriod;
-    sequence: number;
-    player: number;
-    cardType: CardType;
-    foulType?: FoulType;
-  },
-): CardMatchEvent {
+export function buildCardEvent(data: {
+  id: string;
+  team: TeamSide;
+  minute: number;
+  addedTime?: number;
+  period?: MatchPeriod;
+  sequence: number;
+  player: number;
+  cardType: CardType;
+  foulType?: FoulType;
+}): CardMatchEvent {
   return {
     id: data.id,
     type: 'card',
@@ -128,18 +134,16 @@ export function buildCardEvent(
   };
 }
 
-export function buildSubstitutionEvent(
-  data: {
-    id: string;
-    team: TeamSide;
-    minute: number;
-    addedTime?: number;
-    period?: MatchPeriod;
-    sequence: number;
-    playerOut: number;
-    playerIn: number;
-  },
-): SubstitutionMatchEvent {
+export function buildSubstitutionEvent(data: {
+  id: string;
+  team: TeamSide;
+  minute: number;
+  addedTime?: number;
+  period?: MatchPeriod;
+  sequence: number;
+  playerOut: number;
+  playerIn: number;
+}): SubstitutionMatchEvent {
   return {
     id: data.id,
     type: 'substitution',
@@ -153,16 +157,14 @@ export function buildSubstitutionEvent(
   };
 }
 
-export function buildPhaseEvent(
-  data: {
-    id: string;
-    phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
-    minute: number;
-    addedTime?: number;
-    period?: MatchPeriod;
-    sequence: number;
-  },
-): PhaseMatchEvent {
+export function buildPhaseEvent(data: {
+  id: string;
+  phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
+  minute: number;
+  addedTime?: number;
+  period?: MatchPeriod;
+  sequence: number;
+}): PhaseMatchEvent {
   return {
     id: data.id,
     type: 'phase',
@@ -175,34 +177,42 @@ export function buildPhaseEvent(
   };
 }
 
-
 export function getGoalEvents(events: MatchEvent[]): GoalMatchEvent[] {
-  return events ? events.filter(
-    (event): event is GoalMatchEvent => event.type === 'goal',
-  ) : [];
+  return events
+    ? events.filter((event): event is GoalMatchEvent => event.type === 'goal')
+    : [];
 }
 
 export function getCardEvents(events: MatchEvent[]): CardMatchEvent[] {
-  return events ? events.filter(
-    (event): event is CardMatchEvent => event.type === 'card',
-  ) : [];
+  return events
+    ? events.filter((event): event is CardMatchEvent => event.type === 'card')
+    : [];
 }
 
 export function getSubstitutionEvents(
   events: MatchEvent[],
 ): SubstitutionMatchEvent[] {
-  return events ? events.filter(
-    (event): event is SubstitutionMatchEvent => event.type === 'substitution',
-  ) : [];
+  return events
+    ? events.filter(
+        (event): event is SubstitutionMatchEvent =>
+          event.type === 'substitution',
+      )
+    : [];
 }
 
 export function getPhaseEvents(events: MatchEvent[]): PhaseMatchEvent[] {
-  return events ? events.filter(
-    (event): event is PhaseMatchEvent => event.type === 'phase',
-  ) : [];
+  return events
+    ? events.filter((event): event is PhaseMatchEvent => event.type === 'phase')
+    : [];
 }
 
-export function calculateSequenceForNewEvent(events: MatchEvent[], minute: number, addedTime = 0): number {
-  const sameMinuteEvents = events.filter(event => event.minute === minute && (event.addedTime || 0) === addedTime);
+export function calculateSequenceForNewEvent(
+  events: MatchEvent[],
+  minute: number,
+  addedTime = 0,
+): number {
+  const sameMinuteEvents = events.filter(
+    event => event.minute === minute && (event.addedTime || 0) === addedTime,
+  );
   return sameMinuteEvents.length + 1; // +1 to place the new event after existing ones in the same minute
 }

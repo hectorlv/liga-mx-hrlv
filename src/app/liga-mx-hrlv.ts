@@ -28,8 +28,11 @@ import {
   saveUpdates,
 } from '../services/firebaseService.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
-import { FIREBASE_CONFIG } from '../utils/constants.js';
-import { calculatePlayIn } from '../utils/playoffCalculator.js';
+import { FIREBASE_CONFIG, POSTSEASON_FORMAT } from '../utils/constants.js';
+import {
+  calculatePlayIn,
+  calculateQuarterFinal,
+} from '../utils/playoffCalculator.js';
 import { calculateTable } from '../utils/tableCalculator.js';
 import { APP_VERSION } from '../utils/version.js';
 import '../utils/material.js';
@@ -221,7 +224,11 @@ export class LigaMxHrlv extends LitElement {
     ) {
       if (this.matchesList.length > 0 && this.teams.length > 0) {
         this.table = calculateTable(this.teams, this.matchesList);
-        calculatePlayIn(this.table, this.matchesList);
+        if (POSTSEASON_FORMAT.playInSpots > 0) {
+          calculatePlayIn(this.table, this.matchesList);
+        } else {
+          calculateQuarterFinal(this.table, this.matchesList);
+        }
       }
     }
   }

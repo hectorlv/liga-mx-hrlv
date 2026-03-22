@@ -23,7 +23,12 @@ import {
   replaceDateSeparator,
 } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { buildPhaseEvent, calculateSequenceForNewEvent, dispatchEventMatchUpdated, getPhaseEvents } from '../utils/functionUtils.js';
+import {
+  buildPhaseEvent,
+  calculateSequenceForNewEvent,
+  dispatchEventMatchUpdated,
+  getPhaseEvents,
+} from '../utils/functionUtils.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -46,13 +51,25 @@ export class MatchDetailPage extends LitElement {
       }
 
       @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0.5; }
-        to { transform: translateX(0); opacity: 1; }
+        from {
+          transform: translateX(100%);
+          opacity: 0.5;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
       }
 
       @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
       }
 
       /* --- HEADER DEL PARTIDO (MARCADOR) --- */
@@ -247,7 +264,7 @@ export class MatchDetailPage extends LitElement {
   @state() isEditing: boolean = false;
   @query('#halftimeMinuteInput') halftimeMinuteInput!: MdFilledTextField;
 
- // --- VARIABLES PARA EL GESTO DE DESLIZAR ---
+  // --- VARIABLES PARA EL GESTO DE DESLIZAR ---
   private touchStartX = 0;
   private touchStartY = 0;
 
@@ -255,7 +272,9 @@ export class MatchDetailPage extends LitElement {
     super.connectedCallback();
     /* ¡OJO! Si ya tenías un connectedCallback (como en team-page), 
        solo agrégale estas dos líneas al que ya tienes: */
-    this.addEventListener('touchstart', this._handleTouchStart, { passive: true });
+    this.addEventListener('touchstart', this._handleTouchStart, {
+      passive: true,
+    });
     this.addEventListener('touchend', this._handleTouchEnd, { passive: true });
   }
 
@@ -275,7 +294,7 @@ export class MatchDetailPage extends LitElement {
   private readonly _handleTouchEnd = (e: TouchEvent) => {
     const touchEndX = e.changedTouches[0].screenX;
     const touchEndY = e.changedTouches[0].screenY;
-    
+
     const deltaX = touchEndX - this.touchStartX;
     const deltaY = touchEndY - this.touchStartY;
 
@@ -283,7 +302,11 @@ export class MatchDetailPage extends LitElement {
     // 1. El toque inicial debe ser en el borde izquierdo (los primeros 50px de la pantalla)
     // 2. El deslizamiento hacia la derecha debe ser de al menos 60px
     // 3. El movimiento debe ser más horizontal que vertical (para no confundirlo con el scroll de leer la página)
-    if (this.touchStartX < 50 && deltaX > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (
+      this.touchStartX < 50 &&
+      deltaX > 60 &&
+      Math.abs(deltaX) > Math.abs(deltaY)
+    ) {
       this._goBack();
     }
   };
@@ -312,7 +335,9 @@ export class MatchDetailPage extends LitElement {
 
     const { local, visitante, fecha, hora, estadio, golLocal, golVisitante } =
       this.match;
-    const isPlayed = getPhaseEvents(this.match.events).some(e => e.phase === 'start');
+    const isPlayed = getPhaseEvents(this.match.events).some(
+      e => e.phase === 'start',
+    );
 
     return html`
       <section class="match-header-card">
@@ -451,8 +476,10 @@ export class MatchDetailPage extends LitElement {
   private _goBack() {
     this.classList.add('closing');
     setTimeout(() => {
-    this.dispatchEvent(new CustomEvent('back-to-calendar', { bubbles: true, composed: true }));
-    }, 250)
+      this.dispatchEvent(
+        new CustomEvent('back-to-calendar', { bubbles: true, composed: true }),
+      );
+    }, 250);
   }
 
   private editMatchInfo() {
@@ -479,7 +506,10 @@ export class MatchDetailPage extends LitElement {
 
   private renderPhaseButton() {
     if (!this.match) return null;
-    if (getPhaseEvents(this.match.events).length === 0 || !getPhaseEvents(this.match.events)) {
+    if (
+      getPhaseEvents(this.match.events).length === 0 ||
+      !getPhaseEvents(this.match.events)
+    ) {
       return html`
         <md-icon-button
           id="startMatchButton"
@@ -491,8 +521,12 @@ export class MatchDetailPage extends LitElement {
         </md-icon-button>
       `;
     } else if (
-      getPhaseEvents(this.match.events).some(event => event.phase === 'start') &&
-      !getPhaseEvents(this.match.events).some(event => event.phase === 'halftime')
+      getPhaseEvents(this.match.events).some(
+        event => event.phase === 'start',
+      ) &&
+      !getPhaseEvents(this.match.events).some(
+        event => event.phase === 'halftime',
+      )
     ) {
       return html`
         <md-filled-text-field
@@ -512,8 +546,12 @@ export class MatchDetailPage extends LitElement {
         </md-icon-button>
       `;
     } else if (
-      getPhaseEvents(this.match.events).some(event => event.phase === 'halftime') &&
-      !getPhaseEvents(this.match.events).some(event => event.phase === 'secondHalf')
+      getPhaseEvents(this.match.events).some(
+        event => event.phase === 'halftime',
+      ) &&
+      !getPhaseEvents(this.match.events).some(
+        event => event.phase === 'secondHalf',
+      )
     ) {
       return html`
         <md-icon-button
@@ -526,8 +564,12 @@ export class MatchDetailPage extends LitElement {
         </md-icon-button>
       `;
     } else if (
-      getPhaseEvents(this.match.events).some(event => event.phase === 'secondHalf') &&
-      !getPhaseEvents(this.match.events).some(event => event.phase === 'fulltime')
+      getPhaseEvents(this.match.events).some(
+        event => event.phase === 'secondHalf',
+      ) &&
+      !getPhaseEvents(this.match.events).some(
+        event => event.phase === 'fulltime',
+      )
     ) {
       return html`
         <md-filled-text-field
@@ -572,7 +614,7 @@ export class MatchDetailPage extends LitElement {
       const addedTimeInput = this.renderRoot.querySelector(
         '#halftimeMinuteInput',
       ) as MdFilledTextField;
-      addedTime= Number(addedTimeInput.value) || 0;
+      addedTime = Number(addedTimeInput.value) || 0;
     } else if (phase === 'fulltime') {
       const addedTimeInput = this.renderRoot.querySelector(
         '#fulltimeMinuteInput',
@@ -585,15 +627,19 @@ export class MatchDetailPage extends LitElement {
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
-  private _phaseEventsWithUpdate(phase: PhaseMatchEvent['phase'], minute: number, addedTime: number): MatchEvent[] {
+  private _phaseEventsWithUpdate(
+    phase: PhaseMatchEvent['phase'],
+    minute: number,
+    addedTime: number,
+  ): MatchEvent[] {
     const newPhaseEvent: PhaseMatchEvent = buildPhaseEvent({
       id: crypto.randomUUID(),
       phase,
       minute,
       addedTime,
-      sequence: calculateSequenceForNewEvent(this.match?.events || [], minute)
+      sequence: calculateSequenceForNewEvent(this.match?.events || [], minute),
     });
-    const next = [...this.match?.events || [], newPhaseEvent];
+    const next = [...(this.match?.events || []), newPhaseEvent];
     return next;
   }
 

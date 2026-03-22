@@ -510,16 +510,16 @@ export class GoalsCard extends LitElement {
             </label>
           </div>
 
-            <md-filled-text-field
-              label="Minuto"
-              type="number"
-              id="editGoalMinute"
-              min="0"
-              max="90"
-              @input=${this._validateEditForm}
-              @change=${this._validateEditForm}
-              required
-            ></md-filled-text-field>
+          <md-filled-text-field
+            label="Minuto"
+            type="number"
+            id="editGoalMinute"
+            min="0"
+            max="90"
+            @input=${this._validateEditForm}
+            @change=${this._validateEditForm}
+            required
+          ></md-filled-text-field>
 
           ${this.showEditAddedTime
             ? html`<md-filled-text-field

@@ -1,4 +1,5 @@
 import { Match, TableEntry } from '../types';
+import { POSTSEASON_FORMAT } from './constants.js';
 
 type TeamSide = 'home' | 'away';
 type MatchResult = 'win' | 'draw' | 'loss';
@@ -11,6 +12,7 @@ type MatchWithScore = Match & {
   golLocal: number;
   golVisitante: number;
 };
+const TOTAL_REGULAR_SEASON_MATCHES = 17;
 
 function calculateTeamStats(team: string, matches: Match[]): TableEntry {
   const counters: ResultCounters = { jg: 0, je: 0, jp: 0 };
@@ -59,7 +61,7 @@ export function calculateTable(
         (match.local === team || match.visitante === team) &&
         match.golLocal != null &&
         match.golVisitante != null &&
-        match.jornada <= 17,
+        match.jornada <= TOTAL_REGULAR_SEASON_MATCHES,
     );
     const teamStats = calculateTeamStats(team, teamMatches);
     return teamStats;
@@ -73,10 +75,64 @@ export function calculateTable(
     }
     return b.gf - a.gf;
   });
-  table.forEach((team, index) => {
-    team.eliminado = index >= 10;
-  });
+  markQualifiedTeams(table);
   return table;
+}
+
+function markQualifiedTeams(table: TableEntry[]): void {
+  const { directQualificationSpots, playInSpots } = POSTSEASON_FORMAT;
+  const totalPostseasonSpots = directQualificationSpots + playInSpots;
+  const allTeamsFinished = table.every(
+    team => team.jj >= TOTAL_REGULAR_SEASON_MATCHES,
+  );
+
+  resetPostseasonStatus(table);
+
+  if (allTeamsFinished) {
+    table.forEach((team, index) => {
+      team.clasificado = index < directQualificationSpots;
+      team.playin =
+        index >= directQualificationSpots && index < totalPostseasonSpots;
+      team.eliminado = index >= totalPostseasonSpots;
+    });
+    return;
+  }
+
+  const directChallengers = table.slice(directQualificationSpots);
+  const playInChallengers = table.slice(totalPostseasonSpots);
+  const postseasonCutoffTeam = table[totalPostseasonSpots - 1];
+
+  table.forEach((team, index) => {
+    team.clasificado =
+      index < directQualificationSpots &&
+      directChallengers.every(
+        challenger => getMaxPossiblePoints(challenger) < team.pts,
+      );
+    team.playin =
+      playInSpots > 0 &&
+      index >= directQualificationSpots &&
+      index < totalPostseasonSpots &&
+      playInChallengers.every(
+        challenger => getMaxPossiblePoints(challenger) < team.pts,
+      );
+    team.eliminado =
+      index >= totalPostseasonSpots &&
+      postseasonCutoffTeam != null &&
+      getMaxPossiblePoints(team) < postseasonCutoffTeam.pts;
+  });
+}
+
+function resetPostseasonStatus(table: TableEntry[]): void {
+  table.forEach(team => {
+    team.clasificado = false;
+    team.playin = false;
+    team.eliminado = false;
+  });
+}
+
+function getMaxPossiblePoints(team: TableEntry): number {
+  const pendingMatches = Math.max(0, TOTAL_REGULAR_SEASON_MATCHES - team.jj);
+  return team.pts + pendingMatches * 3;
 }
 
 function hasFinalScore(match: Match): match is MatchWithScore {

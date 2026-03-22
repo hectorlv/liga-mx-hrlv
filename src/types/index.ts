@@ -30,7 +30,9 @@ export interface TableEntry {
   gc: number;
   dg: number;
   pts: number;
+  clasificado?: boolean;
   eliminado?: boolean;
+  playin?: boolean;
 }
 
 export interface Player {
@@ -87,8 +89,11 @@ export interface PhaseMatchEvent extends BaseMatchEvent {
   phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
 }
 
-export type MatchEvent = GoalMatchEvent | SubstitutionMatchEvent | CardMatchEvent | PhaseMatchEvent;
-
+export type MatchEvent =
+  | GoalMatchEvent
+  | SubstitutionMatchEvent
+  | CardMatchEvent
+  | PhaseMatchEvent;
 
 export type FirebaseUpdates = Record<string, unknown>;
 
