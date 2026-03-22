@@ -33,6 +33,55 @@ Notas de migración:
 - **`npm test`**: Ejecuta el test runner configurado (si hay tests).
 - **`npm run lint`** y **`npm run format`**: Linter y formateador.
 
+## Primeros tests unitarios (setup rápido)
+
+Si quieres empezar con pruebas unitarias para utilidades en `src/utils`, estos son los pasos mínimos:
+
+1. Instala Vitest y cobertura:
+
+   ```bash
+   npm i -D vitest @vitest/coverage-v8
+   ```
+
+2. Agrega scripts en `package.json`:
+
+   ```json
+   {
+     "scripts": {
+       "test": "vitest run",
+       "test:watch": "vitest",
+       "test:coverage": "vitest run --coverage"
+     }
+   }
+   ```
+
+3. Crea `vitest.config.ts`:
+
+   ```ts
+   import { defineConfig } from 'vitest/config';
+
+   export default defineConfig({
+     test: {
+       environment: 'node',
+       include: ['src/**/*.test.ts'],
+     },
+   });
+   ```
+
+4. Crea los primeros archivos de prueba en `src/utils`:
+   - `tableCalculator.test.ts`
+   - `dateUtils.test.ts`
+
+5. Ejecuta validación local:
+
+   ```bash
+   npm run lint
+   npm run typecheck
+   npm test
+   ```
+
+Sugerencia: inicia con funciones puras (tabla/fechas) para obtener cobertura útil sin depender de DOM o Firebase.
+
 Ejemplos de uso en macOS / `zsh`:
 
 ```bash
