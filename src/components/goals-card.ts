@@ -24,6 +24,7 @@ import {
 } from '../types';
 import {
   buildGoalEvent,
+  calculateSequenceForEditedEvent,
   calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   formatMatchMinute,
@@ -918,9 +919,15 @@ export class GoalsCard extends LitElement {
     const ownGoal = this.editGoalOwnCheckbox.checked;
     const goalType = this.editGoalTypeSelect.value as GoalType;
     const assistValue = this.editGoalAssistSelect.value;
+    const id = getGoalEvents(this.match.events || [])[this.editingGoalIndex].id;
     const assist =
       ownGoal || !assistValue ? null : Number(this.editGoalAssistSelect.value);
-    const sequence = Number(this.sequenceInput.value);
+    const sequence = calculateSequenceForEditedEvent(
+      this.match.events || [],
+      id,
+      minute,
+      Number(this.editAddedTimeInput?.value) || 0,
+    );
     const addedTime = Number(this.editAddedTimeInput?.value) || 0;
 
     const updatedGoal: GoalMatchEvent = buildGoalEvent({
@@ -935,8 +942,15 @@ export class GoalsCard extends LitElement {
       assist,
       sequence,
     });
-    const goals = [...(this.match.events || [])];
-    goals[this.editingGoalIndex] = updatedGoal;
+    // Reemplazar el gol editado en la lista de eventos
+    const eventsFiltered = (this.match.events || []).filter(
+      e => e.id !== updatedGoal.id
+    );
+
+    const goals = [...eventsFiltered, updatedGoal].sort((a, b) => {
+      if (a.minute !== b.minute) return a.minute - b.minute;
+      return a.sequence - b.sequence;
+    });
 
     this._updateGoals(goals);
     this._closeEditDialog();

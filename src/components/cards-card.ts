@@ -22,13 +22,13 @@ import {
 } from '../types';
 import {
   buildCardEvent,
+  calculateSequenceForEditedEvent,
   calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   formatMatchMinute,
   getCardEvents,
   getPhaseEvents,
-  inferMatchPeriod,
-  calculateSequenceForNewEvent
+  inferMatchPeriod
 } from '../utils/functionUtils';
 
 @customElement('cards-card')
@@ -818,6 +818,7 @@ export class CardsCard extends LitElement {
     const team = this.editCardTeamState as TeamSide;
     const player = Number(this.editCardPlayerSelect.value);
     const minute = Number(this.editCardMinuteInput.value);
+    const id = this.match.events?.[this.editingCardIndex].id;
     let cardType = this.editCardTypeState;
     let foulType = this.editCardFoulTypeSelect?.value as '' | FoulType;
     if (
@@ -835,14 +836,25 @@ export class CardsCard extends LitElement {
       minute,
       cardType,
       foulType: foulType || undefined,
-      sequence: Number(this.sequenceInput.value) || 0,
+      sequence: calculateSequenceForEditedEvent(
+        this.match.events || [],
+        id,
+        Number(this.editAddedTimeInput?.value) || 0,
+        this.editingCardIndex,
+      ),
       addedTime: this.showEditAddedTime
         ? Number(this.editAddedTimeInput.value) || 0
         : 0,
       period: inferMatchPeriod(minute),
     });
-    const cards = [...(this.match.events || [])];
-    cards[this.editingCardIndex] = updatedCard;
+    // Reemplazar el gol editado en la lista de eventos
+    const eventsFiltered = (this.match.events || []).filter(
+      e => e.id !== updatedCard.id
+    );
+    const cards = [...eventsFiltered, updatedCard].sort((a, b) => {
+      if (a.minute !== b.minute) return a.minute - b.minute;
+      return a.sequence - b.sequence;
+    });
     this._updateCards(cards);
     this._closeEditDialog();
   }

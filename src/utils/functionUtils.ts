@@ -216,3 +216,18 @@ export function calculateSequenceForNewEvent(
   );
   return sameMinuteEvents.length + 1; // +1 to place the new event after existing ones in the same minute
 }
+
+export function calculateSequenceForEditedEvent(
+  events: MatchEvent[],
+  eventId: string,
+  minute: number,
+  addedTime = 0,
+): number {
+  const otherEventsSameMinute = events.filter(
+    event =>
+      event.id !== eventId &&
+      event.minute === minute &&
+      (event.addedTime || 0) === addedTime,
+  );
+  return otherEventsSameMinute.length + 1; // +1 to place the edited event after existing ones in the same minute
+}
