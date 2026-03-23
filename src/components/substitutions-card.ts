@@ -19,13 +19,13 @@ import {
 } from '../types';
 import {
   buildSubstitutionEvent,
+  calculateSequenceForEditedEvent,
   calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   formatMatchMinute,
   getPhaseEvents,
   getSubstitutionEvents,
   inferMatchPeriod,
-  calculateSequenceForNewEvent
 } from '../utils/functionUtils';
 
 @customElement('substitutions-card')
@@ -807,10 +807,17 @@ export class SubstitutionsCard extends LitElement {
     const playerOut = Number(this.editSubOutSelect.value);
     const playerIn = Number(this.editSubInSelect.value);
     const minute = Number(this.editSubMinuteInput.value);
+    const id = getSubstitutionEvents(this.match?.events || [])[this.editingSubIndex].id;
     const addedTime = this.showEditAddedTime
       ? Number(this.editAddedTimeInput.value)
       : 0;
-    const sequence = Number(this.sequenceInput.value);
+    const sequence = calculateSequenceForEditedEvent(
+      this.match.events || [],
+      id,
+      minute,
+      addedTime,
+    );
+
 
     const updatedSub: SubstitutionMatchEvent = buildSubstitutionEvent({
       team,
@@ -823,9 +830,13 @@ export class SubstitutionsCard extends LitElement {
       sequence,
       addedTime,
     });
-
-    const substitutions = [...(this.match.events || [])];
-    substitutions[this.editingSubIndex] = updatedSub;
+    const eventsFiltered = (this.match.events || []).filter(
+      e => e.id !== updatedSub.id,
+    );
+    const substitutions = [...eventsFiltered, updatedSub].sort((a, b) => {
+      if (a.minute !== b.minute) return a.minute - b.minute;
+      return a.sequence - b.sequence;
+    });
     this._updateSubstitutions(substitutions);
     this._closeEditDialog();
   }
