@@ -4,7 +4,7 @@ import '@material/web/iconbutton/icon-button.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import '@material/web/textfield/filled-text-field.js';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import {
@@ -271,6 +271,15 @@ export class SubstitutionsCard extends LitElement {
   @state() editSubTeam: TeamSide = 'local';
   @state() showAddedTime = false;
   @state() showEditAddedTime = false;
+
+  protected override update(changedProperties: PropertyValues): void {
+    if (changedProperties.has('match')) {
+      this._validateAddSub();
+      if (this.editingSubIndex !== null) {
+        this._validateEditForm();
+      }
+    }
+  }
 
   override render() {
     const substitutions = getSubstitutionEvents(this.match?.events || []);

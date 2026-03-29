@@ -5,7 +5,7 @@ import { MdRadio } from '@material/web/radio/radio.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
 import '@material/web/textfield/filled-text-field.js';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import { FOUL_TYPE_LABELS, FOUL_TYPES_BY_CARD } from '../constants';
@@ -287,6 +287,15 @@ export class CardsCard extends LitElement {
   @state() editCardTypeState: CardType = 'yellow';
   @state() showAddedTime = false;
   @state() showEditAddedTime = false;
+
+  protected override update(changedProperties: PropertyValues): void {
+      if (changedProperties.has('match')) {
+        this._validateAddCard();
+        if (this.editingCardIndex !== null) {
+          this._validateEditForm();
+        }
+      }
+    }
 
   override render() {
     const cards = getCardEvents(this.match?.events || []);
