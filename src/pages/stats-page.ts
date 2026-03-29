@@ -170,6 +170,93 @@ export class StatsPage extends LitElement {
         height: 24px;
         object-fit: contain;
       }
+
+      .progress-cell {
+        padding-top: 4px;
+        padding-bottom: 16px;
+      }
+
+      .team-summary-row td {
+        border-bottom: 0;
+      }
+
+      .team-rank-cell {
+        vertical-align: middle;
+      }
+
+      .progress-row td {
+        padding-top: 0;
+      }
+
+      .progress-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+        font-size: 0.8rem;
+      }
+
+      .progress-value {
+        font-weight: 700;
+        color: var(--md-sys-color-on-surface);
+      }
+
+      .progress-status {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      .progress-status.fulfilled {
+        color: var(--md-sys-color-primary);
+      }
+
+      .progress-status.pending {
+        color: var(--app-color-danger, #d32f2f);
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 10px;
+        overflow: hidden;
+        background: var(--md-sys-color-surface-container-high);
+        border-radius: 999px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        border-radius: inherit;
+        transition: width 0.5s ease;
+      }
+
+      .progress-fill.fulfilled {
+        background: linear-gradient(
+          90deg,
+          var(--md-sys-color-primary),
+          color-mix(in srgb, var(--md-sys-color-primary) 72%, white)
+        );
+      }
+
+      .progress-fill.pending {
+        background: linear-gradient(
+          90deg,
+          var(--app-color-danger, #d32f2f),
+          color-mix(in srgb, var(--app-color-danger, #d32f2f) 72%, white)
+        );
+      }
+
+      .progress-meta {
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: var(--md-sys-color-on-surface-variant);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
     `,
   ];
 
@@ -181,6 +268,10 @@ export class StatsPage extends LitElement {
     const { teamStats, topScorers, topAssists, fairPlay } = this._buildStats();
     const teamStatsByU23 = [...teamStats].sort(
       (a, b) => b.u23countedMinutes - a.u23countedMinutes,
+    );
+    const maxU23CountedMinutes = Math.max(
+      ...teamStatsByU23.map(t => t.u23countedMinutes),
+      1,
     );
 
     return html`
@@ -289,15 +380,17 @@ export class StatsPage extends LitElement {
                         <th>Equipo</th>
                         <th class="num-col">Menores Alineados</th>
                         <th class="num-col">Minutos Acumulados</th>
-                        <th class="num-col">Min. Acreditados</th>
-                        <th class="num-col">Faltan</th>
                       </tr>
                     </thead>
                     <tbody>
-                      ${teamStatsByU23.map(
-                        (t, i) => html`
-                          <tr>
-                            <td>${i + 1}</td>
+                      ${teamStatsByU23.map((t, i) => {
+                        const isFulfilled = t.u23minutesToFulfill === 0;
+                        const relativeProgress =
+                          (t.u23countedMinutes / maxU23CountedMinutes) * 100;
+
+                        return html`
+                          <tr class="team-summary-row">
+                            <td class="team-rank-cell" rowspan="2">${i + 1}</td>
                             <td>
                               <div class="team-cell">
                                 ${getTeamImage(t.team)} ${t.team}
@@ -305,25 +398,42 @@ export class StatsPage extends LitElement {
                             </td>
                             <td class="num-col">${t.u23PlayersCount}</td>
                             <td class="num-col">${t.u23totalMinutes}'</td>
-                            <td
-                              class="num-col"
-                              style="font-weight:bold; color:var(--md-sys-color-primary)"
-                            >
-                              ${t.u23countedMinutes}'
-                            </td>
-                            <td
-                              class="num-col"
-                              style="color: ${t.u23minutesToFulfill === 0
-                                ? 'var(--md-sys-color-primary)'
-                                : 'var(--app-color-danger, #D32F2F)'}; font-weight:bold;"
-                            >
-                              ${t.u23minutesToFulfill === 0
-                                ? '✓ Cumplido'
-                                : t.u23minutesToFulfill + "'"}
+                          </tr>
+                          <tr class="progress-row">
+                            <td class="progress-cell" colspan="3">
+                              <div class="progress-head">
+                                <span
+                                  class="progress-status ${isFulfilled
+                                    ? 'fulfilled'
+                                    : 'pending'}"
+                                >
+                                  ${isFulfilled ? 'Cumplido' : 'Pendiente'}
+                                </span>
+                              </div>
+                              <div class="progress-track">
+                                <div
+                                  class="progress-fill ${isFulfilled
+                                    ? 'fulfilled'
+                                    : 'pending'}"
+                                  style="width: ${relativeProgress}%;"
+                                ></div>
+                              </div>
+                              <div class="progress-meta">
+                                <span>${t.u23countedMinutes}' acreditados</span>
+                                <span
+                                  style="color: ${isFulfilled
+                                    ? 'var(--md-sys-color-primary)'
+                                    : 'var(--app-color-danger, #D32F2F)'}; font-weight: 700;"
+                                >
+                                  ${isFulfilled
+                                    ? '✓ Meta cubierta'
+                                    : `Faltan ${t.u23minutesToFulfill}'`}
+                                </span>
+                              </div>
                             </td>
                           </tr>
-                        `,
-                      )}
+                        `;
+                      })}
                     </tbody>
                   </table>
                 `}
