@@ -8,7 +8,7 @@ import { MdOutlinedSelect } from '@material/web/select/outlined-select.js';
 import '@material/web/select/select-option.js';
 import '@material/web/textfield/filled-text-field.js';
 import type { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import { GOAL_TYPE_LABELS, GOAL_TYPES } from '../constants';
@@ -297,6 +297,15 @@ export class GoalsCard extends LitElement {
   @query('#editGoalAssist') editGoalAssistSelect!: MdOutlinedSelect;
   @query('#editAddedTime') editAddedTimeInput!: MdFilledTextField;
   @query('#sequenceInput') sequenceInput!: MdFilledTextField;
+
+  protected override update(changedProperties: PropertyValues): void {
+    if (changedProperties.has('match')) {
+      this._validateForm();
+      if (this.editingGoalIndex !== null) {
+        this._validateEditForm();
+      }
+    }
+  }
 
   override render() {
     const goals = getGoalEvents(this.match?.events || []);
