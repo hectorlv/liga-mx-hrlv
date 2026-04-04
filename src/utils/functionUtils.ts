@@ -223,6 +223,16 @@ export function calculateSequenceForEditedEvent(
   minute: number,
   addedTime = 0,
 ): number {
+  const eventBeingEdited = events.find(event => event.id === eventId);
+  if (!eventBeingEdited) {
+    return 1;
+  }
+  if (
+    eventBeingEdited.minute === minute &&
+    (eventBeingEdited.addedTime || 0) === addedTime
+  ) {
+    return eventBeingEdited.sequence;
+  }
   const otherEventsSameMinute = events.filter(
     event =>
       event.id !== eventId &&
