@@ -849,8 +849,8 @@ export class CardsCard extends LitElement {
       sequence: calculateSequenceForEditedEvent(
         this.match.events || [],
         id,
-        Number(this.editAddedTimeInput?.value) || 0,
-        this.editingCardIndex,
+        minute,
+        Number(this.editAddedTimeInput?.value) || 0
       ),
       addedTime: this.showEditAddedTime
         ? Number(this.editAddedTimeInput.value) || 0
