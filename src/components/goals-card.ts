@@ -305,6 +305,7 @@ export class GoalsCard extends LitElement {
         this._validateEditForm();
       }
     }
+    super.update(changedProperties);
   }
 
   override render() {
@@ -953,7 +954,7 @@ export class GoalsCard extends LitElement {
     });
     // Reemplazar el gol editado en la lista de eventos
     const eventsFiltered = (this.match.events || []).filter(
-      e => e.id !== updatedGoal.id
+      e => e.id !== updatedGoal.id,
     );
 
     const goals = [...eventsFiltered, updatedGoal].sort((a, b) => {

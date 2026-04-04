@@ -279,6 +279,7 @@ export class SubstitutionsCard extends LitElement {
         this._validateEditForm();
       }
     }
+    super.update(changedProperties);
   }
 
   override render() {
@@ -816,7 +817,9 @@ export class SubstitutionsCard extends LitElement {
     const playerOut = Number(this.editSubOutSelect.value);
     const playerIn = Number(this.editSubInSelect.value);
     const minute = Number(this.editSubMinuteInput.value);
-    const id = getSubstitutionEvents(this.match?.events || [])[this.editingSubIndex].id;
+    const id = getSubstitutionEvents(this.match?.events || [])[
+      this.editingSubIndex
+    ].id;
     const addedTime = this.showEditAddedTime
       ? Number(this.editAddedTimeInput.value)
       : 0;
@@ -826,7 +829,6 @@ export class SubstitutionsCard extends LitElement {
       minute,
       addedTime,
     );
-
 
     const updatedSub: SubstitutionMatchEvent = buildSubstitutionEvent({
       team,

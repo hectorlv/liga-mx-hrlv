@@ -28,7 +28,7 @@ import {
   formatMatchMinute,
   getCardEvents,
   getPhaseEvents,
-  inferMatchPeriod
+  inferMatchPeriod,
 } from '../utils/functionUtils';
 
 @customElement('cards-card')
@@ -289,13 +289,14 @@ export class CardsCard extends LitElement {
   @state() showEditAddedTime = false;
 
   protected override update(changedProperties: PropertyValues): void {
-      if (changedProperties.has('match')) {
-        this._validateAddCard();
-        if (this.editingCardIndex !== null) {
-          this._validateEditForm();
-        }
+    if (changedProperties.has('match')) {
+      this._validateAddCard();
+      if (this.editingCardIndex !== null) {
+        this._validateEditForm();
       }
     }
+    super.update(changedProperties);
+  }
 
   override render() {
     const cards = getCardEvents(this.match?.events || []);
@@ -858,7 +859,7 @@ export class CardsCard extends LitElement {
     });
     // Reemplazar el gol editado en la lista de eventos
     const eventsFiltered = (this.match.events || []).filter(
-      e => e.id !== updatedCard.id
+      e => e.id !== updatedCard.id,
     );
     const cards = [...eventsFiltered, updatedCard].sort((a, b) => {
       if (a.minute !== b.minute) return a.minute - b.minute;
