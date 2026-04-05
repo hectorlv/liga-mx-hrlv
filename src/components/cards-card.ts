@@ -857,7 +857,7 @@ export class CardsCard extends LitElement {
         this.match.events || [],
         id,
         minute,
-        Number(this.editAddedTimeInput?.value) || 0
+        Number(this.editAddedTimeInput?.value) || 0,
       ),
       addedTime: this.showEditAddedTime
         ? Number(this.editAddedTimeInput.value) || 0

@@ -219,7 +219,7 @@ export class MatchDetailPage extends LitElement {
           grid-column: 1;
           grid-row: 2 / span 3; /* Ocupa varias filas hacia abajo */
           position: sticky;
-          top: 80px; 
+          top: 80px;
           z-index: 1;
         }
 
@@ -558,10 +558,7 @@ export class MatchDetailPage extends LitElement {
           <md-icon>pause_circle</md-icon>
         </md-icon-button>
       `;
-    } else if (
-      halftimeEvent &&
-      !secondHalfEvent
-    ) {
+    } else if (halftimeEvent && !secondHalfEvent) {
       return html`
         <md-filled-text-field
           id="halftimeMinuteInput"
