@@ -263,6 +263,7 @@ export class SubstitutionsCard extends LitElement {
   @query('#sequence') sequenceInput!: MdFilledTextField;
 
   @state() editingSubIndex: number | null = null;
+  @state() editingSubId: string | null = null;
   @state() editOutPlayers: Player[] = [];
   @state() editInPlayers: Player[] = [];
   @state() disableSaveEditedSub = true;
@@ -713,6 +714,7 @@ export class SubstitutionsCard extends LitElement {
 
   private _openEditSub(sub: SubstitutionMatchEvent, index: number) {
     this.editingSubIndex = index;
+    this.editingSubId = sub.id;
     this.editOutPlayers = this._getPlayersForOut(sub.team, sub.playerOut);
     this.editInPlayers = this._getPlayersForIn(sub.team, sub.playerIn);
     this.showEditAddedTime = sub.minute === 45 || sub.minute === 90;
@@ -736,6 +738,7 @@ export class SubstitutionsCard extends LitElement {
   private _closeEditDialog() {
     this.editSubDialog?.close();
     this.editingSubIndex = null;
+    this.editingSubId = null;
     this.disableSaveEditedSub = true;
     this.editOutPlayers = [];
     this.editInPlayers = [];
@@ -807,19 +810,16 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _saveEditedSub() {
-    if (
-      this.match === null ||
-      this.editingSubIndex === null ||
-      this.editingSubIndex < 0
-    )
-      return;
+    if (this.match === null || !this.editingSubId) return;
+    const subToEdit = getSubstitutionEvents(this.match?.events || []).find(
+      sub => sub.id === this.editingSubId,
+    );
+    if (!subToEdit) return;
     const team = this.editSubTeam;
     const playerOut = Number(this.editSubOutSelect.value);
     const playerIn = Number(this.editSubInSelect.value);
     const minute = Number(this.editSubMinuteInput.value);
-    const id = getSubstitutionEvents(this.match?.events || [])[
-      this.editingSubIndex
-    ].id;
+    const id = subToEdit.id;
     const addedTime = this.showEditAddedTime
       ? Number(this.editAddedTimeInput.value)
       : 0;
@@ -835,8 +835,7 @@ export class SubstitutionsCard extends LitElement {
       playerOut,
       playerIn,
       minute,
-      id: getSubstitutionEvents(this.match?.events || [])[this.editingSubIndex]
-        .id,
+      id: subToEdit.id,
       period: inferMatchPeriod(minute),
       sequence,
       addedTime,
@@ -858,10 +857,12 @@ export class SubstitutionsCard extends LitElement {
       '¿Seguro que deseas eliminar este cambio?',
     );
     if (!confirmed) return;
-    const substitutions = getSubstitutionEvents(this.match.events || []).filter(
-      (_, idx) => idx !== index,
+    const subToDelete = getSubstitutionEvents(this.match.events || [])[index];
+    if (!subToDelete) return;
+    const eventsWithoutSub = (this.match.events || []).filter(
+      event => event.id !== subToDelete.id,
     );
-    this._updateSubstitutions(substitutions);
+    this._updateSubstitutions(eventsWithoutSub);
   }
 
   private _validateAddSub() {
