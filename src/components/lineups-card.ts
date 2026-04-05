@@ -399,7 +399,7 @@ export class LineupsCard extends LitElement {
       this.lineupsCollapsed = this._lineupsReady();
     }
   }
-
+  
   private _onLineupChange(e: Event, side: TeamSide, playerId: number) {
     if (!this.match) return;
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
