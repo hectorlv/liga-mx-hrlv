@@ -274,6 +274,7 @@ export class GoalsCard extends LitElement {
   @state() editAssistPlayers: Player[] = [];
   @state() disableSaveEditedGoal = true;
   @state() editingGoalIndex: number | null = null;
+  @state() editingGoalId: string | null = null;
   @state() goalTeamState: TeamSideOptional = '';
   @state() editGoalTeamState: TeamSideOptional = '';
   @state() showAddedTime = false;
@@ -835,6 +836,7 @@ export class GoalsCard extends LitElement {
 
   private async _openEditGoal(goal: GoalMatchEvent, index: number) {
     this.editingGoalIndex = index;
+    this.editingGoalId = goal.id;
     const teamForPlayers = this._resolvePlayerTeam(goal.team, !!goal.ownGoal);
     this.editActivePlayers = this._getPlayersForTeam(
       teamForPlayers,
@@ -875,6 +877,7 @@ export class GoalsCard extends LitElement {
   private _closeEditDialog() {
     this.editGoalDialog?.close();
     this.editingGoalIndex = null;
+    this.editingGoalId = null;
     this.editActivePlayers = [];
     this.editAssistPlayers = [];
     this.disableSaveEditedGoal = true;
@@ -922,14 +925,18 @@ export class GoalsCard extends LitElement {
   }
 
   private _saveEditedGoal() {
-    if (this.editingGoalIndex === null || !this.match) return;
+    if (!this.editingGoalId || !this.match) return;
+    const goalToEdit = getGoalEvents(this.match.events || []).find(
+      goal => goal.id === this.editingGoalId,
+    );
+    if (!goalToEdit) return;
     const team = this.editGoalTeamState as TeamSide;
     const player = Number(this.editGoalPlayerSelect.value);
     const minute = Number(this.editGoalMinuteInput.value);
     const ownGoal = this.editGoalOwnCheckbox.checked;
     const goalType = this.editGoalTypeSelect.value as GoalType;
     const assistValue = this.editGoalAssistSelect.value;
-    const id = getGoalEvents(this.match.events || [])[this.editingGoalIndex].id;
+    const id = goalToEdit.id;
     const assist =
       ownGoal || !assistValue ? null : Number(this.editGoalAssistSelect.value);
     const sequence = calculateSequenceForEditedEvent(
@@ -941,7 +948,7 @@ export class GoalsCard extends LitElement {
     const addedTime = Number(this.editAddedTimeInput?.value) || 0;
 
     const updatedGoal: GoalMatchEvent = buildGoalEvent({
-      id: getGoalEvents(this.match.events || [])[this.editingGoalIndex].id,
+      id: goalToEdit.id,
       team,
       player,
       minute,
@@ -972,13 +979,11 @@ export class GoalsCard extends LitElement {
       '¿Seguro que deseas eliminar este gol?',
     );
     if (!confirmed) return;
-    const goals = getGoalEvents(this.match.events || []).filter(
-      (_, i) => i !== index,
+    const goalToDelete = getGoalEvents(this.match.events || [])[index];
+    if (!goalToDelete) return;
+    const eventsWithoutGoal = (this.match.events || []).filter(
+      event => event.id !== goalToDelete.id,
     );
-    // Recalcular secuencia
-    const updatedGoals = goals.map((g, i) =>
-      g.type === 'goal' ? { ...g, sequence: i + 1 } : g,
-    );
-    this._updateGoals(updatedGoals);
+    this._updateGoals(eventsWithoutGoal);
   }
 }

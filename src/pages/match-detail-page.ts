@@ -25,6 +25,7 @@ import {
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
   buildPhaseEvent,
+  calculateSequenceForEditedEvent,
   calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
   getPhaseEvents,
@@ -217,6 +218,9 @@ export class MatchDetailPage extends LitElement {
         lineups-card {
           grid-column: 1;
           grid-row: 2 / span 3; /* Ocupa varias filas hacia abajo */
+          position: sticky;
+          top: 80px;
+          z-index: 1;
         }
 
         /* Los demás a la derecha apilados */
@@ -506,6 +510,12 @@ export class MatchDetailPage extends LitElement {
 
   private renderPhaseButton() {
     if (!this.match) return null;
+    const halftimeEvent = this._getExistingPhaseEvent('halftime');
+    const secondHalfEvent = this._getExistingPhaseEvent('secondHalf');
+    const fulltimeEvent = this._getExistingPhaseEvent('fulltime');
+    const halftimeAddedTimeValue = String(halftimeEvent?.addedTime || '');
+    const fulltimeAddedTimeValue = String(fulltimeEvent?.addedTime || '');
+
     if (
       getPhaseEvents(this.match.events).length === 0 ||
       !getPhaseEvents(this.match.events)
@@ -524,9 +534,7 @@ export class MatchDetailPage extends LitElement {
       getPhaseEvents(this.match.events).some(
         event => event.phase === 'start',
       ) &&
-      !getPhaseEvents(this.match.events).some(
-        event => event.phase === 'halftime',
-      )
+      !halftimeEvent
     ) {
       return html`
         <md-filled-text-field
@@ -535,25 +543,39 @@ export class MatchDetailPage extends LitElement {
           type="number"
           min="0"
           max="30"
+          .value=${halftimeAddedTimeValue}
         ></md-filled-text-field>
         <md-icon-button
           id="halftimeButton"
           @click=${() => this._savePhaseEvent('halftime')}
-          title="Guardar medio tiempo"
-          aria-label="Guardar medio tiempo"
+          title=${halftimeEvent
+            ? 'Actualizar medio tiempo'
+            : 'Guardar medio tiempo'}
+          aria-label=${halftimeEvent
+            ? 'Actualizar medio tiempo'
+            : 'Guardar medio tiempo'}
         >
           <md-icon>pause_circle</md-icon>
         </md-icon-button>
       `;
-    } else if (
-      getPhaseEvents(this.match.events).some(
-        event => event.phase === 'halftime',
-      ) &&
-      !getPhaseEvents(this.match.events).some(
-        event => event.phase === 'secondHalf',
-      )
-    ) {
+    } else if (halftimeEvent && !secondHalfEvent) {
       return html`
+        <md-filled-text-field
+          id="halftimeMinuteInput"
+          label="Minutos agregados"
+          type="number"
+          min="0"
+          max="30"
+          .value=${halftimeAddedTimeValue}
+        ></md-filled-text-field>
+        <md-icon-button
+          id="halftimeButton"
+          @click=${() => this._savePhaseEvent('halftime')}
+          title="Actualizar medio tiempo"
+          aria-label="Actualizar medio tiempo"
+        >
+          <md-icon>pause_circle</md-icon>
+        </md-icon-button>
         <md-icon-button
           id="secondHalfButton"
           @click=${() => this._savePhaseEvent('secondHalf')}
@@ -566,9 +588,6 @@ export class MatchDetailPage extends LitElement {
     } else if (
       getPhaseEvents(this.match.events).some(
         event => event.phase === 'secondHalf',
-      ) &&
-      !getPhaseEvents(this.match.events).some(
-        event => event.phase === 'fulltime',
       )
     ) {
       return html`
@@ -578,12 +597,17 @@ export class MatchDetailPage extends LitElement {
           type="number"
           min="0"
           max="30"
+          .value=${fulltimeAddedTimeValue}
         ></md-filled-text-field>
         <md-icon-button
           id="fulltimeButton"
           @click=${() => this._savePhaseEvent('fulltime')}
-          title="Guardar tiempo completo"
-          aria-label="Guardar tiempo completo"
+          title=${fulltimeEvent
+            ? 'Actualizar tiempo completo'
+            : 'Guardar tiempo completo'}
+          aria-label=${fulltimeEvent
+            ? 'Actualizar tiempo completo'
+            : 'Guardar tiempo completo'}
         >
           <md-icon>stop_circle</md-icon>
         </md-icon-button>
@@ -632,15 +656,41 @@ export class MatchDetailPage extends LitElement {
     minute: number,
     addedTime: number,
   ): MatchEvent[] {
-    const newPhaseEvent: PhaseMatchEvent = buildPhaseEvent({
-      id: crypto.randomUUID(),
+    const existing = this._getExistingPhaseEvent(phase);
+    const nextPhaseEvent: PhaseMatchEvent = buildPhaseEvent({
+      id: existing?.id || crypto.randomUUID(),
       phase,
       minute,
       addedTime,
-      sequence: calculateSequenceForNewEvent(this.match?.events || [], minute),
+      sequence: existing
+        ? calculateSequenceForEditedEvent(
+            this.match?.events || [],
+            existing.id,
+            minute,
+            addedTime,
+          )
+        : calculateSequenceForNewEvent(
+            this.match?.events || [],
+            minute,
+            addedTime,
+          ),
     });
-    const next = [...(this.match?.events || []), newPhaseEvent];
-    return next;
+
+    if (!existing) {
+      return [...(this.match?.events || []), nextPhaseEvent];
+    }
+
+    return (this.match?.events || []).map(event =>
+      event.id === existing.id ? nextPhaseEvent : event,
+    );
+  }
+
+  private _getExistingPhaseEvent(
+    phase: PhaseMatchEvent['phase'],
+  ): PhaseMatchEvent | undefined {
+    return getPhaseEvents(this.match?.events || []).find(
+      event => event.phase === phase,
+    );
   }
 
   private _phaseMinuteValue(phase: PhaseMatchEvent['phase']): number {

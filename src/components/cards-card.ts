@@ -278,6 +278,7 @@ export class CardsCard extends LitElement {
   @query('#sequence') sequenceInput!: MdFilledTextField;
 
   @state() editingCardIndex: number | null = null;
+  @state() editingCardId: string | null = null;
   @state() editPlayers: Player[] = [];
   @state() disableSaveEditedCard = true;
   @state() disableAddCard = true;
@@ -763,6 +764,7 @@ export class CardsCard extends LitElement {
 
   private _openEditCard(card: CardMatchEvent, index: number) {
     this.editingCardIndex = index;
+    this.editingCardId = card.id;
     this.editPlayers = this._getPlayersForTeam(card.team, card.player);
     this.updateComplete.then(() => {
       if (this.editCardTeamRadio) this.editCardTeamState = card.team;
@@ -784,6 +786,7 @@ export class CardsCard extends LitElement {
   private _closeEditDialog() {
     this.editCardDialog?.close();
     this.editingCardIndex = null;
+    this.editingCardId = null;
     this.disableSaveEditedCard = true;
     this.editPlayers = [];
   }
@@ -825,22 +828,26 @@ export class CardsCard extends LitElement {
       this.editingCardIndex < 0
     )
       return;
+    const cardToEdit = getCardEvents(this.match.events || []).find(
+      card => card.id === this.editingCardId,
+    );
+    if (!cardToEdit) return;
     const team = this.editCardTeamState as TeamSide;
     const player = Number(this.editCardPlayerSelect.value);
     const minute = Number(this.editCardMinuteInput.value);
-    const id = this.match.events?.[this.editingCardIndex].id;
+    const id = cardToEdit.id;
     let cardType = this.editCardTypeState;
     let foulType = this.editCardFoulTypeSelect?.value as '' | FoulType;
     if (
       cardType === 'yellow' &&
-      this._hasPreviousYellow(team, player, this.editingCardIndex ?? undefined)
+      this._hasPreviousYellow(team, player, cardToEdit.id)
     ) {
       cardType = 'red';
       globalThis.alert('Doble amarilla: se registra como tarjeta roja.');
       foulType = 'dobleAmarilla';
     }
     const updatedCard: CardMatchEvent = buildCardEvent({
-      id: this.match.events[this.editingCardIndex].id,
+      id: cardToEdit.id,
       team,
       player,
       minute,
@@ -850,7 +857,7 @@ export class CardsCard extends LitElement {
         this.match.events || [],
         id,
         minute,
-        Number(this.editAddedTimeInput?.value) || 0
+        Number(this.editAddedTimeInput?.value) || 0,
       ),
       addedTime: this.showEditAddedTime
         ? Number(this.editAddedTimeInput.value) || 0
@@ -875,10 +882,12 @@ export class CardsCard extends LitElement {
       '¿Seguro que deseas eliminar esta tarjeta?',
     );
     if (!confirmed) return;
-    const cards = getCardEvents(this.match.events || []).filter(
-      (_, idx) => idx !== index,
+    const cardToDelete = getCardEvents(this.match.events || [])[index];
+    if (!cardToDelete) return;
+    const eventsWithoutCard = (this.match.events || []).filter(
+      event => event.id !== cardToDelete.id,
     );
-    this._updateCards(cards);
+    this._updateCards(eventsWithoutCard);
   }
 
   private _getPlayersForTeam(
@@ -965,13 +974,13 @@ export class CardsCard extends LitElement {
   private _hasPreviousYellow(
     team: TeamSide,
     player: number,
-    ignoreIndex?: number,
+    ignoreCardId?: string,
   ): boolean {
     const cards = getCardEvents(this.match?.events || []).filter(
       c => c.cardType === 'yellow',
     );
-    return cards.some((c, idx) => {
-      if (ignoreIndex !== undefined && idx === ignoreIndex) return false;
+    return cards.some(c => {
+      if (ignoreCardId && c.id === ignoreCardId) return false;
       return c.team === team && c.player === player;
     });
   }
