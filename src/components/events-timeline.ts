@@ -13,7 +13,7 @@ import {
   SubstitutionMatchEvent,
   TeamSideOptional,
 } from '../types';
-import { formatMatchMinute, getPeriodWeight } from '../utils/functionUtils';
+import { formatMatchMinute, sortMatchEvents } from '../utils/functionUtils';
 
 @customElement('events-timeline')
 export class EventsTimeline extends LitElement {
@@ -427,15 +427,9 @@ export class EventsTimeline extends LitElement {
 
   private _buildTimelineItems(): MatchEvent[] {
     if (!this.match) return [];
-    return this.match.events.sort((a, b) => {
-      const periodDiff = getPeriodWeight(a.period) - getPeriodWeight(b.period);
-      if (periodDiff !== 0) return periodDiff;
-      const minuteDiff = a.minute - b.minute;
-      if (minuteDiff !== 0) return minuteDiff;
-      const addedTimeDiff = (a.addedTime || 0) - (b.addedTime || 0);
-      if (addedTimeDiff !== 0) return addedTimeDiff;
-      return a.sequence - b.sequence;
-    });
+
+    const events = Array.isArray(this.match.events) ? this.match.events : [];
+    return sortMatchEvents(events);
   }
 
   private _phaseLabel(phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime') {

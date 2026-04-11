@@ -1,7 +1,7 @@
 import { css, html, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { Player } from '../types';
-import { FIREBASE_CONFIG } from '../utils/constants.js';
+import { getDownloadURL, getStorage, ref } from 'firebase/storage';
 
 @customElement('player-info')
 export class PlayerInfo extends LitElement {
@@ -63,15 +63,20 @@ export class PlayerInfo extends LitElement {
     `,
   ];
   @property({ type: Object }) player!: Player;
+  @state() private resolvedImageSrc = '';
+
+  private readonly storage = getStorage();
 
   override render() {
+    const imageSrc = this.resolvedImageSrc;
+
     return html`
       <div class="player-card">
-        ${this.player.imgSrc
+        ${imageSrc
           ? html`
               <img
                 class="player-photo"
-                src="${this.getImageSrc(this.player.imgSrc)}"
+                src="${imageSrc}"
                 alt="Photo of ${this.player.name}"
               />
             `
@@ -85,19 +90,44 @@ export class PlayerInfo extends LitElement {
     `;
   }
 
-  private getImageSrc(imgSrc: string): string {
-    if (!imgSrc.includes('cldrsrcs.apilmx')) {
-      return imgSrc;
+  override updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has('player')) {
+      void this.resolveImageSrc();
+    }
+  }
+
+  private async resolveImageSrc(): Promise<void> {
+    const originalSrc = this.player?.imgSrc ?? '';
+
+    if (!originalSrc) {
+      this.resolvedImageSrc = '';
+      return;
     }
 
-    const sanitizedSrc = imgSrc.split('?rnd=')[0];
+    if (!originalSrc.includes('cldrsrcs.apilmx')) {
+      this.resolvedImageSrc = originalSrc;
+      return;
+    }
+
+    const sanitizedSrc = originalSrc.split('?rnd=')[0];
     const fileName = sanitizedSrc.split('/').pop();
 
     if (!fileName) {
-      return imgSrc;
+      this.resolvedImageSrc = originalSrc;
+      return;
     }
 
-    const encodedPath = encodeURIComponent(fileName);
-    return `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/${encodedPath}?alt=media`;
+    try {
+      const downloadUrl = await getDownloadURL(ref(this.storage, fileName));
+
+      if (this.player?.imgSrc === originalSrc) {
+        this.resolvedImageSrc = downloadUrl;
+      }
+    } catch (error) {
+      console.error(`Error fetching download URL for ${this.player.name}:`, error);
+      if (this.player?.imgSrc === originalSrc) {
+        this.resolvedImageSrc = originalSrc;
+      }
+    }
   }
 }
