@@ -1,6 +1,9 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Player } from '../types';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
+
+
 
 @customElement('player-info')
 export class PlayerInfo extends LitElement {
@@ -63,6 +66,8 @@ export class PlayerInfo extends LitElement {
   ];
   @property({ type: Object }) player!: Player;
 
+  private readonly storage = getStorage();
+
   override render() {
     return html`
       <div class="player-card">
@@ -70,7 +75,7 @@ export class PlayerInfo extends LitElement {
           ? html`
               <img
                 class="player-photo"
-                src="${this.player.imgSrc}"
+                src="${this.getImageSrc(this.player.imgSrc)}"
                 alt="Photo of ${this.player.name}"
               />
             `
@@ -83,4 +88,15 @@ export class PlayerInfo extends LitElement {
       </div>
     `;
   }
+
+  private getImageSrc(src: string): Promise<string> | string {
+    // Si la URL incluye cldrsrcs.apilmx.com se recupera la imagen desde Firebase Storage
+    if (src.includes('cldrsrcs.apilmx.com')) {
+      const filename = src.split('/').pop()?.split('?')[0] || '';
+      const fileRef = ref(this.storage, filename);
+      return getDownloadURL(fileRef).then((url) => url).catch(() => src);
+    }
+    return src;
+  }
+
 }
