@@ -124,7 +124,10 @@ export class PlayerInfo extends LitElement {
         this.resolvedImageSrc = downloadUrl;
       }
     } catch (error) {
-      console.error(`Error fetching download URL for ${this.player.name}:`, error);
+      console.error(
+        `Error fetching download URL for ${this.player.name}:`,
+        error,
+      );
       if (this.player?.imgSrc === originalSrc) {
         this.resolvedImageSrc = originalSrc;
       }

@@ -398,11 +398,10 @@ export class TeamPage extends LitElement {
             </div>
           </div>
 
-          ${this.playersList.map(
-            player => {
-              const imageSrc = this._getResolvedPlayerImage(player.image);
+          ${this.playersList.map(player => {
+            const imageSrc = this._getResolvedPlayerImage(player.image);
 
-              return html`
+            return html`
               <div class="player-card">
                 <div class="player-header">
                   <div class="cell cell-photo">
@@ -482,8 +481,7 @@ export class TeamPage extends LitElement {
                 </div>
               </div>
             `;
-            },
-          )}
+          })}
         </div>
       </main>
 
@@ -759,8 +757,8 @@ export class TeamPage extends LitElement {
       .filter((imgSrc): imgSrc is string => {
         return Boolean(
           imgSrc &&
-            imgSrc.includes('cldrsrcs.apilmx') &&
-            !this.imageSrcCache[imgSrc],
+          imgSrc.includes('cldrsrcs.apilmx') &&
+          !this.imageSrcCache[imgSrc],
         );
       });
 
