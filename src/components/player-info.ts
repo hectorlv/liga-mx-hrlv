@@ -117,6 +117,9 @@ export class PlayerInfo extends LitElement {
       return;
     }
 
+    // Clear the previous resolved image before fetching the new one to avoid stale-image bleed-through
+    this.resolvedImageSrc = '';
+
     try {
       const downloadUrl = await getDownloadURL(ref(this.storage, fileName));
 
