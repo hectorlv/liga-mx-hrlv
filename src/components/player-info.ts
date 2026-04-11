@@ -1,9 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { Player } from '../types';
-import { getStorage, ref, getDownloadURL } from 'firebase/storage';
-
-
+import { FIREBASE_CONFIG } from '../utils/constants.js';
 
 @customElement('player-info')
 export class PlayerInfo extends LitElement {
@@ -66,8 +64,6 @@ export class PlayerInfo extends LitElement {
   ];
   @property({ type: Object }) player!: Player;
 
-  private readonly storage = getStorage();
-
   override render() {
     return html`
       <div class="player-card">
@@ -89,14 +85,19 @@ export class PlayerInfo extends LitElement {
     `;
   }
 
-  private getImageSrc(src: string): Promise<string> | string {
-    // Si la URL incluye cldrsrcs.apilmx.com se recupera la imagen desde Firebase Storage
-    if (src.includes('cldrsrcs.apilmx.com')) {
-      const filename = src.split('/').pop()?.split('?')[0] || '';
-      const fileRef = ref(this.storage, filename);
-      return getDownloadURL(fileRef).then((url) => url).catch(() => src);
+  private getImageSrc(imgSrc: string): string {
+    if (!imgSrc.includes('cldrsrcs.apilmx')) {
+      return imgSrc;
     }
-    return src;
-  }
 
+    const sanitizedSrc = imgSrc.split('?rnd=')[0];
+    const fileName = sanitizedSrc.split('/').pop();
+
+    if (!fileName) {
+      return imgSrc;
+    }
+
+    const encodedPath = encodeURIComponent(fileName);
+    return `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/${encodedPath}?alt=media`;
+  }
 }
