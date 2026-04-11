@@ -3,7 +3,7 @@ const FIREBASE_CONFIG = {
   authDomain: 'ligamx-b16f7.firebaseapp.com',
   databaseURL: 'https://ligamx-b16f7-default-rtdb.firebaseio.com',
   projectId: 'ligamx-b16f7',
-  storageBucket: 'ligamx-b16f7.appspot.com',
+  storageBucket: 'ligamx-b16f7.firebasestorage.app',
   messagingSenderId: '363875455177',
   appId: '1:363875455177:web:f96a1cd9f9863cac967d18',
   measurementId: 'G-VKRRB5SGHD',

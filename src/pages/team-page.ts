@@ -1,5 +1,6 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import { getDownloadURL, getStorage, ref } from 'firebase/storage';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
@@ -352,6 +353,7 @@ export class TeamPage extends LitElement {
 
   @state() private playersList: PlayerStats[] = [];
   @state() private editingPlayer: PlayerStats | null = null;
+  @state() private imageSrcCache: Record<string, string> = {};
 
   @query('#dialogEditPlayer') dialogEditPlayer!: MdDialog;
   @query('#editName') editNameField!: MdFilledTextField;
@@ -360,6 +362,8 @@ export class TeamPage extends LitElement {
   @query('#editNationality') editNationalityField!: MdFilledTextField;
   @query('#editBirthDate') editBirthDateField!: MdFilledTextField;
   @query('#editImage') editImageField!: MdFilledTextField;
+
+  private readonly storage = getStorage();
 
   override render() {
     return html`
@@ -394,14 +398,16 @@ export class TeamPage extends LitElement {
             </div>
           </div>
 
-          ${this.playersList.map(
-            player => html`
+          ${this.playersList.map(player => {
+            const imageSrc = this._getResolvedPlayerImage(player.image);
+
+            return html`
               <div class="player-card">
                 <div class="player-header">
                   <div class="cell cell-photo">
-                    ${player.image
+                    ${imageSrc
                       ? html`<img
-                          src="${player.image}"
+                          src="${imageSrc}"
                           class="player-photo"
                           alt="${player.fullName}"
                           loading="lazy"
@@ -474,8 +480,8 @@ export class TeamPage extends LitElement {
                   </div>
                 </div>
               </div>
-            `,
-          )}
+            `;
+          })}
         </div>
       </main>
 
@@ -563,6 +569,12 @@ export class TeamPage extends LitElement {
   override willUpdate(changedProps: Map<string, unknown>) {
     if (changedProps.has('players') || changedProps.has('matchesList')) {
       this.getPlayerStats();
+    }
+  }
+
+  override updated(changedProps: Map<string, unknown>) {
+    if (changedProps.has('playersList')) {
+      void this._resolvePlayerImages();
     }
   }
 
@@ -729,6 +741,57 @@ export class TeamPage extends LitElement {
       });
     }
     return statsMap;
+  }
+
+  private _getResolvedPlayerImage(imgSrc?: string): string {
+    if (!imgSrc) {
+      return '';
+    }
+
+    return this.imageSrcCache[imgSrc] ?? imgSrc;
+  }
+
+  private async _resolvePlayerImages(): Promise<void> {
+    const pendingImages = this.playersList
+      .map(player => player.image)
+      .filter((imgSrc): imgSrc is string => {
+        return Boolean(
+          imgSrc &&
+          imgSrc.includes('cldrsrcs.apilmx') &&
+          !this.imageSrcCache[imgSrc],
+        );
+      });
+
+    if (pendingImages.length === 0) {
+      return;
+    }
+
+    const resolvedEntries = await Promise.all(
+      [...new Set(pendingImages)].map(async originalSrc => {
+        const sanitizedSrc = originalSrc.split('?rnd=')[0];
+        const fileName = sanitizedSrc.split('/').pop();
+
+        if (!fileName) {
+          return [originalSrc, originalSrc] as const;
+        }
+
+        try {
+          const downloadUrl = await getDownloadURL(ref(this.storage, fileName));
+          return [originalSrc, downloadUrl] as const;
+        } catch (error) {
+          console.error(
+            `Error fetching download URL for player image ${fileName}:`,
+            error,
+          );
+          return [originalSrc, originalSrc] as const;
+        }
+      }),
+    );
+
+    this.imageSrcCache = {
+      ...this.imageSrcCache,
+      ...Object.fromEntries(resolvedEntries),
+    };
   }
 
   private getAgeFromBirthDate(birthDate: string | Date): string {
