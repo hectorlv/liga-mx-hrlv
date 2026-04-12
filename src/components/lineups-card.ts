@@ -4,6 +4,7 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
+import { uploadPlayerImage } from '../utils/playerImageUpload.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
@@ -163,6 +164,66 @@ export class LineupsCard extends LitElement {
           grid-column: 1 / -1;
         }
       }
+
+      .image-input-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .image-paste-zone {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 180px;
+        border: 2px dashed var(--md-sys-color-outline);
+        border-radius: 16px;
+        padding: 16px;
+        background: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface-variant);
+        text-align: center;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .image-paste-zone:focus {
+        border-color: var(--md-sys-color-primary);
+        box-shadow: 0 0 0 3px rgba(0, 103, 192, 0.12);
+      }
+
+      .image-paste-zone.has-image {
+        padding: 8px;
+        border-style: solid;
+      }
+
+      .image-preview {
+        max-width: 100%;
+        max-height: 220px;
+        border-radius: 12px;
+        object-fit: contain;
+      }
+
+      .image-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .image-help,
+      .image-error {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+
+      .image-help {
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .image-error {
+        color: var(--md-sys-color-error);
+      }
     `,
   ];
 
@@ -175,7 +236,6 @@ export class LineupsCard extends LitElement {
   @query('#newPlayerName') newPlayerNameField!: MdFilledTextField;
   @query('#newPlayerPosition') newPlayerPositionField!: MdFilledSelect;
   @query('#newPlayerNumber') newPlayerNumberField!: MdFilledTextField;
-  @query('#newPlayerImage') newPlayerImageField!: MdFilledTextField;
   @query('#newPlayerBirthDate') newPlayerBirthDateField!: MdFilledTextField;
   @query('#newPlayerFullName') newPlayerFullNameField!: MdFilledTextField;
   @query('#newPlayerNationality') newPlayerNationalityField!: MdFilledTextField;
@@ -183,6 +243,10 @@ export class LineupsCard extends LitElement {
   @state() private addPlayerSide: TeamSide | null = null;
   @state() private lineupsCollapsed = false;
   @state() private lastMatchId: number | null = null;
+  @state() private pastedImageBlob: Blob | null = null;
+  @state() private pastedImagePreviewUrl = '';
+  @state() private isUploadingImage = false;
+  @state() private imageError = '';
 
   override render() {
     if (!this.match) return html``;
@@ -370,17 +434,49 @@ export class LineupsCard extends LitElement {
             label="Nacimiento"
             type="date"
           ></md-filled-text-field>
-          <md-filled-text-field
-            id="newPlayerImage"
-            label="URL de foto"
-            class="full-width"
-          ></md-filled-text-field>
+          <div class="image-input-section full-width">
+            <div
+              class="image-paste-zone ${this.pastedImagePreviewUrl
+                ? 'has-image'
+                : ''}"
+              tabindex="0"
+              role="button"
+              @paste=${this._handleImagePaste}
+              title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
+            >
+              ${this.pastedImagePreviewUrl
+                ? html`<img
+                    class="image-preview"
+                    src="${this.pastedImagePreviewUrl}"
+                    alt="Vista previa de la foto del jugador"
+                  />`
+                : html`<div>
+                    <md-icon>content_paste</md-icon>
+                    <p>Pega aquí la foto del jugador</p>
+                    <p class="image-help">Usa Ctrl+V o Cmd+V desde el portapapeles</p>
+                  </div>`}
+            </div>
+            <div class="image-actions">
+              <p class="${this.imageError ? 'image-error' : 'image-help'}">
+                ${this.imageError || 'La imagen se convertirá a JPEG y se subirá al guardar.'}
+              </p>
+              ${this.pastedImagePreviewUrl
+                ? html`
+                    <md-outlined-button @click=${this._clearPastedImage}>
+                      Quitar imagen
+                    </md-outlined-button>
+                  `
+                : null}
+            </div>
+          </div>
         </div>
         <div slot="actions">
           <md-outlined-button @click=${this._cancelAddPlayer}
+            ?disabled=${this.isUploadingImage}
             >Cancelar</md-outlined-button
           >
           <md-filled-button @click=${this._saveNewPlayer}
+            ?disabled=${this.isUploadingImage}
             >Guardar</md-filled-button
           >
         </div>
@@ -447,14 +543,19 @@ export class LineupsCard extends LitElement {
       this.newPlayerNumberField.value = '';
       this.newPlayerNumberField.setCustomValidity('');
     }
-    if (this.newPlayerImageField) this.newPlayerImageField.value = '';
     if (this.newPlayerFullNameField) this.newPlayerFullNameField.value = '';
     if (this.newPlayerNationalityField)
       this.newPlayerNationalityField.value = '';
     if (this.newPlayerBirthDateField) this.newPlayerBirthDateField.value = '';
+    this._clearPastedImage();
+    this.imageError = '';
+    this.isUploadingImage = false;
   }
 
   private _cancelAddPlayer() {
+    this._clearPastedImage();
+    this.imageError = '';
+    this.isUploadingImage = false;
     this.dialogAddPlayer?.close();
     this.addPlayerSide = null;
   }
@@ -465,12 +566,11 @@ export class LineupsCard extends LitElement {
     return teamName.replaceAll('.', '');
   }
 
-  private _saveNewPlayer() {
+  private async _saveNewPlayer() {
     if (!this.match || !this.addPlayerSide) return;
     const name = this.newPlayerNameField?.value?.trim();
     const position = this.newPlayerPositionField?.value?.trim();
     const number = Number(this.newPlayerNumberField?.value);
-    const imgSrc = this.newPlayerImageField?.value?.trim() || '';
     const birthDateInput = this.newPlayerBirthDateField?.value || '';
     let birthDate = birthDateInput;
     if (birthDateInput.includes('-')) {
@@ -497,6 +597,25 @@ export class LineupsCard extends LitElement {
       return;
     }
     this.newPlayerNumberField?.setCustomValidity('');
+
+    let imgSrc = '';
+    if (this.pastedImageBlob) {
+      this.isUploadingImage = true;
+      this.imageError = '';
+
+      try {
+        imgSrc = await uploadPlayerImage(
+          this.pastedImageBlob,
+          this._getTeamKey(this.addPlayerSide),
+          number,
+        );
+      } catch (error) {
+        console.error('Error uploading player image:', error);
+        this.imageError = 'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
+        this.isUploadingImage = false;
+        return;
+      }
+    }
 
     const newPlayer: Player = {
       name,
@@ -525,8 +644,58 @@ export class LineupsCard extends LitElement {
 
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
 
+    this.isUploadingImage = false;
     this.dialogAddPlayer?.close();
     this.addPlayerSide = null;
+    this._clearPastedImage();
+  }
+
+  private _handleImagePaste(event: ClipboardEvent) {
+    const imageFile = event.clipboardData?.items
+      ? Array.from(event.clipboardData.items).find(item =>
+          item.type.startsWith('image/'),
+        )
+      : null;
+
+    if (!imageFile) {
+      this.imageError = 'El portapapeles no contiene una imagen.';
+      return;
+    }
+
+    const blob = imageFile.getAsFile();
+    if (!blob) {
+      this.imageError = 'No fue posible leer la imagen pegada.';
+      return;
+    }
+
+    event.preventDefault();
+    this.imageError = '';
+    this._setPastedImage(blob);
+  }
+
+  private _setPastedImage(blob: Blob) {
+    this._revokePreviewUrl();
+    this.pastedImageBlob = blob;
+    this.pastedImagePreviewUrl = URL.createObjectURL(blob);
+  }
+
+  private _clearPastedImage = () => {
+    this._revokePreviewUrl();
+    this.pastedImageBlob = null;
+  };
+
+  private _revokePreviewUrl() {
+    if (!this.pastedImagePreviewUrl) {
+      return;
+    }
+
+    URL.revokeObjectURL(this.pastedImagePreviewUrl);
+    this.pastedImagePreviewUrl = '';
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this._revokePreviewUrl();
   }
 
   private updateLineups() {
