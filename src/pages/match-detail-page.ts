@@ -112,6 +112,30 @@ export class MatchDetailPage extends LitElement {
         padding: 4px;
       }
 
+      .desktop-back-button {
+        display: none;
+        position: sticky;
+        top: 24px;
+        left: 24px;
+        z-index: 10;
+        width: fit-content;
+        margin-bottom: 12px;
+        border-radius: 999px;
+        background: color-mix(
+          in srgb,
+          var(--md-sys-color-surface, #ffffff) 92%,
+          transparent
+        );
+        border: 1px solid var(--md-sys-color-outline-variant);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+        backdrop-filter: blur(10px);
+      }
+
+      .desktop-back-button md-icon-button {
+        --md-icon-button-icon-color: var(--md-sys-color-on-surface);
+        --md-icon-button-state-layer-size: 48px;
+      }
+
       /* Duelo Principal */
       .duel-container {
         display: flex;
@@ -238,6 +262,13 @@ export class MatchDetailPage extends LitElement {
         }
       }
 
+      @media (min-width: 900px) {
+        .desktop-back-button {
+          display: block;
+          margin-left: 8px;
+        }
+      }
+
       /* Ajustes móviles para escudos */
       @media (max-width: 600px) {
         .team-side img {
@@ -344,6 +375,16 @@ export class MatchDetailPage extends LitElement {
     );
 
     return html`
+      <div class="desktop-back-button">
+        <md-icon-button
+          @click=${this._goBack}
+          aria-label="Volver al calendario"
+          title="Volver al calendario"
+        >
+          <md-icon>arrow_back</md-icon>
+        </md-icon-button>
+      </div>
+
       <section class="match-header-card">
         <div class="top-nav">
           <md-icon-button @click=${this._goBack} aria-label="Volver">
