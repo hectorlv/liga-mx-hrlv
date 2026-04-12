@@ -18,6 +18,7 @@ import {
   getSubstitutionEvents,
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { uploadPlayerImage } from '../utils/playerImageUpload.js';
 
 // Imports de Material para el formulario de edición
 import '@material/web/button/filled-button.js';
@@ -204,6 +205,66 @@ export class TeamPage extends LitElement {
         border: 2px solid var(--md-sys-color-outline-variant);
       }
 
+      .image-input-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .image-paste-zone {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 180px;
+        border: 2px dashed var(--md-sys-color-outline);
+        border-radius: 16px;
+        padding: 16px;
+        background: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface-variant);
+        text-align: center;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .image-paste-zone:focus {
+        border-color: var(--md-sys-color-primary);
+        box-shadow: 0 0 0 3px rgba(0, 103, 192, 0.12);
+      }
+
+      .image-paste-zone.has-image {
+        padding: 8px;
+        border-style: solid;
+      }
+
+      .image-preview {
+        max-width: 100%;
+        max-height: 220px;
+        border-radius: 12px;
+        object-fit: contain;
+      }
+
+      .image-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .image-help,
+      .image-error {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+
+      .image-help {
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .image-error {
+        color: var(--md-sys-color-error);
+      }
+
       .desktop-headers {
         display: none;
       }
@@ -361,9 +422,12 @@ export class TeamPage extends LitElement {
   @query('#editPosition') editPositionField!: MdFilledSelect;
   @query('#editNationality') editNationalityField!: MdFilledTextField;
   @query('#editBirthDate') editBirthDateField!: MdFilledTextField;
-  @query('#editImage') editImageField!: MdFilledTextField;
 
   private readonly storage = getStorage();
+  @state() private editPastedImageBlob: Blob | null = null;
+  @state() private editPastedImagePreviewUrl = '';
+  @state() private editIsUploadingImage = false;
+  @state() private editImageError = '';
 
   override render() {
     return html`
@@ -546,18 +610,51 @@ export class TeamPage extends LitElement {
               this.editingPlayer?.rawBirthDate,
             )}"
           ></md-filled-text-field>
-          <md-filled-text-field
-            id="editImage"
-            label="URL de foto"
-            class="full-width"
-            value="${this.editingPlayer?.image || ''}"
-          ></md-filled-text-field>
+          <div class="image-input-section full-width">
+            <div
+              class="image-paste-zone ${this._getEditImagePreview()
+                ? 'has-image'
+                : ''}"
+              tabindex="0"
+              role="button"
+              @paste=${this._handleEditImagePaste}
+              title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
+            >
+              ${this._getEditImagePreview()
+                ? html`<img
+                    class="image-preview"
+                    src="${this._getEditImagePreview()}"
+                    alt="Vista previa de la foto del jugador"
+                  />`
+                : html`<div>
+                    <md-icon>content_paste</md-icon>
+                    <p>Pega aquí la foto del jugador</p>
+                    <p class="image-help">Usa Ctrl+V o Cmd+V desde el portapapeles</p>
+                  </div>`}
+            </div>
+            <div class="image-actions">
+              <p class="${this.editImageError ? 'image-error' : 'image-help'}">
+                ${this.editImageError || 'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'}
+              </p>
+              ${this.editPastedImagePreviewUrl
+                ? html`
+                    <md-outlined-button @click=${this._clearEditPastedImage}>
+                      Quitar imagen nueva
+                    </md-outlined-button>
+                  `
+                : null}
+            </div>
+          </div>
         </div>
         <div slot="actions">
-          <md-outlined-button @click=${this._closeEditPlayer}
+          <md-outlined-button
+            @click=${this._closeEditPlayer}
+            ?disabled=${this.editIsUploadingImage}
             >Cancelar</md-outlined-button
           >
-          <md-filled-button @click=${this._saveEditedPlayer}
+          <md-filled-button
+            @click=${this._saveEditedPlayer}
+            ?disabled=${this.editIsUploadingImage}
             >Guardar</md-filled-button
           >
         </div>
@@ -596,6 +693,7 @@ export class TeamPage extends LitElement {
     /* Igual aquí, si ya tenías disconnectedCallback, solo agrega estas dos líneas: */
     this.removeEventListener('touchstart', this._handleTouchStart);
     this.removeEventListener('touchend', this._handleTouchEnd);
+    this._revokeEditPreviewUrl();
   }
 
   // Usamos "arrow functions" (=>) para no perder la referencia a 'this'
@@ -637,11 +735,17 @@ export class TeamPage extends LitElement {
   // --- LÓGICA DE EDICIÓN ---
 
   private _openEditPlayer(player: PlayerStats) {
+    this._clearEditPastedImage();
+    this.editImageError = '';
+    this.editIsUploadingImage = false;
     this.editingPlayer = player;
     this.dialogEditPlayer.show();
   }
 
   private _closeEditPlayer() {
+    this._clearEditPastedImage();
+    this.editImageError = '';
+    this.editIsUploadingImage = false;
     this.dialogEditPlayer.close();
     this.editingPlayer = null;
   }
@@ -658,14 +762,13 @@ export class TeamPage extends LitElement {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  private _saveEditedPlayer() {
+  private async _saveEditedPlayer() {
     if (!this.editingPlayer) return;
 
     const name = this.editNameField.value.trim();
     const position = this.editPositionField.value.trim();
     const fullName = this.editFullNameField.value.trim();
     const nationality = this.editNationalityField.value.trim();
-    const imgSrc = this.editImageField.value.trim();
     const birthDateInput = this.editBirthDateField.value;
 
     // Formateamos la fecha de YYYY-MM-DD a DD/MM/YYYY para mantener tu estándar
@@ -678,6 +781,25 @@ export class TeamPage extends LitElement {
     if (!name || !position) {
       alert('El nombre corto y la posición son obligatorios.');
       return;
+    }
+
+    let imgSrc = this.editingPlayer.image || '';
+    if (this.editPastedImageBlob) {
+      this.editIsUploadingImage = true;
+      this.editImageError = '';
+
+      try {
+        imgSrc = await uploadPlayerImage(
+          this.editPastedImageBlob,
+          this.team.equipo.replaceAll('.', ''),
+          this.editingPlayer.number,
+        );
+      } catch (error) {
+        console.error('Error uploading player image:', error);
+        this.editImageError = 'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
+        this.editIsUploadingImage = false;
+        return;
+      }
     }
 
     // Buscamos al jugador original en el array global
@@ -702,6 +824,7 @@ export class TeamPage extends LitElement {
     updates[`/players/${teamKey}`] = updatedPlayers;
 
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
+    this.editIsUploadingImage = false;
     this._closeEditPlayer();
   }
 
@@ -749,6 +872,57 @@ export class TeamPage extends LitElement {
     }
 
     return this.imageSrcCache[imgSrc] ?? imgSrc;
+  }
+
+  private _getEditImagePreview(): string {
+    if (this.editPastedImagePreviewUrl) {
+      return this.editPastedImagePreviewUrl;
+    }
+
+    return this._getResolvedPlayerImage(this.editingPlayer?.image);
+  }
+
+  private _handleEditImagePaste(event: ClipboardEvent) {
+    const imageFile = event.clipboardData?.items
+      ? Array.from(event.clipboardData.items).find(item =>
+          item.type.startsWith('image/'),
+        )
+      : null;
+
+    if (!imageFile) {
+      this.editImageError = 'El portapapeles no contiene una imagen.';
+      return;
+    }
+
+    const blob = imageFile.getAsFile();
+    if (!blob) {
+      this.editImageError = 'No fue posible leer la imagen pegada.';
+      return;
+    }
+
+    event.preventDefault();
+    this.editImageError = '';
+    this._setEditPastedImage(blob);
+  }
+
+  private _setEditPastedImage(blob: Blob) {
+    this._revokeEditPreviewUrl();
+    this.editPastedImageBlob = blob;
+    this.editPastedImagePreviewUrl = URL.createObjectURL(blob);
+  }
+
+  private _clearEditPastedImage = () => {
+    this._revokeEditPreviewUrl();
+    this.editPastedImageBlob = null;
+  };
+
+  private _revokeEditPreviewUrl() {
+    if (!this.editPastedImagePreviewUrl) {
+      return;
+    }
+
+    URL.revokeObjectURL(this.editPastedImagePreviewUrl);
+    this.editPastedImagePreviewUrl = '';
   }
 
   private async _resolvePlayerImages(): Promise<void> {
