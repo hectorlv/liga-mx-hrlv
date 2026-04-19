@@ -18,7 +18,10 @@ import {
   getSubstitutionEvents,
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { uploadPlayerImage } from '../utils/playerImageUpload.js';
+import {
+  readImageFromClipboard,
+  uploadPlayerImage,
+} from '../utils/playerImageUpload.js';
 
 // Imports de Material para el formulario de edición
 import '@material/web/button/filled-button.js';
@@ -427,6 +430,7 @@ export class TeamPage extends LitElement {
   @state() private editPastedImageBlob: Blob | null = null;
   @state() private editPastedImagePreviewUrl = '';
   @state() private editIsUploadingImage = false;
+  @state() private editIsReadingClipboardImage = false;
   @state() private editImageError = '';
 
   override render() {
@@ -629,12 +633,16 @@ export class TeamPage extends LitElement {
                 : html`<div>
                     <md-icon>content_paste</md-icon>
                     <p>Pega aquí la foto del jugador</p>
-                    <p class="image-help">Usa Ctrl+V o Cmd+V desde el portapapeles</p>
+                    <p class="image-help">
+                      En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
+                      Leer portapapeles.
+                    </p>
                   </div>`}
             </div>
             <div class="image-actions">
               <p class="${this.editImageError ? 'image-error' : 'image-help'}">
-                ${this.editImageError || 'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'}
+                ${this.editImageError ||
+                'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'}
               </p>
               ${this.editPastedImagePreviewUrl
                 ? html`
@@ -643,6 +651,16 @@ export class TeamPage extends LitElement {
                     </md-outlined-button>
                   `
                 : null}
+              <md-outlined-button
+                @click=${this._readEditImageFromClipboard}
+                ?disabled=${this.editIsReadingClipboardImage ||
+                this.editIsUploadingImage}
+              >
+                <md-icon slot="icon">content_paste_go</md-icon>
+                ${this.editIsReadingClipboardImage
+                  ? 'Leyendo...'
+                  : 'Leer portapapeles'}
+              </md-outlined-button>
             </div>
           </div>
         </div>
@@ -738,6 +756,7 @@ export class TeamPage extends LitElement {
     this._clearEditPastedImage();
     this.editImageError = '';
     this.editIsUploadingImage = false;
+    this.editIsReadingClipboardImage = false;
     this.editingPlayer = player;
     this.dialogEditPlayer.show();
   }
@@ -746,6 +765,7 @@ export class TeamPage extends LitElement {
     this._clearEditPastedImage();
     this.editImageError = '';
     this.editIsUploadingImage = false;
+    this.editIsReadingClipboardImage = false;
     this.dialogEditPlayer.close();
     this.editingPlayer = null;
   }
@@ -796,7 +816,8 @@ export class TeamPage extends LitElement {
         );
       } catch (error) {
         console.error('Error uploading player image:', error);
-        this.editImageError = 'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
+        this.editImageError =
+          'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
         this.editIsUploadingImage = false;
         return;
       }
@@ -903,6 +924,23 @@ export class TeamPage extends LitElement {
     event.preventDefault();
     this.editImageError = '';
     this._setEditPastedImage(blob);
+  }
+
+  private async _readEditImageFromClipboard() {
+    this.editIsReadingClipboardImage = true;
+    this.editImageError = '';
+
+    try {
+      const blob = await readImageFromClipboard();
+      this._setEditPastedImage(blob);
+    } catch (error) {
+      this.editImageError =
+        error instanceof Error
+          ? error.message
+          : 'No fue posible leer la imagen del portapapeles.';
+    } finally {
+      this.editIsReadingClipboardImage = false;
+    }
   }
 
   private _setEditPastedImage(blob: Blob) {

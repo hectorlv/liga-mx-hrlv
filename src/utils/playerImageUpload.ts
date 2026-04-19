@@ -75,3 +75,36 @@ export async function uploadPlayerImage(
 
   return getDownloadURL(storageRef);
 }
+
+export async function readImageFromClipboard(): Promise<Blob> {
+  if (!navigator.clipboard?.read) {
+    throw new Error(
+      'Este navegador no permite leer imágenes del portapapeles. Intenta pegar con Ctrl+V o Cmd+V en escritorio.',
+    );
+  }
+
+  let clipboardItems: ClipboardItems;
+  try {
+    clipboardItems = await navigator.clipboard.read();
+  } catch {
+    throw new Error(
+      'No fue posible leer el portapapeles. Revisa permisos del navegador y que la página esté en HTTPS.',
+    );
+  }
+
+  if (clipboardItems.length === 0) {
+    throw new Error('El portapapeles está vacío.');
+  }
+
+  for (const clipboardItem of clipboardItems) {
+    const imageType = clipboardItem.types.find(type =>
+      type.startsWith('image/'),
+    );
+
+    if (imageType) {
+      return clipboardItem.getType(imageType);
+    }
+  }
+
+  throw new Error('El portapapeles no contiene una imagen.');
+}
