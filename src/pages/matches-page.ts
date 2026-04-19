@@ -637,7 +637,7 @@ export class MatchesPage extends LitElement {
           match.fecha.getMonth() === this.todayDate.getMonth() &&
           match.fecha.getDate() === this.todayDate.getDate());
       const noPlayIn = match.jornada !== 18 && match.jornada !== 19; // Solo torneo sin playin
-      return findTeam && findMatchDay && todayDate && onlyPlayOff && noPlayin;
+      return findTeam && findMatchDay && todayDate && onlyPlayOff && noPlayIn;
     });
   }
 
