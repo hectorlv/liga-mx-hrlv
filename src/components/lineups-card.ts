@@ -4,7 +4,10 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
 import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import { uploadPlayerImage } from '../utils/playerImageUpload.js';
+import {
+  readImageFromClipboard,
+  uploadPlayerImage,
+} from '../utils/playerImageUpload.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
@@ -246,6 +249,7 @@ export class LineupsCard extends LitElement {
   @state() private pastedImageBlob: Blob | null = null;
   @state() private pastedImagePreviewUrl = '';
   @state() private isUploadingImage = false;
+  @state() private isReadingClipboardImage = false;
   @state() private imageError = '';
 
   override render() {
@@ -453,12 +457,16 @@ export class LineupsCard extends LitElement {
                 : html`<div>
                     <md-icon>content_paste</md-icon>
                     <p>Pega aquí la foto del jugador</p>
-                    <p class="image-help">Usa Ctrl+V o Cmd+V desde el portapapeles</p>
+                    <p class="image-help">
+                      En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
+                      Leer portapapeles.
+                    </p>
                   </div>`}
             </div>
             <div class="image-actions">
               <p class="${this.imageError ? 'image-error' : 'image-help'}">
-                ${this.imageError || 'La imagen se convertirá a JPEG y se subirá al guardar.'}
+                ${this.imageError ||
+                'La imagen se convertirá a JPEG y se subirá al guardar.'}
               </p>
               ${this.pastedImagePreviewUrl
                 ? html`
@@ -467,15 +475,27 @@ export class LineupsCard extends LitElement {
                     </md-outlined-button>
                   `
                 : null}
+              <md-outlined-button
+                @click=${this._readImageFromClipboard}
+                ?disabled=${this.isReadingClipboardImage ||
+                this.isUploadingImage}
+              >
+                <md-icon slot="icon">content_paste_go</md-icon>
+                ${this.isReadingClipboardImage
+                  ? 'Leyendo...'
+                  : 'Leer portapapeles'}
+              </md-outlined-button>
             </div>
           </div>
         </div>
         <div slot="actions">
-          <md-outlined-button @click=${this._cancelAddPlayer}
+          <md-outlined-button
+            @click=${this._cancelAddPlayer}
             ?disabled=${this.isUploadingImage}
             >Cancelar</md-outlined-button
           >
-          <md-filled-button @click=${this._saveNewPlayer}
+          <md-filled-button
+            @click=${this._saveNewPlayer}
             ?disabled=${this.isUploadingImage}
             >Guardar</md-filled-button
           >
@@ -550,12 +570,14 @@ export class LineupsCard extends LitElement {
     this._clearPastedImage();
     this.imageError = '';
     this.isUploadingImage = false;
+    this.isReadingClipboardImage = false;
   }
 
   private _cancelAddPlayer() {
     this._clearPastedImage();
     this.imageError = '';
     this.isUploadingImage = false;
+    this.isReadingClipboardImage = false;
     this.dialogAddPlayer?.close();
     this.addPlayerSide = null;
   }
@@ -611,7 +633,8 @@ export class LineupsCard extends LitElement {
         );
       } catch (error) {
         console.error('Error uploading player image:', error);
-        this.imageError = 'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
+        this.imageError =
+          'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
         this.isUploadingImage = false;
         return;
       }
@@ -671,6 +694,23 @@ export class LineupsCard extends LitElement {
     event.preventDefault();
     this.imageError = '';
     this._setPastedImage(blob);
+  }
+
+  private async _readImageFromClipboard() {
+    this.isReadingClipboardImage = true;
+    this.imageError = '';
+
+    try {
+      const blob = await readImageFromClipboard();
+      this._setPastedImage(blob);
+    } catch (error) {
+      this.imageError =
+        error instanceof Error
+          ? error.message
+          : 'No fue posible leer la imagen del portapapeles.';
+    } finally {
+      this.isReadingClipboardImage = false;
+    }
   }
 
   private _setPastedImage(blob: Blob) {
