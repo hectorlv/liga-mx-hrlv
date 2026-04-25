@@ -175,11 +175,12 @@ export class PlayerInfo extends LitElement {
       return false;
     }
 
-    // Regla U23 para 2026: nacidos en 2003 o después.
+    // Regla U23 para 2026: nacidos en 2003 o después y nacionalidad mexicano
     const currentYear = new Date().getFullYear();
     const minBirthYear = currentYear - 23;
+    const isMexican = this.player?.nationality?.toLowerCase() === 'mexicano';
 
-    return birthYear >= minBirthYear;
+    return birthYear >= minBirthYear && isMexican;
   }
 
   private getBirthYear(birthDate?: string | Date): number | null {
