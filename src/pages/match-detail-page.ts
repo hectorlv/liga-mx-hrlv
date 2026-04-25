@@ -779,7 +779,7 @@ export class MatchDetailPage extends LitElement {
     window.scrollTo(0, 0);
   }
 
-  private _backToMatchDetail = () => {
+  private readonly _backToMatchDetail = () => {
     this.selectedTeam = null;
   };
 

@@ -996,7 +996,7 @@ export class TeamPage extends LitElement {
     this.editPastedImagePreviewUrl = URL.createObjectURL(blob);
   }
 
-  private _clearEditPastedImage = () => {
+  private readonly _clearEditPastedImage = () => {
     this._revokeEditPreviewUrl();
     this.editPastedImageBlob = null;
   };

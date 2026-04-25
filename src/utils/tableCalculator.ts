@@ -1,8 +1,5 @@
 import { Match, TableEntry } from '../types';
-import {
-  POSTSEASON_FORMAT,
-  REGULAR_SEASON_LAST_JORNADA,
-} from './constants.js';
+import { POSTSEASON_FORMAT, REGULAR_SEASON_LAST_JORNADA } from './constants.js';
 
 type TeamSide = 'home' | 'away';
 type MatchResult = 'win' | 'draw' | 'loss';
