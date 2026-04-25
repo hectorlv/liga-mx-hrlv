@@ -31,6 +31,34 @@ export class PlayerInfo extends LitElement {
         object-fit: contain;
         flex-shrink: 0;
       }
+      .player-photo-wrapper {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        flex-shrink: 0;
+      }
+
+      .player-photo-wrapper md-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .u23-badge {
+        position: absolute;
+        right: -12px;
+        top: -4px;
+        border-radius: 999px;
+        padding: 2px 6px;
+        font-size: 0.65em;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        background-color: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+      }
 
       .player-details {
         flex: 1;
@@ -69,18 +97,22 @@ export class PlayerInfo extends LitElement {
 
   override render() {
     const imageSrc = this.resolvedImageSrc;
+    const isU23 = this.isU23Player();
 
     return html`
       <div class="player-card">
-        ${imageSrc
-          ? html`
-              <img
-                class="player-photo"
-                src="${imageSrc}"
-                alt="Photo of ${this.player.name}"
-              />
-            `
-          : html` <md-icon>person</md-icon>`}
+        <div class="player-photo-wrapper">
+          ${imageSrc
+            ? html`
+                <img
+                  class="player-photo"
+                  src="${imageSrc}"
+                  alt="Photo of ${this.player.name}"
+                />
+              `
+            : html` <md-icon>person</md-icon>`}
+          ${isU23 ? html`<span class="u23-badge">U23</span>` : null}
+        </div>
         <div class="player-details">
           <h3 class="player-name">${this.player.name}</h3>
           <p class="player-position">Posición: ${this.player.position}</p>
@@ -135,5 +167,41 @@ export class PlayerInfo extends LitElement {
         this.resolvedImageSrc = originalSrc;
       }
     }
+  }
+
+  private isU23Player(): boolean {
+    const birthYear = this.getBirthYear(this.player?.birthDate);
+    if (!birthYear) {
+      return false;
+    }
+
+    // Regla U23 para 2026: nacidos en 2003 o después.
+    const currentYear = new Date().getFullYear();
+    const minBirthYear = currentYear - 23;
+
+    return birthYear >= minBirthYear;
+  }
+
+  private getBirthYear(birthDate?: string | Date): number | null {
+    if (!birthDate) {
+      return null;
+    }
+
+    if (birthDate instanceof Date) {
+      return birthDate.getFullYear();
+    }
+
+    const [day, month, year] = birthDate.split('/');
+    if (day && month && year) {
+      const parsedYear = Number.parseInt(year, 10);
+      return Number.isNaN(parsedYear) ? null : parsedYear;
+    }
+
+    const parsedDate = new Date(birthDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return null;
+    }
+
+    return parsedDate.getFullYear();
   }
 }

@@ -100,6 +100,8 @@ const POSTSEASON_FORMAT = {
   playInSpots: 0,
 };
 
+const REGULAR_SEASON_LAST_JORNADA = 17;
+
 const LOGOS = [
   { equipo: 'América', img: 'america' },
   { equipo: 'Atlas', img: 'atlas' },
@@ -135,4 +137,5 @@ export {
   LIGUILLA,
   LOGOS,
   POSTSEASON_FORMAT,
+  REGULAR_SEASON_LAST_JORNADA,
 };
