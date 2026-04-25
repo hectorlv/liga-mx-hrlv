@@ -17,11 +17,14 @@ import './match-detail-page.js';
 import { MdFilledButton } from '@material/web/button/filled-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
-import { Match, PlayerTeam } from '../types/index.js';
+import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
 import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { getPhaseEvents } from '../utils/functionUtils.js';
+import {
+  getAggregateScoreForSecondLeg,
+  getPhaseEvents,
+} from '../utils/functionUtils.js';
 /**
  * Page for show the fixture
  */
@@ -191,11 +194,25 @@ export class MatchesPage extends LitElement {
 
       .cell-score {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 2px;
+        color: var(--md-sys-color-primary);
+      }
+
+      .match-score-primary {
         font-size: 1.5rem;
         font-weight: 800;
-        color: var(--md-sys-color-primary);
+        line-height: 1;
+      }
+
+      .aggregate-score {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
       }
 
       /* Cabeceras de tabla (ocultas en móvil) */
@@ -208,7 +225,7 @@ export class MatchesPage extends LitElement {
         .matches-grid {
           display: grid;
           /* Columnas: Jornada | Fecha | Local | Score | Visitante | Estadio */
-          grid-template-columns: 55px 170px minmax(0, 1fr) 81px minmax(
+          grid-template-columns: 55px 170px minmax(0, 1fr) 96px minmax(
               0,
               1fr
             ) 185px;
@@ -322,6 +339,7 @@ export class MatchesPage extends LitElement {
   ];
 
   @property({ type: Array }) matchesList: Match[] = [];
+  @property({ type: Array }) table: TableEntry[] = [];
   @property({ type: Array }) teams: string[] = [];
   @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Array }) players: PlayerTeam[] = [];
@@ -470,6 +488,8 @@ export class MatchesPage extends LitElement {
       return html` <main>
         <match-detail-page
           .match="${this.selectedMatch}"
+          .matchesList="${this.matchesList}"
+          .table="${this.table}"
           .teams="${this.teams}"
           .players="${this.players}"
           .stadiums="${this.stadiums}"
@@ -575,6 +595,10 @@ export class MatchesPage extends LitElement {
 
   private renderMatchItem(match: Match) {
     const isLive = isMatchLive(getPhaseEvents(match.events));
+    const aggregateScore = getAggregateScoreForSecondLeg(
+      match,
+      this.matchesList,
+    );
 
     return html`
       <div
@@ -599,7 +623,16 @@ export class MatchesPage extends LitElement {
           <span class="team-name">${match.local}</span>
           ${getTeamImage(match.local)}
         </div>
-        <div class="cell-score">${match.golLocal} - ${match.golVisitante}</div>
+        <div class="cell-score">
+          <div class="match-score-primary">
+            ${match.golLocal} - ${match.golVisitante}
+          </div>
+          ${aggregateScore
+            ? html`<div class="aggregate-score">
+                Global ${aggregateScore.local} - ${aggregateScore.visitante}
+              </div>`
+            : ''}
+        </div>
         <div class="cell-visit team-block">
           ${getTeamImage(match.visitante)}
           <span class="team-name">${match.visitante}</span>

@@ -1,5 +1,8 @@
 import { Match, TableEntry } from '../types';
-import { POSTSEASON_FORMAT } from './constants.js';
+import {
+  POSTSEASON_FORMAT,
+  REGULAR_SEASON_LAST_JORNADA,
+} from './constants.js';
 
 type TeamSide = 'home' | 'away';
 type MatchResult = 'win' | 'draw' | 'loss';
@@ -12,7 +15,6 @@ type MatchWithScore = Match & {
   golLocal: number;
   golVisitante: number;
 };
-const TOTAL_REGULAR_SEASON_MATCHES = 17;
 
 function calculateTeamStats(team: string, matches: Match[]): TableEntry {
   const counters: ResultCounters = { jg: 0, je: 0, jp: 0 };
@@ -61,7 +63,7 @@ export function calculateTable(
         (match.local === team || match.visitante === team) &&
         match.golLocal != null &&
         match.golVisitante != null &&
-        match.jornada <= TOTAL_REGULAR_SEASON_MATCHES,
+        match.jornada <= REGULAR_SEASON_LAST_JORNADA,
     );
     const teamStats = calculateTeamStats(team, teamMatches);
     return teamStats;
@@ -83,7 +85,7 @@ function markQualifiedTeams(table: TableEntry[]): void {
   const { directQualificationSpots, playInSpots } = POSTSEASON_FORMAT;
   const totalPostseasonSpots = directQualificationSpots + playInSpots;
   const allTeamsFinished = table.every(
-    team => team.jj >= TOTAL_REGULAR_SEASON_MATCHES,
+    team => team.jj >= REGULAR_SEASON_LAST_JORNADA,
   );
 
   resetPostseasonStatus(table);
@@ -131,7 +133,7 @@ function resetPostseasonStatus(table: TableEntry[]): void {
 }
 
 function getMaxPossiblePoints(team: TableEntry): number {
-  const pendingMatches = Math.max(0, TOTAL_REGULAR_SEASON_MATCHES - team.jj);
+  const pendingMatches = Math.max(0, REGULAR_SEASON_LAST_JORNADA - team.jj);
   return team.pts + pendingMatches * 3;
 }
 

@@ -48,8 +48,8 @@ export class PlayerInfo extends LitElement {
 
       .u23-badge {
         position: absolute;
-        right: -6px;
-        bottom: -4px;
+        right: -12px;
+        top: -4px;
         border-radius: 999px;
         padding: 2px 6px;
         font-size: 0.65em;

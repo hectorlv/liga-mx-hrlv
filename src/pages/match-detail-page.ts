@@ -8,6 +8,7 @@ import '../components/events-timeline.js';
 import '../components/goals-card.js';
 import '../components/lineups-card.js';
 import '../components/substitutions-card.js';
+import './team-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
@@ -16,6 +17,7 @@ import {
   PhaseMatchEvent,
   Player,
   PlayerTeam,
+  TableEntry,
 } from '../types/index.js';
 import {
   formatDateDDMMYYYY,
@@ -28,10 +30,17 @@ import {
   calculateSequenceForEditedEvent,
   calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
+  getAggregateScoreForSecondLeg,
   getPhaseEvents,
 } from '../utils/functionUtils.js';
+import { REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
+
+type TeamTableComparison = {
+  team: TableEntry;
+  position: number;
+};
 
 @customElement('match-detail-page')
 export class MatchDetailPage extends LitElement {
@@ -150,6 +159,22 @@ export class MatchDetailPage extends LitElement {
         align-items: center;
         gap: 8px;
         flex: 1;
+        border-radius: 12px;
+        cursor: pointer;
+        padding: 8px;
+        transition:
+          background-color 0.2s,
+          transform 0.2s;
+      }
+
+      .team-side:hover,
+      .team-side:focus-visible {
+        background-color: var(--row-hover);
+        outline: none;
+      }
+
+      .team-side:active {
+        transform: scale(0.98);
       }
 
       .team-side img {
@@ -184,6 +209,15 @@ export class MatchDetailPage extends LitElement {
         border-radius: 16px;
       }
 
+      .aggregate-score {
+        margin-top: 8px;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.9rem;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
       /* Información de Tiempo y Lugar */
       .match-meta {
         display: flex;
@@ -202,6 +236,77 @@ export class MatchDetailPage extends LitElement {
         background: var(--header-bg);
         padding: 6px 12px;
         border-radius: 8px;
+      }
+
+      .table-comparison {
+        max-width: 720px;
+        margin: 16px auto 0;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: stretch;
+        gap: 12px;
+        background: var(--header-bg);
+        border-radius: 12px;
+      }
+
+      .table-comparison-team {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .table-comparison-team.local {
+        align-items: flex-end;
+        text-align: right;
+      }
+
+      .table-comparison-team.visitor {
+        align-items: flex-start;
+      }
+
+      .table-team-name {
+        max-width: 100%;
+        color: var(--md-sys-color-on-surface);
+        font-size: 0.95rem;
+        font-weight: 800;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .table-team-record {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .table-comparison-team.local .table-team-record {
+        justify-content: flex-end;
+      }
+
+      .table-stat {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .table-stat.strong {
+        color: var(--md-sys-color-primary);
+        font-size: 0.86rem;
+        font-weight: 900;
+      }
+
+      .table-comparison-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
       }
 
       /* Modo Edición */
@@ -286,17 +391,37 @@ export class MatchDetailPage extends LitElement {
           align-items: center;
           gap: 8px;
         }
+        .table-comparison {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .table-comparison-label {
+          order: -1;
+        }
+        .table-comparison-team,
+        .table-comparison-team.local,
+        .table-comparison-team.visitor {
+          align-items: center;
+          text-align: center;
+        }
+        .table-team-record,
+        .table-comparison-team.local .table-team-record {
+          justify-content: center;
+        }
       }
     `,
   ];
 
   @property({ type: Object }) match: Match | null = null;
+  @property({ type: Array }) matchesList: Match[] = [];
+  @property({ type: Array }) table: TableEntry[] = [];
   @property({ type: Object }) players: PlayerTeam = new Map();
   @property({ type: Array }) teams: string[] = [];
   @property({ type: Array }) stadiums: string[] = [];
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
+  @state() selectedTeam: string | null = null;
   @query('#halftimeMinuteInput') halftimeMinuteInput!: MdFilledTextField;
 
   // --- VARIABLES PARA EL GESTO DE DESLIZAR ---
@@ -366,13 +491,44 @@ export class MatchDetailPage extends LitElement {
         Cargando detalles del partido...
       </p>`;
     }
+
+    if (this.selectedTeam) {
+      const selectedTeamData = this._getTeamData(this.selectedTeam);
+      if (selectedTeamData) {
+        return html`
+          <team-page
+            .team=${selectedTeamData.team}
+            .teamPosition=${selectedTeamData.position}
+            .players=${this.players.get(
+              this.selectedTeam.replaceAll('.', ''),
+            ) || []}
+            .matchesList=${this._getTeamMatches(this.selectedTeam)}
+            @back=${this._backToMatchDetail}
+          ></team-page>
+        `;
+      }
+      this.selectedTeam = null;
+    }
+
     this._updatePlayerLists();
 
     const { local, visitante, fecha, hora, estadio, golLocal, golVisitante } =
       this.match;
+    const aggregateScore = getAggregateScoreForSecondLeg(
+      this.match,
+      this.matchesList,
+    );
+    const tableComparison = this._getRegularSeasonTableComparison();
     const isPlayed = getPhaseEvents(this.match.events).some(
       e => e.phase === 'start',
     );
+
+    const tableComparisonTemplate = tableComparison
+      ? this._renderTableComparison(
+          tableComparison.local,
+          tableComparison.visitor,
+        )
+      : '';
 
     return html`
       <div class="desktop-back-button">
@@ -415,7 +571,14 @@ export class MatchDetailPage extends LitElement {
         </div>
 
         <div class="duel-container">
-          <div class="team-side">
+          <div
+            class="team-side"
+            role="button"
+            tabindex="0"
+            @click=${() => this._showTeamPage(local)}
+            @keydown=${(event: KeyboardEvent) =>
+              this._handleTeamSideKeydown(event, local)}
+          >
             ${getTeamImage(local)}
             <span class="team-name">${local}</span>
           </div>
@@ -431,9 +594,21 @@ export class MatchDetailPage extends LitElement {
                 >
                   VS
                 </div>`}
+            ${aggregateScore
+              ? html`<div class="aggregate-score">
+                  Global ${aggregateScore.local} - ${aggregateScore.visitante}
+                </div>`
+              : ''}
           </div>
 
-          <div class="team-side">
+          <div
+            class="team-side"
+            role="button"
+            tabindex="0"
+            @click=${() => this._showTeamPage(visitante)}
+            @keydown=${(event: KeyboardEvent) =>
+              this._handleTeamSideKeydown(event, visitante)}
+          >
             ${getTeamImage(visitante)}
             <span class="team-name">${visitante}</span>
           </div>
@@ -481,6 +656,7 @@ export class MatchDetailPage extends LitElement {
                   <md-icon style="font-size: 18px">stadium</md-icon> ${estadio}
                 </div>
               </div>
+              ${tableComparisonTemplate}
             `}
       </section>
 
@@ -518,7 +694,107 @@ export class MatchDetailPage extends LitElement {
     `;
   }
 
+  private _getRegularSeasonTableComparison(): {
+    local: TeamTableComparison;
+    visitor: TeamTableComparison;
+  } | null {
+    if (!this.match || this.match.jornada > REGULAR_SEASON_LAST_JORNADA) {
+      return null;
+    }
+
+    const localIndex = this.table.findIndex(
+      team => team.equipo === this.match?.local,
+    );
+    const visitorIndex = this.table.findIndex(
+      team => team.equipo === this.match?.visitante,
+    );
+
+    if (localIndex < 0 || visitorIndex < 0) {
+      return null;
+    }
+
+    return {
+      local: {
+        team: this.table[localIndex],
+        position: localIndex + 1,
+      },
+      visitor: {
+        team: this.table[visitorIndex],
+        position: visitorIndex + 1,
+      },
+    };
+  }
+
+  private _renderTableComparison(
+    local: TeamTableComparison,
+    visitor: TeamTableComparison,
+  ) {
+    return html`
+      <div class="table-comparison" aria-label="Comparación en tabla general">
+        ${this._renderTableComparisonTeam(local, 'local')}
+        <div class="table-comparison-label">Tabla</div>
+        ${this._renderTableComparisonTeam(visitor, 'visitor')}
+      </div>
+    `;
+  }
+
+  private _renderTableComparisonTeam(
+    comparison: TeamTableComparison,
+    side: 'local' | 'visitor',
+  ) {
+    const { team, position } = comparison;
+    return html`
+      <div class="table-comparison-team ${side}">
+        <div class="table-team-name">${team.equipo}</div>
+        <div class="table-team-record">
+          <span class="table-stat strong">#${position}</span>
+          <span class="table-stat strong">${team.pts} PTS</span>
+          <span class="table-stat">JJ ${team.jj}</span>
+          <span class="table-stat">DG ${team.dg}</span>
+          <span class="table-stat">${team.jg}-${team.je}-${team.jp}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private _getTeamData(teamName: string): TeamTableComparison | null {
+    const teamIndex = this.table.findIndex(team => team.equipo === teamName);
+    if (teamIndex < 0) return null;
+
+    return {
+      team: this.table[teamIndex],
+      position: teamIndex + 1,
+    };
+  }
+
+  private _getTeamMatches(teamName: string): Match[] {
+    return this.matchesList.filter(
+      match => match.local === teamName || match.visitante === teamName,
+    );
+  }
+
+  private _showTeamPage(teamName: string) {
+    if (!this._getTeamData(teamName)) return;
+    this.selectedTeam = teamName;
+    window.scrollTo(0, 0);
+  }
+
+  private _backToMatchDetail = () => {
+    this.selectedTeam = null;
+  };
+
+  private _handleTeamSideKeydown(event: KeyboardEvent, teamName: string) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this._showTeamPage(teamName);
+  }
+
   private _goBack() {
+    if (this.selectedTeam) {
+      this._backToMatchDetail();
+      return;
+    }
+
     this.classList.add('closing');
     setTimeout(() => {
       this.dispatchEvent(

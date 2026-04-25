@@ -10,7 +10,77 @@ import {
   PhaseMatchEvent,
   SubstitutionMatchEvent,
   TeamSide,
+  Match,
 } from '../types';
+import { LIGUILLA } from './constants.js';
+
+export interface AggregateScore {
+  local: number;
+  visitante: number;
+}
+
+const PLAYOFF_SERIES = [
+  LIGUILLA.quarter1,
+  LIGUILLA.quarter2,
+  LIGUILLA.quarter3,
+  LIGUILLA.quarter4,
+  LIGUILLA.semi1,
+  LIGUILLA.semi2,
+  LIGUILLA.final,
+];
+
+function hasAvailableScore(match: Match): boolean {
+  return (
+    typeof match.golLocal === 'number' &&
+    Number.isFinite(match.golLocal) &&
+    typeof match.golVisitante === 'number' &&
+    Number.isFinite(match.golVisitante)
+  );
+}
+
+function hasTeams(match: Match): boolean {
+  return match.local.trim() !== '' && match.visitante.trim() !== '';
+}
+
+export function getAggregateScoreForSecondLeg(
+  match: Match,
+  matches: Match[],
+): AggregateScore | null {
+  const series = PLAYOFF_SERIES.find(
+    playoffSeries => playoffSeries.vuelta.id === match.idMatch,
+  );
+
+  if (!series || !hasTeams(match) || !hasAvailableScore(match)) return null;
+
+  const firstLeg = matches.find(
+    candidate => candidate.idMatch === series.ida.id,
+  );
+
+  if (!firstLeg || !hasTeams(firstLeg) || !hasAvailableScore(firstLeg)) {
+    return null;
+  }
+
+  const secondLegTeams = new Set([match.local, match.visitante]);
+  if (
+    !secondLegTeams.has(firstLeg.local) ||
+    !secondLegTeams.has(firstLeg.visitante)
+  ) {
+    return null;
+  }
+
+  const aggregate: Record<string, number> = {
+    [firstLeg.local]: firstLeg.golLocal,
+    [firstLeg.visitante]: firstLeg.golVisitante,
+  };
+
+  aggregate[match.local] += match.golLocal;
+  aggregate[match.visitante] += match.golVisitante;
+
+  return {
+    local: aggregate[match.local],
+    visitante: aggregate[match.visitante],
+  };
+}
 
 export function dispatchEventMatchUpdated(
   detail: FirebaseUpdates,

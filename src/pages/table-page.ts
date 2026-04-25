@@ -327,6 +327,9 @@ export class TablePage extends LitElement {
       return html`
         <team-page
           .team=${this.table.find(t => t.equipo === this.selectedTeam)!}
+          .teamPosition=${this.table.findIndex(
+            t => t.equipo === this.selectedTeam,
+          ) + 1}
           .players=${this.players.get(this.selectedTeam.replaceAll('.', ''))!}
           .matchesList=${this.matchesList.filter(
             m =>

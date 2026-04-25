@@ -97,6 +97,12 @@ export class TeamPage extends LitElement {
         padding: 16px;
         border-radius: 16px;
       }
+      .team-heading {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
       .header-container img {
         width: 64px;
         height: 64px;
@@ -106,6 +112,22 @@ export class TeamPage extends LitElement {
         margin: 0;
         font-size: 1.8rem;
         color: var(--md-sys-color-on-surface);
+      }
+      .team-table-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .team-table-stat {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .team-table-stat.strong {
+        color: var(--md-sys-color-primary);
+        font-size: 0.9rem;
+        font-weight: 900;
       }
 
       .players-grid {
@@ -408,10 +430,20 @@ export class TeamPage extends LitElement {
           grid-column: 1 / -1;
         }
       }
+      @media (max-width: 600px) {
+        .header-container {
+          align-items: flex-start;
+        }
+        .header-container h1 {
+          font-size: 1.35rem;
+          line-height: 1.15;
+        }
+      }
     `,
   ];
 
   @property({ type: Object }) team!: TableEntry;
+  @property({ type: Number }) teamPosition = 0;
   @property({ type: Array }) players!: Player[];
   @property({ type: Array }) matchesList!: Match[];
 
@@ -441,7 +473,22 @@ export class TeamPage extends LitElement {
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
           ${getTeamImage(this.team.equipo)}
-          <h1>${this.team.equipo}</h1>
+          <div class="team-heading">
+            <h1>${this.team.equipo}</h1>
+            <div class="team-table-summary">
+              ${this.teamPosition > 0
+                ? html`<span class="team-table-stat strong"
+                    >#${this.teamPosition}</span
+                  >`
+                : ''}
+              <span class="team-table-stat strong">${this.team.pts} PTS</span>
+              <span class="team-table-stat">JJ ${this.team.jj}</span>
+              <span class="team-table-stat">DG ${this.team.dg}</span>
+              <span class="team-table-stat"
+                >${this.team.jg}-${this.team.je}-${this.team.jp}</span
+              >
+            </div>
+          </div>
         </div>
 
         <div class="players-grid">

@@ -246,6 +246,7 @@ export class LigaMxHrlv extends LitElement {
         return html`
           <matches-page
             .matchesList="${this.matchesList}"
+            .table="${this.table}"
             .teams="${this.teams}"
             .stadiums="${this.stadiums}"
             .players="${this.players}"
