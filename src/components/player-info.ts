@@ -108,9 +108,10 @@ export class PlayerInfo extends LitElement {
                   class="player-photo"
                   src="${imageSrc}"
                   alt="Photo of ${this.player.name}"
+                  title="${this.player.fullName}"
                 />
               `
-            : html` <md-icon>person</md-icon>`}
+            : html` <md-icon title="${this.player.fullName}">person</md-icon>`}
           ${isU23 ? html`<span class="u23-badge">U23</span>` : null}
         </div>
         <div class="player-details">
