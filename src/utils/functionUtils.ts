@@ -11,12 +11,27 @@ import {
   SubstitutionMatchEvent,
   TeamSide,
   Match,
+  TableEntry,
 } from '../types';
 import { LIGUILLA } from './constants.js';
 
 export interface AggregateScore {
   local: number;
   visitante: number;
+}
+
+export interface PlayoffSeriesConfig {
+  ida: {
+    id: number;
+  };
+  vuelta: {
+    id: number;
+  };
+}
+
+export interface PlayoffSeriesResult {
+  aggregate: Record<string, number>;
+  winner: string | null;
 }
 
 const PLAYOFF_SERIES = [
@@ -80,6 +95,74 @@ export function getAggregateScoreForSecondLeg(
     local: aggregate[match.local],
     visitante: aggregate[match.visitante],
   };
+}
+
+export function getPlayoffSeriesMatches(
+  series: PlayoffSeriesConfig,
+  matches: Match[],
+): { ida: Match | null; vuelta: Match | null } {
+  return {
+    ida: matches.find(candidate => candidate.idMatch === series.ida.id) || null,
+    vuelta:
+      matches.find(candidate => candidate.idMatch === series.vuelta.id) || null,
+  };
+}
+
+export function getPlayoffSeriesResult(
+  series: PlayoffSeriesConfig,
+  matches: Match[],
+  table: TableEntry[],
+): PlayoffSeriesResult | null {
+  const { ida, vuelta } = getPlayoffSeriesMatches(series, matches);
+
+  if (
+    !ida ||
+    !vuelta ||
+    !hasTeams(ida) ||
+    !hasTeams(vuelta) ||
+    !hasAvailableScore(ida) ||
+    !hasAvailableScore(vuelta)
+  ) {
+    return null;
+  }
+
+  const secondLegTeams = new Set([vuelta.local, vuelta.visitante]);
+  if (!secondLegTeams.has(ida.local) || !secondLegTeams.has(ida.visitante)) {
+    return null;
+  }
+
+  const aggregate: Record<string, number> = {
+    [ida.local]: ida.golLocal,
+    [ida.visitante]: ida.golVisitante,
+  };
+
+  aggregate[vuelta.local] += vuelta.golLocal;
+  aggregate[vuelta.visitante] += vuelta.golVisitante;
+
+  let winner: string;
+  if (aggregate[vuelta.local] > aggregate[vuelta.visitante]) {
+    winner = vuelta.local;
+  } else if (aggregate[vuelta.visitante] > aggregate[vuelta.local]) {
+    winner = vuelta.visitante;
+  } else {
+    winner = getBestSeededTeam(vuelta.local, vuelta.visitante, table);
+  }
+
+  return { aggregate, winner };
+}
+
+function getBestSeededTeam(
+  firstTeam: string,
+  secondTeam: string,
+  table: TableEntry[],
+): string {
+  const firstIndex = table.findIndex(team => team.equipo === firstTeam);
+  const secondIndex = table.findIndex(team => team.equipo === secondTeam);
+
+  if (firstIndex === -1 && secondIndex === -1) return firstTeam;
+  if (firstIndex === -1) return secondTeam;
+  if (secondIndex === -1) return firstTeam;
+  return firstIndex <= secondIndex ? firstTeam : secondTeam;
 }
 
 export function dispatchEventMatchUpdated(

@@ -15,6 +15,7 @@ import { MdDialog } from '@material/web/dialog/dialog.js';
 // Styles and components
 import '../pages/login-page.js';
 import '../pages/matches-page.js';
+import '../pages/bracket-page.js';
 import '../pages/table-page.js';
 import '../pages/stats-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
@@ -178,6 +179,10 @@ export class LigaMxHrlv extends LitElement {
                   <md-icon slot="icon">format_list_numbered</md-icon>
                   Tabla
                 </md-primary-tab>
+                <md-primary-tab aria-label="Liguilla">
+                  <md-icon slot="icon">account_tree</md-icon>
+                  Liguilla
+                </md-primary-tab>
                 <md-primary-tab aria-label="Estadísticas">
                   <md-icon slot="icon">bar_chart</md-icon>
                   Estadísticas
@@ -263,6 +268,17 @@ export class LigaMxHrlv extends LitElement {
             @edit-match="${this._editMatch}"
           ></table-page>
         `;
+      case 'Liguilla':
+        return html`
+          <bracket-page
+            .matchesList=${this.matchesList}
+            .table=${this.table}
+            .teams=${this.teams}
+            .stadiums=${this.stadiums}
+            .players=${this.players}
+            @edit-match=${this._editMatch}
+          ></bracket-page>
+        `;
       case 'Estadísticas':
         return html`
           <stats-page
@@ -311,8 +327,10 @@ export class LigaMxHrlv extends LitElement {
         return 0;
       case 'Tabla General':
         return 1;
-      case 'Estadísticas':
+      case 'Liguilla':
         return 2;
+      case 'Estadísticas':
+        return 3;
       default:
         return 0;
     }
@@ -321,7 +339,12 @@ export class LigaMxHrlv extends LitElement {
   private _onTabsChange(e: Event) {
     const tabs = e.target as MdTabs;
     const index = tabs.activeTabIndex ?? 0;
-    const tabNames = ['Calendario', 'Tabla General', 'Estadísticas'];
+    const tabNames = [
+      'Calendario',
+      'Tabla General',
+      'Liguilla',
+      'Estadísticas',
+    ];
     const next = tabNames[index] || 'Calendario';
     if (this.selectedTab !== next) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
