@@ -114,6 +114,17 @@ function createPlayoffMatches(
   matches: Match[],
 ): FirebaseUpdates {
   const update: FirebaseUpdates = {};
+  const idaMatch = matches.find(x => x.idMatch === playoffMatch.ida.id);
+  const vueltaMatch = matches.find(x => x.idMatch === playoffMatch.vuelta.id);
+  const idaDefaultStadium = getEstadio(
+    quarters[playoffMatch.visitante].equipo,
+    matches,
+  );
+  const vueltaDefaultStadium = getEstadio(
+    quarters[playoffMatch.local].equipo,
+    matches,
+  );
+
   update[`/matches/${playoffMatch.ida.id}/local`] =
     quarters[playoffMatch.visitante].equipo;
   update[`/matches/${playoffMatch.ida.id}/visitante`] =
@@ -122,14 +133,10 @@ function createPlayoffMatches(
     quarters[playoffMatch.local].equipo;
   update[`/matches/${playoffMatch.vuelta.id}/visitante`] =
     quarters[playoffMatch.visitante].equipo;
-  update[`/matches/${playoffMatch.ida.id}/estadio`] = getEstadio(
-    quarters[playoffMatch.visitante].equipo,
-    matches,
-  );
-  update[`/matches/${playoffMatch.vuelta.id}/estadio`] = getEstadio(
-    quarters[playoffMatch.local].equipo,
-    matches,
-  );
+  update[`/matches/${playoffMatch.ida.id}/estadio`] =
+    idaMatch?.estadio || idaDefaultStadium;
+  update[`/matches/${playoffMatch.vuelta.id}/estadio`] =
+    vueltaMatch?.estadio || vueltaDefaultStadium;
   return update;
 }
 
