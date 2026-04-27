@@ -636,12 +636,8 @@ export class MatchDetailPage extends LitElement {
                 >
                   ${this.stadiums.map(
                     stadium =>
-                      html`<md-select-option
-                        value="${stadium}"
-                        ?selected=${stadium === estadio}
-                      >
-                        <div slot="headline">${stadium}</div>
-                      </md-select-option
+                      html`<md-select-option value=${stadium}
+                        >${stadium}</md-select-option
                       >`,
                   )}
                 </md-filled-select>
@@ -824,17 +820,9 @@ export class MatchDetailPage extends LitElement {
       fechaInput.value,
     );
     updates[`/matches/${this.match.idMatch}/hora`] = horaInput.value;
-    updates[`/matches/${this.match.idMatch}/estadio`] =
-      this._getStadiumSelectValue(estadioSelect);
+    updates[`/matches/${this.match.idMatch}/estadio`] = estadioSelect.value;
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
     this.isEditing = false;
-  }
-
-  private _getStadiumSelectValue(estadioSelect: MdFilledSelect): string {
-    if (estadioSelect.value) return estadioSelect.value;
-    const selectedOption = estadioSelect.selectedOptions?.[0];
-    if (!selectedOption) return this.match?.estadio || '';
-    return selectedOption.value || selectedOption.textContent?.trim() || '';
   }
 
   private renderPhaseButton() {
