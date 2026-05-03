@@ -14,6 +14,7 @@ import { MdDialog } from '@material/web/dialog/dialog.js';
 
 // Styles and components
 import '../pages/login-page.js';
+import '../pages/home-page.js';
 import '../pages/matches-page.js';
 import '../pages/bracket-page.js';
 import '../pages/table-page.js';
@@ -171,6 +172,10 @@ export class LigaMxHrlv extends LitElement {
                 .activeTabIndex=${this._getTabIndex(this.selectedTab)}
                 @change=${this._onTabsChange}
               >
+                <md-primary-tab aria-label="Inicio">
+                  <md-icon slot="icon">home</md-icon>
+                  Inicio
+                </md-primary-tab>
                 <md-primary-tab aria-label="Calendario">
                   <md-icon slot="icon">calendar_month</md-icon>
                   Calendario
@@ -247,6 +252,18 @@ export class LigaMxHrlv extends LitElement {
             @login-success="${this.loginSuccess}"
           ></login-page>
         `;
+      case 'Inicio':
+        return html`
+          <home-page
+            .matchesList=${this.matchesList}
+            .table=${this.table}
+            .teams=${this.teams}
+            .players=${this.players}
+            .navigateToTab=${(tab: string) => this._selectTab(tab)}
+            @navigate-tab=${(event: CustomEvent<{ tab: string }>) =>
+              this._navigateToTab(event)}
+          ></home-page>
+        `;
       case 'Calendario':
         return html`
           <matches-page
@@ -293,7 +310,7 @@ export class LigaMxHrlv extends LitElement {
   }
 
   private loginSuccess(e: CustomEvent<{ user: User }>) {
-    this.selectedTab = 'Calendario';
+    this.selectedTab = 'Inicio';
     this.user = e.detail.user;
     this._unsubscribeMatches = fetchMatches((matches: Match[]) => {
       this.matchesList = matches;
@@ -323,16 +340,29 @@ export class LigaMxHrlv extends LitElement {
 
   private _getTabIndex(tab: string): number {
     switch (tab) {
-      case 'Calendario':
+      case 'Inicio':
         return 0;
-      case 'Tabla General':
+      case 'Calendario':
         return 1;
-      case 'Liguilla':
+      case 'Tabla General':
         return 2;
-      case 'Estadísticas':
+      case 'Liguilla':
         return 3;
+      case 'Estadísticas':
+        return 4;
       default:
         return 0;
+    }
+  }
+
+  private _navigateToTab(e: CustomEvent<{ tab: string }>) {
+    this._selectTab(e.detail.tab);
+  }
+
+  private _selectTab(tab: string) {
+    if (this.selectedTab !== tab) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      this.selectedTab = tab;
     }
   }
 
@@ -340,6 +370,7 @@ export class LigaMxHrlv extends LitElement {
     const tabs = e.target as MdTabs;
     const index = tabs.activeTabIndex ?? 0;
     const tabNames = [
+      'Inicio',
       'Calendario',
       'Tabla General',
       'Liguilla',
