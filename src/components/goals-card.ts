@@ -265,6 +265,7 @@ export class GoalsCard extends LitElement {
   @property({ type: Array }) localPlayers: Player[] = [];
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
+  @property({ type: Boolean }) isAdmin = false;
 
   @state() goalTeam: TeamSideOptional = '';
   @state() disableAddGoalButton = true;
@@ -361,12 +362,14 @@ export class GoalsCard extends LitElement {
           </div>
         </div>
 
-        <div class="add-goal-section">
-          <div class="add-goal-header">
-            <md-icon>add_circle</md-icon> Registrar Nuevo Gol
-          </div>
+        ${this.isAdmin
+          ? html`
+              <div class="add-goal-section">
+                <div class="add-goal-header">
+                  <md-icon>add_circle</md-icon> Registrar Nuevo Gol
+                </div>
 
-          <div class="add-goal-form">
+                <div class="add-goal-form">
             <div class="radio-group full-width">
               <label
                 ><md-radio
@@ -478,14 +481,18 @@ export class GoalsCard extends LitElement {
               @click=${this._addGoal}
             >
               <md-icon slot="icon">add</md-icon> Agregar
-            </md-filled-button>
-          </div>
-        </div>
+                  </md-filled-button>
+                </div>
+              </div>
+            `
+          : null}
       </div>
 
-      <md-dialog id="editGoalDialog" type="modal">
-        <div slot="headline">Editar gol</div>
-        <div slot="content" class="dialog-form">
+      ${this.isAdmin
+        ? html`
+            <md-dialog id="editGoalDialog" type="modal">
+              <div slot="headline">Editar gol</div>
+              <div slot="content" class="dialog-form">
           <div class="radio-group full-width" style="margin-bottom: 8px;">
             <label
               ><md-radio
@@ -603,8 +610,10 @@ export class GoalsCard extends LitElement {
             ?disabled=${this.disableSaveEditedGoal}
             >Guardar</md-filled-button
           >
-        </div>
-      </md-dialog>
+              </div>
+            </md-dialog>
+          `
+        : null}
     `;
   }
 
@@ -659,18 +668,22 @@ export class GoalsCard extends LitElement {
           </div>
         </div>
 
-        <div class="goal-actions">
-          <md-icon-button
-            @click=${() => this._openEditGoal(goal, index)}
-            title="Editar"
-            ><md-icon class="edit-btn">edit</md-icon></md-icon-button
-          >
-          <md-icon-button
-            @click=${() => this._deleteGoal(index)}
-            title="Eliminar"
-            ><md-icon class="delete-btn">delete</md-icon></md-icon-button
-          >
-        </div>
+        ${this.isAdmin
+          ? html`
+              <div class="goal-actions">
+                <md-icon-button
+                  @click=${() => this._openEditGoal(goal, index)}
+                  title="Editar"
+                  ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+                >
+                <md-icon-button
+                  @click=${() => this._deleteGoal(index)}
+                  title="Eliminar"
+                  ><md-icon class="delete-btn">delete</md-icon></md-icon-button
+                >
+              </div>
+            `
+          : null}
       </div>
     `;
   }
@@ -699,6 +712,7 @@ export class GoalsCard extends LitElement {
   }
 
   private _addGoal() {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     if (!this._hasMatchStarted()) {
       globalThis.alert(
@@ -835,6 +849,7 @@ export class GoalsCard extends LitElement {
   }
 
   private async _openEditGoal(goal: GoalMatchEvent, index: number) {
+    if (!this.isAdmin) return;
     this.editingGoalIndex = index;
     this.editingGoalId = goal.id;
     const teamForPlayers = this._resolvePlayerTeam(goal.team, !!goal.ownGoal);
@@ -925,6 +940,7 @@ export class GoalsCard extends LitElement {
   }
 
   private _saveEditedGoal() {
+    if (!this.isAdmin) return;
     if (!this.editingGoalId || !this.match) return;
     const goalToEdit = getGoalEvents(this.match.events || []).find(
       goal => goal.id === this.editingGoalId,
@@ -974,6 +990,7 @@ export class GoalsCard extends LitElement {
   }
 
   private _deleteGoal(index: number) {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const confirmed = globalThis.confirm(
       '¿Seguro que deseas eliminar este gol?',

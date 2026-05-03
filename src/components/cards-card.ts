@@ -263,6 +263,7 @@ export class CardsCard extends LitElement {
   @property({ type: Array }) localPlayers: Player[] = [];
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
+  @property({ type: Boolean }) isAdmin = false;
 
   @query('#cardPlayer') cardPlayerSelect!: MdOutlinedSelect;
   @query('#cardMinute') cardMinuteInput!: MdFilledTextField;
@@ -363,7 +364,8 @@ export class CardsCard extends LitElement {
           </div>
         </div>
 
-        <div class="add-card-section">
+        ${this.isAdmin
+          ? html`<div class="add-card-section">
           <div class="add-card-header">
             <md-icon>add_circle</md-icon> Registrar Tarjeta
           </div>
@@ -498,10 +500,12 @@ export class CardsCard extends LitElement {
               <md-icon slot="icon">warning</md-icon> Agregar Tarjeta
             </md-filled-button>
           </div>
-        </div>
+        </div>`
+          : null}
       </div>
 
-      <md-dialog id="editCardDialog" type="modal">
+      ${this.isAdmin
+        ? html`<md-dialog id="editCardDialog" type="modal">
         <div slot="headline">Editar tarjeta</div>
         <div slot="content" class="form-grid" style="margin-top: 8px;">
           <div class="radio-group full-width">
@@ -642,7 +646,8 @@ export class CardsCard extends LitElement {
             >Guardar</md-filled-button
           >
         </div>
-      </md-dialog>
+      </md-dialog>`
+        : null}
     `;
   }
 
@@ -690,18 +695,22 @@ export class CardsCard extends LitElement {
           </div>
         </div>
 
-        <div class="card-actions">
-          <md-icon-button
-            @click=${() => this._openEditCard(card, index)}
-            title="Editar"
-            ><md-icon class="edit-btn">edit</md-icon></md-icon-button
-          >
-          <md-icon-button
-            @click=${() => this._deleteCard(index)}
-            title="Eliminar"
-            ><md-icon class="delete-btn">delete</md-icon></md-icon-button
-          >
-        </div>
+        ${this.isAdmin
+          ? html`
+              <div class="card-actions">
+                <md-icon-button
+                  @click=${() => this._openEditCard(card, index)}
+                  title="Editar"
+                  ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+                >
+                <md-icon-button
+                  @click=${() => this._deleteCard(index)}
+                  title="Eliminar"
+                  ><md-icon class="delete-btn">delete</md-icon></md-icon-button
+                >
+              </div>
+            `
+          : null}
       </div>
     `;
   }
@@ -709,6 +718,7 @@ export class CardsCard extends LitElement {
   // --- Toda la lógica original sigue exactamente igual abajo de esto ---
 
   private _addCard() {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     if (!this._hasMatchStarted()) {
       globalThis.alert(
@@ -763,6 +773,7 @@ export class CardsCard extends LitElement {
   }
 
   private _openEditCard(card: CardMatchEvent, index: number) {
+    if (!this.isAdmin) return;
     this.editingCardIndex = index;
     this.editingCardId = card.id;
     this.editPlayers = this._getPlayersForTeam(card.team, card.player);
@@ -822,6 +833,7 @@ export class CardsCard extends LitElement {
   }
 
   private _saveEditedCard() {
+    if (!this.isAdmin) return;
     if (
       this.match === null ||
       this.editingCardIndex === null ||
@@ -877,6 +889,7 @@ export class CardsCard extends LitElement {
   }
 
   private _deleteCard(index: number) {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const confirmed = globalThis.confirm(
       '¿Seguro que deseas eliminar esta tarjeta?',

@@ -233,6 +233,7 @@ export class LineupsCard extends LitElement {
   @property({ type: Object }) match!: Match;
   @property({ type: Array }) localPlayers: Player[] = [];
   @property({ type: Array }) visitorPlayers: Player[] = [];
+  @property({ type: Boolean }) isAdmin = false;
 
   @query('#dialogLineups') dialogLineups!: MdDialog;
   @query('#dialogAddPlayer') dialogAddPlayer!: MdDialog;
@@ -260,6 +261,10 @@ export class LineupsCard extends LitElement {
       ? 'Ver alineaciones'
       : 'Ocultar alineaciones';
     const lineupsIcon = this.lineupsCollapsed ? 'visibility' : 'visibility_off';
+
+    if (!this.isAdmin) {
+      return this._renderReadOnlyLineups();
+    }
 
     return html`
       <div class="card">
@@ -506,6 +511,73 @@ export class LineupsCard extends LitElement {
 
   // --- LÓGICA DE COMPONENTE ---
 
+  private _renderReadOnlyLineups() {
+    const { lineupLocal, lineupVisitor, local, visitante } = this.match;
+    const localStarters = this._playersFromLineup(
+      this.localPlayers,
+      lineupLocal || [],
+    );
+    const visitorStarters = this._playersFromLineup(
+      this.visitorPlayers,
+      lineupVisitor || [],
+    );
+
+    return html`
+      <div class="card">
+        <div class="section-header">
+          <h3><md-icon>group</md-icon> Alineaciones</h3>
+        </div>
+
+        ${localStarters.length === 0 && visitorStarters.length === 0
+          ? html`
+              <p class="lineup-collapsed-hint">
+                Aún no hay alineaciones registradas.
+              </p>
+            `
+          : html`
+              <div class="lineup">
+                <div class="team-column">
+                  <div class="lineup-header">
+                    <h4>${local} (Local)</h4>
+                  </div>
+                  ${localStarters.map(
+                    player => html`
+                      <div class="player-row selected">
+                        <div class="player-info-wrapper">
+                          <player-info .player=${player}></player-info>
+                        </div>
+                      </div>
+                    `,
+                  )}
+                </div>
+
+                <div class="team-column">
+                  <div class="lineup-header">
+                    <h4>${visitante} (Visitante)</h4>
+                  </div>
+                  ${visitorStarters.map(
+                    player => html`
+                      <div class="player-row selected">
+                        <div class="player-info-wrapper">
+                          <player-info .player=${player}></player-info>
+                        </div>
+                      </div>
+                    `,
+                  )}
+                </div>
+              </div>
+            `}
+      </div>
+    `;
+  }
+
+  private _playersFromLineup(players: Player[], lineup: Match['lineupLocal']) {
+    return lineup
+      .filter(playerGame => playerGame.titular)
+      .map(playerGame => players.find(player => player.number === playerGame.number))
+      .filter((player): player is Player => Boolean(player));
+  }
+
   override updated(changedProps: Map<string, unknown>) {
     super.updated(changedProps);
     if (!changedProps.has('match') || !this.match) return;
@@ -517,6 +589,7 @@ export class LineupsCard extends LitElement {
   }
 
   private _onLineupChange(e: Event, side: TeamSide, playerId: number) {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
     const lineup = [...(this.match[key] || [])];
@@ -531,6 +604,7 @@ export class LineupsCard extends LitElement {
   }
 
   private _toggleRow(e: Event, side: TeamSide, playerNumber: number) {
+    if (!this.isAdmin) return;
     const checkboxId =
       side === 'local'
         ? `lineupLocal-${playerNumber}`
@@ -551,6 +625,7 @@ export class LineupsCard extends LitElement {
   }
 
   private _openAddPlayerDialog(side: TeamSide) {
+    if (!this.isAdmin) return;
     this.addPlayerSide = side;
     this._resetAddPlayerForm();
     this.dialogAddPlayer?.show();
@@ -589,6 +664,7 @@ export class LineupsCard extends LitElement {
   }
 
   private async _saveNewPlayer() {
+    if (!this.isAdmin) return;
     if (!this.match || !this.addPlayerSide) return;
     const name = this.newPlayerNameField?.value?.trim();
     const position = this.newPlayerPositionField?.value?.trim();
@@ -739,6 +815,7 @@ export class LineupsCard extends LitElement {
   }
 
   private updateLineups() {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const lineupLocal = this.match.lineupLocal || [];
     const lineupVisitor = this.match.lineupVisitor || [];

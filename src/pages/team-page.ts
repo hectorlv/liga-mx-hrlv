@@ -446,6 +446,7 @@ export class TeamPage extends LitElement {
   @property({ type: Number }) teamPosition = 0;
   @property({ type: Array }) players!: Player[];
   @property({ type: Array }) matchesList!: Match[];
+  @property({ type: Boolean }) isAdmin = false;
 
   @state() private playersList: PlayerStats[] = [];
   @state() private editingPlayer: PlayerStats | null = null;
@@ -536,13 +537,17 @@ export class TeamPage extends LitElement {
                   <div class="cell cell-name">${player.fullName}</div>
                   <div class="cell cell-pos">${player.position}</div>
 
-                  <md-icon-button
-                    class="mobile-edit-btn"
-                    @click=${() => this._openEditPlayer(player)}
-                    title="Editar jugador"
-                  >
-                    <md-icon>edit</md-icon>
-                  </md-icon-button>
+                  ${this.isAdmin
+                    ? html`
+                        <md-icon-button
+                          class="mobile-edit-btn"
+                          @click=${() => this._openEditPlayer(player)}
+                          title="Editar jugador"
+                        >
+                          <md-icon>edit</md-icon>
+                        </md-icon-button>
+                      `
+                    : null}
                 </div>
 
                 <div class="player-meta">
@@ -586,13 +591,17 @@ export class TeamPage extends LitElement {
                     <span class="stat-value">${player.redCards}</span>
                   </div>
 
-                  <div class="cell cell-action" style="display: none;">
-                    <md-icon-button
-                      @click=${() => this._openEditPlayer(player)}
-                      title="Editar"
-                      ><md-icon>edit</md-icon></md-icon-button
-                    >
-                  </div>
+                  ${this.isAdmin
+                    ? html`
+                        <div class="cell cell-action" style="display: none;">
+                          <md-icon-button
+                            @click=${() => this._openEditPlayer(player)}
+                            title="Editar"
+                            ><md-icon>edit</md-icon></md-icon-button
+                          >
+                        </div>
+                      `
+                    : null}
                 </div>
               </div>
             `;
@@ -600,9 +609,11 @@ export class TeamPage extends LitElement {
         </div>
       </main>
 
-      <md-dialog id="dialogEditPlayer" type="modal">
-        <div slot="headline">Editar Jugador</div>
-        <div slot="content" class="dialog-form">
+      ${this.isAdmin
+        ? html`
+            <md-dialog id="dialogEditPlayer" type="modal">
+              <div slot="headline">Editar Jugador</div>
+              <div slot="content" class="dialog-form">
           <md-filled-text-field
             label="Número de jersey"
             type="number"
@@ -724,6 +735,8 @@ export class TeamPage extends LitElement {
           >
         </div>
       </md-dialog>
+          `
+        : null}
     `;
   }
 
@@ -800,6 +813,7 @@ export class TeamPage extends LitElement {
   // --- LÓGICA DE EDICIÓN ---
 
   private _openEditPlayer(player: PlayerStats) {
+    if (!this.isAdmin) return;
     this._clearEditPastedImage();
     this.editImageError = '';
     this.editIsUploadingImage = false;
@@ -830,6 +844,7 @@ export class TeamPage extends LitElement {
   }
 
   private async _saveEditedPlayer() {
+    if (!this.isAdmin) return;
     if (!this.editingPlayer) return;
 
     const name = this.editNameField.value.trim();

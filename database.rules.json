@@ -1,10 +1,28 @@
 {
   "rules": {
-    ".read": true,
-    ".write": "root.child('allowedWriters').child(auth.uid).exists()",
+    ".read": false,
+    ".write": false,
+    "matches": {
+      ".read": true,
+      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+    },
+    "teams": {
+      ".read": true,
+      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+    },
+    "stadiums": {
+      ".read": true,
+      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+    },
+    "players": {
+      ".read": true,
+      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+    },
     "allowedWriters": {
-      ".read": false,
-      ".write": "auth != null"
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
     }
   }
 }

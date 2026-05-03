@@ -3,12 +3,14 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 
 // Firebase imports
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Auth, getAuth, User } from 'firebase/auth';
-import { Unsubscribe } from 'firebase/database';
+import { Auth, getAuth, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { getDatabase, onValue, ref, Unsubscribe } from 'firebase/database';
 
 // Material Web imports
 import '@material/web/icon/icon.js';
 import '@material/web/tabs/primary-tab.js';
+import '@material/web/button/outlined-button.js';
+import '@material/web/button/text-button.js';
 import { MdTabs } from '@material/web/tabs/tabs.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
@@ -65,12 +67,48 @@ export class LigaMxHrlv extends LitElement {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Sombra elegante */
       }
 
+      .header-content {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 12px;
+      }
+
       /* TABS CENTRADOS EN PC */
       md-tabs {
         max-width: 800px;
-        margin: 0 auto;
+        margin: 0;
         --md-primary-tab-container-color: transparent;
       }
+
+      .admin-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+
+      .admin-status {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      @media (max-width: 760px) {
+        .header-content {
+          grid-template-columns: 1fr;
+          justify-items: center;
+          padding: 8px 8px 10px;
+        }
+
+        md-tabs {
+          width: 100%;
+        }
+      }
+
 
       /* ÁREA DE CONTENIDO */
       main {
@@ -144,17 +182,21 @@ export class LigaMxHrlv extends LitElement {
   @state() stadiums: string[] = [];
   @state() players: PlayerTeam = new Map();
   @state() table: TableEntry[] = [];
-  @state() selectedTab: string = 'Login';
+  @state() selectedTab: string = 'Inicio';
   @state() titleError: string = '';
   @state() contentError: string = '';
   @state() user: User | null = null;
+  @state() isAdmin: boolean = false;
 
   @query('#dialogLiga') dialog!: MdDialog;
+  @query('#adminLoginDialog') adminLoginDialog!: MdDialog;
 
   private _unsubscribeMatches?: Unsubscribe;
   private _unsubscribeTeams?: Unsubscribe;
   private _unsubscribeStadiums?: Unsubscribe;
   private _unsubscribePlayers?: Unsubscribe;
+  private _unsubscribeAuth?: Unsubscribe;
+  private _unsubscribeAllowedWriter?: Unsubscribe;
 
   constructor() {
     super();
@@ -164,10 +206,8 @@ export class LigaMxHrlv extends LitElement {
 
   override render() {
     return html`
-      ${this.selectedTab === 'Login'
-        ? html``
-        : html`
-            <header>
+      <header>
+        <div class="header-content">
               <md-tabs
                 .activeTabIndex=${this._getTabIndex(this.selectedTab)}
                 @change=${this._onTabsChange}
@@ -193,23 +233,37 @@ export class LigaMxHrlv extends LitElement {
                   Estadísticas
                 </md-primary-tab>
               </md-tabs>
-            </header>
-          `}
+          <div class="admin-actions">
+            ${this.user
+              ? html`
+                  <span class="admin-status">
+                    ${this.isAdmin ? 'Admin' : 'Sin permisos'}
+                  </span>
+                  <md-text-button @click=${this._logout}>
+                    <md-icon slot="icon">logout</md-icon>
+                    Salir
+                  </md-text-button>
+                `
+              : html`
+                  <md-outlined-button @click=${this._openAdminLogin}>
+                    <md-icon slot="icon">admin_panel_settings</md-icon>
+                    Admin
+                  </md-outlined-button>
+                `}
+          </div>
+        </div>
+      </header>
 
       <main>${this._getTab()}</main>
 
-      ${this.selectedTab === 'Login'
-        ? ''
-        : html`
-            <md-icon
-              id="scrollTopButton"
-              class="scrollTopButton material-icons-outlined"
-              title="Volver arriba"
-              @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            >
-              arrow_upward
-            </md-icon>
-          `}
+      <md-icon
+        id="scrollTopButton"
+        class="scrollTopButton material-icons-outlined"
+        title="Volver arriba"
+        @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      >
+        arrow_upward
+      </md-icon>
 
       <p class="app-footer">
         Made with love by HRLV - <span>v${APP_VERSION}</span>
@@ -224,16 +278,33 @@ export class LigaMxHrlv extends LitElement {
           >
         </div>
       </md-dialog>
+
+      <md-dialog id="adminLoginDialog" type="modal">
+        <div slot="headline">Acceso admin</div>
+        <div slot="content">
+          <login-page
+            .auth="${this.auth}"
+            @login-success="${this.loginSuccess}"
+          ></login-page>
+        </div>
+        <div slot="actions">
+          <md-text-button @click=${() => this.adminLoginDialog.close()}
+            >Cerrar</md-text-button
+          >
+        </div>
+      </md-dialog>
     `;
   }
 
   override updated(changedProperties: PropertyValues) {
     if (
       changedProperties.has('matchesList') ||
-      changedProperties.has('teams')
+      changedProperties.has('teams') ||
+      changedProperties.has('isAdmin')
     ) {
       if (this.matchesList.length > 0 && this.teams.length > 0) {
         this.table = calculateTable(this.teams, this.matchesList);
+        if (!this.isAdmin) return;
         if (POSTSEASON_FORMAT.playInSpots > 0) {
           calculatePlayIn(this.table, this.matchesList);
         } else {
@@ -245,13 +316,6 @@ export class LigaMxHrlv extends LitElement {
 
   private _getTab() {
     switch (this.selectedTab) {
-      case 'Login':
-        return html`
-          <login-page
-            .auth="${this.auth}"
-            @login-success="${this.loginSuccess}"
-          ></login-page>
-        `;
       case 'Inicio':
         return html`
           <home-page
@@ -272,6 +336,7 @@ export class LigaMxHrlv extends LitElement {
             .teams="${this.teams}"
             .stadiums="${this.stadiums}"
             .players="${this.players}"
+            .isAdmin=${this.isAdmin}
             @edit-match="${this._editMatch}"
           ></matches-page>
         `;
@@ -282,6 +347,7 @@ export class LigaMxHrlv extends LitElement {
             .table="${this.table}"
             .teams="${this.teams}"
             .players="${this.players}"
+            .isAdmin=${this.isAdmin}
             @edit-match="${this._editMatch}"
           ></table-page>
         `;
@@ -293,6 +359,7 @@ export class LigaMxHrlv extends LitElement {
             .teams=${this.teams}
             .stadiums=${this.stadiums}
             .players=${this.players}
+            .isAdmin=${this.isAdmin}
             @edit-match=${this._editMatch}
           ></bracket-page>
         `;
@@ -309,9 +376,34 @@ export class LigaMxHrlv extends LitElement {
     }
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    this._subscribePublicData();
+    this._unsubscribeAuth = onAuthStateChanged(this.auth, user => {
+      this.user = user;
+      this._unsubscribeAllowedWriter?.();
+      this._unsubscribeAllowedWriter = undefined;
+      this.isAdmin = false;
+
+      if (!user) return;
+
+      const allowedWriterRef = ref(
+        getDatabase(this.app),
+        `/allowedWriters/${user.uid}`,
+      );
+      this._unsubscribeAllowedWriter = onValue(allowedWriterRef, snapshot => {
+        this.isAdmin = snapshot.exists();
+      });
+    });
+  }
+
   private loginSuccess(e: CustomEvent<{ user: User }>) {
-    this.selectedTab = 'Inicio';
     this.user = e.detail.user;
+    this.adminLoginDialog?.close();
+  }
+
+  private _subscribePublicData() {
+    if (this._unsubscribeMatches) return;
     this._unsubscribeMatches = fetchMatches((matches: Match[]) => {
       this.matchesList = matches;
     });
@@ -328,6 +420,8 @@ export class LigaMxHrlv extends LitElement {
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    this._unsubscribeAuth?.();
+    this._unsubscribeAllowedWriter?.();
     this._unsubscribeMatches?.();
     this._unsubscribeTeams?.();
     this._unsubscribeStadiums?.();
@@ -335,7 +429,24 @@ export class LigaMxHrlv extends LitElement {
   }
 
   private _editMatch(e: CustomEvent<Record<string, unknown>>) {
+    if (!this.isAdmin) {
+      this.titleError = 'Permiso requerido';
+      this.contentError =
+        'Debes iniciar sesión con un usuario admin para guardar cambios.';
+      this.dialog?.show();
+      return;
+    }
     saveUpdates(e.detail);
+  }
+
+  private _openAdminLogin() {
+    this.adminLoginDialog?.show();
+  }
+
+  private async _logout() {
+    await signOut(this.auth);
+    this.isAdmin = false;
+    this.user = null;
   }
 
   private _getTabIndex(tab: string): number {
