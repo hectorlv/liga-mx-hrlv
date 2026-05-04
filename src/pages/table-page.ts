@@ -319,6 +319,7 @@ export class TablePage extends LitElement {
   @property({ type: Array }) teams!: string[];
   @property({ type: Object }) players!: PlayerTeam;
   @property({ type: Array }) matchesList!: Match[];
+  @property({ type: Boolean }) isAdmin = false;
 
   @state() private selectedTeam: string | null = null;
 
@@ -336,6 +337,7 @@ export class TablePage extends LitElement {
               m.local === this.selectedTeam ||
               m.visitante === this.selectedTeam,
           )}
+          .isAdmin=${this.isAdmin}
           @back=${() => (this.selectedTeam = null)}
         ></team-page>
       `;

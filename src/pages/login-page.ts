@@ -23,7 +23,7 @@ export class LoginPage extends LitElement {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 80vh; /* Ocupa casi toda la altura visible */
+        min-height: auto;
         box-sizing: border-box;
         padding: 24px;
         --md-sys-color-surface: #ffffff;

@@ -249,6 +249,7 @@ export class SubstitutionsCard extends LitElement {
   @property({ type: Array }) localPlayers: Player[] = [];
   @property({ type: Array }) visitorPlayers: Player[] = [];
   @property({ type: Object }) match: Match | null = null;
+  @property({ type: Boolean }) isAdmin = false;
 
   @query('#subOut') subOutSelect!: MdOutlinedSelect;
   @query('#subIn') subInSelect!: MdOutlinedSelect;
@@ -339,7 +340,8 @@ export class SubstitutionsCard extends LitElement {
           </div>
         </div>
 
-        <div class="add-sub-section">
+        ${this.isAdmin
+          ? html`<div class="add-sub-section">
           <div class="add-sub-header">
             <md-icon>add_circle</md-icon> Registrar Cambio
           </div>
@@ -430,10 +432,12 @@ export class SubstitutionsCard extends LitElement {
               <md-icon slot="icon">swap_horiz</md-icon> Agregar
             </md-filled-button>
           </div>
-        </div>
+        </div>`
+          : null}
       </div>
 
-      <md-dialog id="editSubDialog" type="modal">
+      ${this.isAdmin
+        ? html`<md-dialog id="editSubDialog" type="modal">
         <div slot="headline">Editar cambio</div>
         <div slot="content" class="form-grid" style="margin-top: 8px;">
           <div class="radio-group full-width">
@@ -520,7 +524,8 @@ export class SubstitutionsCard extends LitElement {
             >Guardar</md-filled-button
           >
         </div>
-      </md-dialog>
+      </md-dialog>`
+        : null}
     `;
   }
 
@@ -565,23 +570,28 @@ export class SubstitutionsCard extends LitElement {
           </div>
         </div>
 
-        <div class="sub-actions">
-          <md-icon-button
-            @click=${() => this._openEditSub(sub, index)}
-            title="Editar"
-            ><md-icon class="edit-btn">edit</md-icon></md-icon-button
-          >
-          <md-icon-button
-            @click=${() => this._deleteSub(index)}
-            title="Eliminar"
-            ><md-icon class="delete-btn">delete</md-icon></md-icon-button
-          >
-        </div>
+        ${this.isAdmin
+          ? html`
+              <div class="sub-actions">
+                <md-icon-button
+                  @click=${() => this._openEditSub(sub, index)}
+                  title="Editar"
+                  ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+                >
+                <md-icon-button
+                  @click=${() => this._deleteSub(index)}
+                  title="Eliminar"
+                  ><md-icon class="delete-btn">delete</md-icon></md-icon-button
+                >
+              </div>
+            `
+          : null}
       </div>
     `;
   }
 
   private _addSub() {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     if (!this._hasMatchStarted()) {
       globalThis.alert(
@@ -713,6 +723,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _openEditSub(sub: SubstitutionMatchEvent, index: number) {
+    if (!this.isAdmin) return;
     this.editingSubIndex = index;
     this.editingSubId = sub.id;
     this.editOutPlayers = this._getPlayersForOut(sub.team, sub.playerOut);
@@ -810,6 +821,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _saveEditedSub() {
+    if (!this.isAdmin) return;
     if (this.match === null || !this.editingSubId) return;
     const subToEdit = getSubstitutionEvents(this.match?.events || []).find(
       sub => sub.id === this.editingSubId,
@@ -852,6 +864,7 @@ export class SubstitutionsCard extends LitElement {
   }
 
   private _deleteSub(index: number) {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const confirmed = globalThis.confirm(
       '¿Seguro que deseas eliminar este cambio?',

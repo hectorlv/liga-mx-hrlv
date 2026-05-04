@@ -418,6 +418,7 @@ export class MatchDetailPage extends LitElement {
   @property({ type: Object }) players: PlayerTeam = new Map();
   @property({ type: Array }) teams: string[] = [];
   @property({ type: Array }) stadiums: string[] = [];
+  @property({ type: Boolean }) isAdmin = false;
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
@@ -503,6 +504,7 @@ export class MatchDetailPage extends LitElement {
               this.selectedTeam.replaceAll('.', ''),
             ) || []}
             .matchesList=${this._getTeamMatches(this.selectedTeam)}
+            .isAdmin=${this.isAdmin}
             @back=${this._backToMatchDetail}
           ></team-page>
         `;
@@ -548,8 +550,8 @@ export class MatchDetailPage extends LitElement {
           </md-icon-button>
 
           <div class="action-buttons">
-            ${this.renderPhaseButton()}
-            ${this.isEditing
+            ${this.isAdmin ? this.renderPhaseButton() : null}
+            ${this.isAdmin && this.isEditing
               ? html`
                   <md-icon-button @click=${this.editMatchInfo} title="Guardar"
                     ><md-icon>save</md-icon></md-icon-button
@@ -560,13 +562,15 @@ export class MatchDetailPage extends LitElement {
                     ><md-icon>cancel</md-icon></md-icon-button
                   >
                 `
-              : html`
+              : this.isAdmin
+                ? html`
                   <md-icon-button
                     @click=${() => (this.isEditing = true)}
                     title="Editar información"
                     ><md-icon>edit</md-icon></md-icon-button
                   >
-                `}
+                `
+                : null}
           </div>
         </div>
 
@@ -675,24 +679,28 @@ export class MatchDetailPage extends LitElement {
           .match=${this.match}
           .localPlayers=${this.localPlayers}
           .visitorPlayers=${this.visitorPlayers}
+          .isAdmin=${this.isAdmin}
         ></lineups-card>
 
         <goals-card
           .match=${this.match}
           .localPlayers=${this.localPlayers}
           .visitorPlayers=${this.visitorPlayers}
+          .isAdmin=${this.isAdmin}
         ></goals-card>
 
         <cards-card
           .match=${this.match}
           .localPlayers=${this.localPlayers}
           .visitorPlayers=${this.visitorPlayers}
+          .isAdmin=${this.isAdmin}
         ></cards-card>
 
         <substitutions-card
           .match=${this.match}
           .localPlayers=${this.localPlayers}
           .visitorPlayers=${this.visitorPlayers}
+          .isAdmin=${this.isAdmin}
         ></substitutions-card>
       </div>
     `;
@@ -808,6 +816,7 @@ export class MatchDetailPage extends LitElement {
   }
 
   private editMatchInfo() {
+    if (!this.isAdmin) return;
     if (!this.match) return;
 
     const fechaInput = this.renderRoot.querySelector(
@@ -838,6 +847,7 @@ export class MatchDetailPage extends LitElement {
   }
 
   private renderPhaseButton() {
+    if (!this.isAdmin) return null;
     if (!this.match) return null;
     const halftimeEvent = this._getExistingPhaseEvent('halftime');
     const secondHalfEvent = this._getExistingPhaseEvent('secondHalf');
@@ -946,6 +956,7 @@ export class MatchDetailPage extends LitElement {
   }
 
   private startMatch() {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/golLocal`] = 0;
@@ -959,6 +970,7 @@ export class MatchDetailPage extends LitElement {
   }
 
   private _savePhaseEvent(phase: PhaseMatchEvent['phase']) {
+    if (!this.isAdmin) return;
     if (!this.match) return;
     const minute = this._phaseMinuteValue(phase);
     if (minute === null) return;

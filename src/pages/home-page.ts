@@ -397,7 +397,7 @@ export class HomePage extends LitElement {
           grid-template-columns: auto minmax(0, 1fr);
         }
 
-        .quick-card md-icon:last-child {
+        .quick-card > md-icon:last-child {
           display: none;
         }
       }

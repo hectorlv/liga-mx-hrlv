@@ -343,6 +343,7 @@ export class MatchesPage extends LitElement {
   @property({ type: Array }) teams: string[] = [];
   @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Array }) players: PlayerTeam[] = [];
+  @property({ type: Boolean }) isAdmin = false;
 
   @state() matchesRender: Match[] = [];
   @state() showDetails: boolean = false;
@@ -493,6 +494,7 @@ export class MatchesPage extends LitElement {
           .teams="${this.teams}"
           .players="${this.players}"
           .stadiums="${this.stadiums}"
+          .isAdmin=${this.isAdmin}
           @back-to-calendar="${this._backToCalendar}"
         ></match-detail-page>
       </main>`;
