@@ -360,6 +360,7 @@ export class LigaMxHrlv extends LitElement {
             .players=${this.players}
             .isAdmin=${this.isAdmin}
             .navigateToTab=${(tab: string) => this._selectTab(tab)}
+            @edit-match="${this._editMatch}"
             @navigate-tab=${(event: CustomEvent<{ tab: string }>) =>
               this._navigateToTab(event)}
           ></home-page>
@@ -464,7 +465,7 @@ export class LigaMxHrlv extends LitElement {
     this._unsubscribePlayers?.();
   }
 
-  private _editMatch(e: CustomEvent<Record<string, unknown>>) {
+  private async _editMatch(e: CustomEvent<Record<string, unknown>>) {
     if (!this.isAdmin) {
       this.titleError = 'Permiso requerido';
       this.contentError =
@@ -472,7 +473,16 @@ export class LigaMxHrlv extends LitElement {
       this.dialog?.show();
       return;
     }
-    saveUpdates(e.detail);
+    try {
+      await saveUpdates(e.detail);
+    } catch (error) {
+      this.titleError = 'No se guardaron los cambios';
+      this.contentError =
+        error instanceof Error
+          ? error.message
+          : 'Firebase rechazó la actualización del partido.';
+      this.dialog?.show();
+    }
   }
 
   private _openAdminLogin() {
