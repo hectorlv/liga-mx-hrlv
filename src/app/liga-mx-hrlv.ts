@@ -322,7 +322,9 @@ export class LigaMxHrlv extends LitElement {
             .matchesList=${this.matchesList}
             .table=${this.table}
             .teams=${this.teams}
+            .stadiums=${this.stadiums}
             .players=${this.players}
+            .isAdmin=${this.isAdmin}
             .navigateToTab=${(tab: string) => this._selectTab(tab)}
             @navigate-tab=${(event: CustomEvent<{ tab: string }>) =>
               this._navigateToTab(event)}
