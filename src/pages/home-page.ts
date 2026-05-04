@@ -1,13 +1,14 @@
 import '@material/web/icon/icon.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
-import { css, html, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { css, html, LitElement, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, Player, PlayerTeam, TableEntry } from '../types/index.js';
 import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
 import { getGoalEvents, getPhaseEvents } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import './match-detail-page.js';
 
 type NavigationTab =
   | 'Calendario'
@@ -103,6 +104,23 @@ export class HomePage extends LitElement {
         background: var(--md-sys-color-surface-container);
         border: 1px solid var(--md-sys-color-outline-variant);
         border-radius: var(--radius-m);
+        cursor: pointer;
+        transition:
+          transform 0.2s ease,
+          border-color 0.2s ease,
+          background-color 0.2s ease;
+      }
+
+      .match-focus:hover,
+      .match-focus:focus-visible {
+        border-color: var(--md-sys-color-primary);
+        background: color-mix(
+          in srgb,
+          var(--md-sys-color-primary-container) 36%,
+          var(--md-sys-color-surface-container)
+        );
+        outline: none;
+        transform: translateY(-1px);
       }
 
       .team {
@@ -407,10 +425,39 @@ export class HomePage extends LitElement {
   @property({ type: Array }) matchesList: Match[] = [];
   @property({ type: Array }) table: TableEntry[] = [];
   @property({ type: Array }) teams: string[] = [];
+  @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Object }) players: PlayerTeam = new Map();
+  @property({ type: Boolean }) isAdmin = false;
   @property({ attribute: false }) navigateToTab?: (tab: NavigationTab) => void;
 
+  @state() private showDetails = false;
+  @state() private selectedMatch: Match | null = null;
+
+  override updated(changedProperties: PropertyValues) {
+    if (changedProperties.has('matchesList') && this.selectedMatch) {
+      const updatedMatch = this.matchesList.find(
+        match => match.idMatch === this.selectedMatch?.idMatch,
+      );
+      if (updatedMatch) this.selectedMatch = updatedMatch;
+    }
+  }
+
   override render() {
+    if (this.showDetails && this.selectedMatch) {
+      return html`
+        <match-detail-page
+          .match=${this.selectedMatch}
+          .matchesList=${this.matchesList}
+          .table=${this.table}
+          .teams=${this.teams}
+          .players=${this.players}
+          .stadiums=${this.stadiums}
+          .isAdmin=${this.isAdmin}
+          @back-to-calendar=${this._backToHome}
+        ></match-detail-page>
+      `;
+    }
+
     const focusMatch = this._getFocusMatch();
     const focusLabel = focusMatch ? this._getFocusLabel(focusMatch) : '';
     const topScorer = this._getLeader('goals');
@@ -450,7 +497,15 @@ export class HomePage extends LitElement {
 
           ${focusMatch
             ? html`
-                <article class="match-focus" aria-label="Partido destacado">
+                <article
+                  class="match-focus"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Abrir detalle del partido destacado"
+                  @click=${() => this._openMatchDetails(focusMatch)}
+                  @keydown=${(event: KeyboardEvent) =>
+                    this._onFocusMatchKeydown(event, focusMatch)}
+                >
                   <div class="team">
                     ${getTeamImage(focusMatch.local)}
                     <span class="team-name">${focusMatch.local}</span>
@@ -747,5 +802,23 @@ export class HomePage extends LitElement {
         composed: true,
       }),
     );
+  }
+
+  private _openMatchDetails(match: Match) {
+    this.selectedMatch = match;
+    this.showDetails = true;
+    window.scrollTo(0, 0);
+  }
+
+  private _onFocusMatchKeydown(event: KeyboardEvent, match: Match) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this._openMatchDetails(match);
+  }
+
+  private _backToHome() {
+    this.showDetails = false;
+    this.selectedMatch = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
