@@ -100,12 +100,38 @@ export class LigaMxHrlv extends LitElement {
       @media (max-width: 760px) {
         .header-content {
           grid-template-columns: 1fr;
-          justify-items: center;
-          padding: 8px 8px 10px;
+          justify-items: stretch;
+          padding: 8px 52px 10px 8px;
         }
 
         md-tabs {
           width: 100%;
+        }
+
+        .admin-actions {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          z-index: 2;
+          gap: 0;
+        }
+
+        .admin-status,
+        .admin-action-label {
+          display: none;
+        }
+
+        .admin-actions md-text-button,
+        .admin-actions md-outlined-button {
+          width: 40px;
+          min-width: 40px;
+          height: 40px;
+          --md-text-button-container-height: 40px;
+          --md-text-button-leading-space: 8px;
+          --md-text-button-trailing-space: 8px;
+          --md-outlined-button-container-height: 40px;
+          --md-outlined-button-leading-space: 8px;
+          --md-outlined-button-trailing-space: 8px;
         }
       }
 
@@ -239,15 +265,23 @@ export class LigaMxHrlv extends LitElement {
                   <span class="admin-status">
                     ${this.isAdmin ? 'Admin' : 'Sin permisos'}
                   </span>
-                  <md-text-button @click=${this._logout}>
+                  <md-text-button
+                    aria-label="Cerrar sesión"
+                    title="Cerrar sesión"
+                    @click=${this._logout}
+                  >
                     <md-icon slot="icon">logout</md-icon>
-                    Salir
+                    <span class="admin-action-label">Salir</span>
                   </md-text-button>
                 `
               : html`
-                  <md-outlined-button @click=${this._openAdminLogin}>
+                  <md-outlined-button
+                    aria-label="Abrir acceso admin"
+                    title="Abrir acceso admin"
+                    @click=${this._openAdminLogin}
+                  >
                     <md-icon slot="icon">admin_panel_settings</md-icon>
-                    Admin
+                    <span class="admin-action-label">Admin</span>
                   </md-outlined-button>
                 `}
           </div>
