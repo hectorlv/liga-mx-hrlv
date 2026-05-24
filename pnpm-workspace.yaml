@@ -1,0 +1,12 @@
+packages:
+  - "."
+
+strictDepBuilds: true
+minimumReleaseAge: 1440
+
+allowBuilds:
+  "@firebase/util": false
+  esbuild: true
+  protobufjs: false
+  rs-module-lexer: true
+  unrs-resolver: true

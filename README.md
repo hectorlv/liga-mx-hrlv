@@ -27,11 +27,11 @@ Notas de migración:
 
 ## Scripts útiles
 
-- **`npm start`**: Ejecuta la app en modo desarrollo con recarga en cambios.
-- **`npm run build`**: Construye la app y genera la carpeta `dist/`.
-- **`npm run start:build`**: Sirve la versión construida desde `dist/`.
-- **`npm test`**: Ejecuta el test runner configurado (si hay tests).
-- **`npm run lint`** y **`npm run format`**: Linter y formateador.
+- **`pnpm start`**: Ejecuta la app en modo desarrollo con recarga en cambios.
+- **`pnpm run build`**: Construye la app y genera la carpeta `dist/`.
+- **`pnpm run start:build`**: Sirve la versión construida desde `dist/`.
+- **`pnpm test`**: Ejecuta el test runner configurado (si hay tests).
+- **`pnpm run lint`** y **`pnpm run format`**: Linter y formateador.
 
 ## Primeros tests unitarios (setup rápido)
 
@@ -40,7 +40,7 @@ Si quieres empezar con pruebas unitarias para utilidades en `src/utils`, estos s
 1. Instala Vitest y cobertura:
 
    ```bash
-   npm i -D vitest @vitest/coverage-v8
+   pnpm i -D vitest @vitest/coverage-v8
    ```
 
 2. Agrega scripts en `package.json`:
@@ -75,9 +75,9 @@ Si quieres empezar con pruebas unitarias para utilidades en `src/utils`, estos s
 5. Ejecuta validación local:
 
    ```bash
-   npm run lint
-   npm run typecheck
-   npm test
+   pnpm run lint
+   pnpm run typecheck
+   pnpm test
    ```
 
 Sugerencia: inicia con funciones puras (tabla/fechas) para obtener cobertura útil sin depender de DOM o Firebase.
@@ -86,20 +86,20 @@ Ejemplos de uso en macOS / `zsh`:
 
 ```bash
 # Desarrollo
-npm start
+pnpm start
 
 # Build para producción
-npm run build
+pnpm run build
 
 # Servir la build localmente (usa start:build)
-npm run start:build
+pnpm run start:build
 ```
 
 ## Notas sobre la reorganización
 
 - Se movieron módulos a `src/app`, `src/components`, `src/styles` y `src/utils` para mejorar la claridad del proyecto.
 - `index.html` ha sido actualizado para importar `./src/app/liga-mx-hrlv.js` directamente.
-- Tras verificar `npm run build` y pruebas locales, se eliminaron los shims raíz antiguos que exportaban desde rutas previas.
+- Tras verificar `pnpm run build` y pruebas locales, se eliminaron los shims raíz antiguos que exportaban desde rutas previas.
 
 Si tienes integraciones externas que importaban módulos desde rutas antiguas de `src/`, actualízalas para que apunten a la nueva estructura.
 

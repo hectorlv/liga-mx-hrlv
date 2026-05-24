@@ -10,7 +10,9 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "develop"
-# Add reviewers
-    reviewers:
-      - "sgtpepper91"
-      - "hectorlv"
+    
+  - package-ecosystem: "github-actions"
+    directory: "/" # Location of workflow files
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
