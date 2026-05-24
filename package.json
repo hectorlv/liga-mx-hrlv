@@ -5,12 +5,13 @@
   "author": "liga-mx-hrlv",
   "version": "4.14.0",
   "type": "module",
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "lint": "eslint \"src/**/*.{ts,js,html}\"",
     "format": "eslint \"src/**/*.{ts,js,html}\" --fix && prettier \"src/**/*.{ts,js,html,css,json,md}\" --write",
-    "build": "rimraf dist && rollup -c rollup.config.js --bundleConfigAsCjs && npm run analyze",
-    "start:build:open": "npm run start:build --open",
-    "start:build": "npm run build && web-dev-server --root-dir dist --app-index index.html",
+    "build": "rimraf dist && rollup -c rollup.config.js --bundleConfigAsCjs && pnpm run analyze",
+    "start:build:open": "pnpm run build && web-dev-server --root-dir dist --app-index index.html --open",
+    "start:build": "pnpm run build && web-dev-server --root-dir dist --app-index index.html",
     "start": "web-dev-server --root-dir dist --app-index index.html",
     "typecheck": "tsc --noEmit",
     "analyze": "custom-elements-manifest analyze --globs \"src/**/*.{ts,js}\" --exclude \"**/dist/**\" --exclude \"**/node_modules/**\" --outdir dist"
