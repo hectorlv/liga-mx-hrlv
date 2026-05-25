@@ -32,6 +32,8 @@ export interface PlayoffSeriesConfig {
 export interface PlayoffSeriesResult {
   aggregate: Record<string, number>;
   winner: string | null;
+  penaltyScore?: AggregateScore | null;
+  requiresExtraTimeOrPenalties?: boolean;
 }
 
 const PLAYOFF_SERIES = [
@@ -55,6 +57,22 @@ function hasAvailableScore(match: Match): boolean {
 
 function hasTeams(match: Match): boolean {
   return match.local.trim() !== '' && match.visitante.trim() !== '';
+}
+
+function hasPenaltyScore(match: Match): boolean {
+  return (
+    typeof match.penaltyLocal === 'number' &&
+    Number.isFinite(match.penaltyLocal) &&
+    typeof match.penaltyVisitante === 'number' &&
+    Number.isFinite(match.penaltyVisitante)
+  );
+}
+
+function isFinalSeries(series: PlayoffSeriesConfig): boolean {
+  return (
+    series.ida.id === LIGUILLA.final.ida.id &&
+    series.vuelta.id === LIGUILLA.final.vuelta.id
+  );
 }
 
 export function getAggregateScoreForSecondLeg(
@@ -139,16 +157,32 @@ export function getPlayoffSeriesResult(
   aggregate[vuelta.local] += vuelta.golLocal;
   aggregate[vuelta.visitante] += vuelta.golVisitante;
 
-  let winner: string;
+  let winner: string | null;
+  let penaltyScore: AggregateScore | null = null;
+  let requiresExtraTimeOrPenalties = false;
   if (aggregate[vuelta.local] > aggregate[vuelta.visitante]) {
     winner = vuelta.local;
   } else if (aggregate[vuelta.visitante] > aggregate[vuelta.local]) {
     winner = vuelta.visitante;
+  } else if (isFinalSeries(series)) {
+    requiresExtraTimeOrPenalties = true;
+    if (hasPenaltyScore(vuelta) && vuelta.penaltyLocal !== vuelta.penaltyVisitante) {
+      penaltyScore = {
+        local: vuelta.penaltyLocal || 0,
+        visitante: vuelta.penaltyVisitante || 0,
+      };
+      winner =
+        penaltyScore.local > penaltyScore.visitante
+          ? vuelta.local
+          : vuelta.visitante;
+    } else {
+      winner = null;
+    }
   } else {
     winner = getBestSeededTeam(vuelta.local, vuelta.visitante, table);
   }
 
-  return { aggregate, winner };
+  return { aggregate, winner, penaltyScore, requiresExtraTimeOrPenalties };
 }
 
 function getBestSeededTeam(

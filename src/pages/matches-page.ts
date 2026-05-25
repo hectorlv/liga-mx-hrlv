@@ -24,6 +24,7 @@ import { getTeamImage } from '../utils/imageUtils.js';
 import {
   getAggregateScoreForSecondLeg,
   getPhaseEvents,
+  getPlayoffSeriesResult,
 } from '../utils/functionUtils.js';
 /**
  * Page for show the fixture
@@ -365,49 +366,24 @@ export class MatchesPage extends LitElement {
   private _boundOnDocClick: (() => void) | undefined;
 
   private get championLegend(): string | null {
-    const finalIda = this.matchesList.find(
-      match => match.idMatch === LIGUILLA.final.ida.id,
+    const result = getPlayoffSeriesResult(
+      LIGUILLA.final,
+      this.matchesList,
+      this.table,
     );
+
+    if (!result?.winner) return null;
+
     const finalVuelta = this.matchesList.find(
       match => match.idMatch === LIGUILLA.final.vuelta.id,
     );
+    if (!finalVuelta) return null;
 
-    if (!finalIda || !finalVuelta) return null;
-
-    const hasTeams =
-      finalIda.local.trim() !== '' &&
-      finalIda.visitante.trim() !== '' &&
-      finalVuelta.local.trim() !== '' &&
-      finalVuelta.visitante.trim() !== '';
-    const hasScores =
-      finalIda.golLocal >= 0 &&
-      finalIda.golVisitante >= 0 &&
-      finalVuelta.golLocal >= 0 &&
-      finalVuelta.golVisitante >= 0;
-
-    if (!hasTeams || !hasScores) return null;
-
-    const teamA = finalIda.local;
-    const teamB = finalIda.visitante;
-    const aggregate: Record<string, number> = {
-      [teamA]: finalIda.golLocal,
-      [teamB]: finalIda.golVisitante,
-    };
-
-    if (finalVuelta.local === teamA) aggregate[teamA] += finalVuelta.golLocal;
-    else if (finalVuelta.visitante === teamA)
-      aggregate[teamA] += finalVuelta.golVisitante;
-    else return null;
-
-    if (finalVuelta.local === teamB) aggregate[teamB] += finalVuelta.golLocal;
-    else if (finalVuelta.visitante === teamB)
-      aggregate[teamB] += finalVuelta.golVisitante;
-    else return null;
-
-    if (aggregate[teamA] === aggregate[teamB]) return null;
-
-    const champion = aggregate[teamA] > aggregate[teamB] ? teamA : teamB;
-    return `🏆 Campeón: ${champion} (${aggregate[teamA]}-${aggregate[teamB]} marcador global)`;
+    const aggregate = `${result.aggregate[finalVuelta.local]}-${result.aggregate[finalVuelta.visitante]}`;
+    const penalties = result.penaltyScore
+      ? `, penales ${result.penaltyScore.local}-${result.penaltyScore.visitante}`
+      : '';
+    return `🏆 Campeón: ${result.winner} (${aggregate} marcador global${penalties})`;
   }
 
   @query('.row-menu') rowMenu!: HTMLElement;

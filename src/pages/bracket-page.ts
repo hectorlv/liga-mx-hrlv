@@ -321,6 +321,10 @@ export class BracketPage extends LitElement {
         color: var(--md-sys-color-primary);
       }
 
+      .winner.pending {
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
       .champion-legend {
         margin: 20px auto 0;
         padding: 14px 16px;
@@ -475,7 +479,11 @@ export class BracketPage extends LitElement {
         <div class="series-heading">
           <span class="series-name">${series.name}</span>
           <span class="series-pill ${result?.winner ? 'done' : ''}">
-            ${result?.winner ? 'Definida' : 'Pendiente'}
+            ${result?.winner
+              ? 'Definida'
+              : result?.requiresExtraTimeOrPenalties
+                ? 'TE / Penales'
+                : 'Pendiente'}
           </span>
         </div>
         <div class="legs">
@@ -552,13 +560,22 @@ export class BracketPage extends LitElement {
     const localScore = result.aggregate[local];
     const visitorScore = result.aggregate[visitor];
 
+    const penaltyText = result.penaltyScore
+      ? html`<span>Penales ${result.penaltyScore.local} - ${result.penaltyScore.visitante}</span>`
+      : '';
+    const winnerText = result.winner
+      ? html`<span class="winner">
+          <md-icon>emoji_events</md-icon>
+          ${result.winner}
+        </span>`
+      : result.requiresExtraTimeOrPenalties
+        ? html`<span class="winner pending">Pendiente por TE / penales</span>`
+        : '';
+
     return html`
       <div class="aggregate">
         <span>Global ${localScore} - ${visitorScore}</span>
-        <span class="winner">
-          <md-icon>emoji_events</md-icon>
-          ${result.winner}
-        </span>
+        ${penaltyText} ${winnerText}
       </div>
     `;
   }

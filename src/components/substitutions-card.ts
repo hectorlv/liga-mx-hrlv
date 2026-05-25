@@ -379,7 +379,7 @@ export class SubstitutionsCard extends LitElement {
               type="number"
               id="subMinute"
               min="0"
-              max="90"
+              max="120"
               @input=${this._validateAddSub}
               @change=${this._validateAddSub}
             ></md-filled-text-field>
@@ -472,7 +472,7 @@ export class SubstitutionsCard extends LitElement {
             type="number"
             id="editSubMinute"
             min="0"
-            max="90"
+            max="120"
             @input=${this._validateEditForm}
             @change=${this._validateEditForm}
           ></md-filled-text-field>
@@ -728,7 +728,7 @@ export class SubstitutionsCard extends LitElement {
     this.editingSubId = sub.id;
     this.editOutPlayers = this._getPlayersForOut(sub.team, sub.playerOut);
     this.editInPlayers = this._getPlayersForIn(sub.team, sub.playerIn);
-    this.showEditAddedTime = sub.minute === 45 || sub.minute === 90;
+    this.showEditAddedTime = [45, 90, 105, 120].includes(sub.minute);
 
     this.updateComplete.then(() => {
       this.editSubTeam = sub.team as TeamSide;
@@ -815,9 +815,9 @@ export class SubstitutionsCard extends LitElement {
       !minuteValue ||
       Number.isNaN(Number(minuteValue)) ||
       Number(minuteValue) < 0 ||
-      Number(minuteValue) > 90 ||
+      Number(minuteValue) > 120 ||
       playerOut === playerIn;
-    this.showEditAddedTime = minuteValue === '45' || minuteValue === '90';
+    this.showEditAddedTime = ['45', '90', '105', '120'].includes(minuteValue);
   }
 
   private _saveEditedSub() {
@@ -892,8 +892,8 @@ export class SubstitutionsCard extends LitElement {
       !minute ||
       Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
-      Number(minute) > 90;
-    this.showAddedTime = minute === '45' || minute === '90';
+      Number(minute) > 120;
+    this.showAddedTime = ['45', '90', '105', '120'].includes(minute);
   }
 
   private _onSubTeamChange() {
