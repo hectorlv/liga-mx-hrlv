@@ -407,7 +407,7 @@ export class CardsCard extends LitElement {
               type="number"
               id="cardMinute"
               min="0"
-              max="90"
+              max="120"
               @input=${this._validateAddCard}
               @change=${this._validateAddCard}
               required
@@ -546,7 +546,7 @@ export class CardsCard extends LitElement {
             type="number"
             id="editCardMinute"
             min="0"
-            max="90"
+            max="120"
             @input=${this._validateEditForm}
             @change=${this._validateEditForm}
             required
@@ -828,8 +828,8 @@ export class CardsCard extends LitElement {
       !foulType ||
       Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
-      Number(minute) > 90;
-    this.showEditAddedTime = minute === '45' || minute === '90';
+      Number(minute) > 120;
+    this.showEditAddedTime = ['45', '90', '105', '120'].includes(minute);
   }
 
   private _saveEditedCard() {
@@ -940,8 +940,8 @@ export class CardsCard extends LitElement {
       !foulType ||
       Number.isNaN(Number(minute)) ||
       Number(minute) < 0 ||
-      Number(minute) > 90;
-    this.showAddedTime = minute === '45' || minute === '90';
+      Number(minute) > 120;
+    this.showAddedTime = ['45', '90', '105', '120'].includes(minute);
   }
 
   private _onCardTeamChange() {

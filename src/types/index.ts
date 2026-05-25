@@ -8,6 +8,8 @@ export interface Match {
   visitante: string;
   golLocal: number;
   golVisitante: number;
+  penaltyLocal?: number | null;
+  penaltyVisitante?: number | null;
   lineupLocal: PlayerGame[];
   lineupVisitor: PlayerGame[];
   events: MatchEvent[];

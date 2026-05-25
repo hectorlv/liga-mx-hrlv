@@ -411,7 +411,7 @@ export class GoalsCard extends LitElement {
               type="number"
               id="newGoalMinute"
               min="0"
-              max="90"
+              max="120"
               @input=${this._validateForm}
               @change=${this._validateForm}
               required
@@ -534,7 +534,7 @@ export class GoalsCard extends LitElement {
             type="number"
             id="editGoalMinute"
             min="0"
-            max="90"
+            max="120"
             @input=${this._validateEditForm}
             @change=${this._validateEditForm}
             required
@@ -822,7 +822,7 @@ export class GoalsCard extends LitElement {
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 120;
 
-    this.showAddedTime = minuteValue === '45' || minuteValue === '90';
+    this.showAddedTime = ['45', '90', '105', '120'].includes(minuteValue);
   }
 
   private _resolvePlayerTeam(
@@ -936,7 +936,7 @@ export class GoalsCard extends LitElement {
       Number(minuteValue) < 0 ||
       Number(minuteValue) > 120;
 
-    this.showEditAddedTime = minuteValue === '45' || minuteValue === '90';
+    this.showEditAddedTime = ['45', '90', '105', '120'].includes(minuteValue);
   }
 
   private _saveEditedGoal() {

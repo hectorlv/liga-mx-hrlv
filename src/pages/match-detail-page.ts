@@ -33,7 +33,7 @@ import {
   getAggregateScoreForSecondLeg,
   getPhaseEvents,
 } from '../utils/functionUtils.js';
-import { REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
+import { LIGUILLA, REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -216,6 +216,15 @@ export class MatchDetailPage extends LitElement {
         font-weight: 800;
         line-height: 1;
         white-space: nowrap;
+      }
+
+      .match-resolution-note {
+        margin-top: 8px;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.78rem;
+        font-weight: 800;
+        line-height: 1.2;
+        text-align: center;
       }
 
       /* Información de Tiempo y Lugar */
@@ -520,6 +529,12 @@ export class MatchDetailPage extends LitElement {
       this.match,
       this.matchesList,
     );
+    const isFinalSecondLeg = this._isFinalSecondLeg();
+    const isFinalAggregateTied =
+      isFinalSecondLeg &&
+      aggregateScore !== null &&
+      aggregateScore.local === aggregateScore.visitante;
+    const hasPenaltyScore = this._hasPenaltyScore();
     const tableComparison = this._getRegularSeasonTableComparison();
     const isPlayed = getPhaseEvents(this.match.events).some(
       e => e.phase === 'start',
@@ -603,6 +618,17 @@ export class MatchDetailPage extends LitElement {
                   Global ${aggregateScore.local} - ${aggregateScore.visitante}
                 </div>`
               : ''}
+            ${hasPenaltyScore
+              ? html`<div class="aggregate-score">
+                  Penales ${this.match.penaltyLocal} -
+                  ${this.match.penaltyVisitante}
+                </div>`
+              : isFinalAggregateTied
+                ? html`<div class="match-resolution-note">
+                    Global empatado: continúa con tiempos extra y, si sigue
+                    empatado, penales.
+                  </div>`
+                : ''}
           </div>
 
           <div
@@ -649,6 +675,30 @@ export class MatchDetailPage extends LitElement {
                       >`,
                   )}
                 </md-filled-select>
+                ${isFinalSecondLeg
+                  ? html`
+                      <md-filled-text-field
+                        label="Penales local"
+                        id="penaltyLocalInput"
+                        type="number"
+                        min="0"
+                        max="20"
+                        .value=${this.match.penaltyLocal == null
+                          ? ''
+                          : String(this.match.penaltyLocal)}
+                      ></md-filled-text-field>
+                      <md-filled-text-field
+                        label="Penales visitante"
+                        id="penaltyVisitanteInput"
+                        type="number"
+                        min="0"
+                        max="20"
+                        .value=${this.match.penaltyVisitante == null
+                          ? ''
+                          : String(this.match.penaltyVisitante)}
+                      ></md-filled-text-field>
+                    `
+                  : ''}
               </div>
             `
           : html`
@@ -835,8 +885,27 @@ export class MatchDetailPage extends LitElement {
     updates[`/matches/${this.match.idMatch}/hora`] = horaInput.value;
     updates[`/matches/${this.match.idMatch}/estadio`] =
       this._getStadiumSelectValue(estadioSelect);
+    if (this._isFinalSecondLeg()) {
+      const penaltyLocalInput = this.renderRoot.querySelector(
+        '#penaltyLocalInput',
+      ) as MdFilledTextField | null;
+      const penaltyVisitanteInput = this.renderRoot.querySelector(
+        '#penaltyVisitanteInput',
+      ) as MdFilledTextField | null;
+      updates[`/matches/${this.match.idMatch}/penaltyLocal`] =
+        this._getPenaltyInputValue(penaltyLocalInput);
+      updates[`/matches/${this.match.idMatch}/penaltyVisitante`] =
+        this._getPenaltyInputValue(penaltyVisitanteInput);
+    }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
     this.isEditing = false;
+  }
+
+  private _getPenaltyInputValue(input: MdFilledTextField | null): number | null {
+    if (!input || input.value === '') return null;
+    const value = Number(input.value);
+    if (!Number.isFinite(value) || value < 0) return null;
+    return Math.floor(value);
   }
 
   private _getStadiumSelectValue(estadioSelect: MdFilledSelect): string {
@@ -1031,6 +1100,19 @@ export class MatchDetailPage extends LitElement {
   ): PhaseMatchEvent | undefined {
     return getPhaseEvents(this.match?.events || []).find(
       event => event.phase === phase,
+    );
+  }
+
+  private _isFinalSecondLeg(): boolean {
+    return this.match?.idMatch === LIGUILLA.final.vuelta.id;
+  }
+
+  private _hasPenaltyScore(): boolean {
+    return (
+      typeof this.match?.penaltyLocal === 'number' &&
+      Number.isFinite(this.match.penaltyLocal) &&
+      typeof this.match?.penaltyVisitante === 'number' &&
+      Number.isFinite(this.match.penaltyVisitante)
     );
   }
 
