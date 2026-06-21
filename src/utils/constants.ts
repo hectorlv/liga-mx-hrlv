@@ -104,6 +104,7 @@ const REGULAR_SEASON_LAST_JORNADA = 17;
 
 const LOGOS = [
   { equipo: 'América', img: 'america' },
+  { equipo: 'Atlante', img: 'atlante' },
   { equipo: 'Atlas', img: 'atlas' },
   { equipo: 'Club Atlético de San Luis', img: 'clubAtleticoDeSanLuis' },
   { equipo: 'Cruz Azul', img: 'cruzAzul' },
@@ -111,7 +112,6 @@ const LOGOS = [
   { equipo: 'Gallos Blancos de Querétaro', img: 'gallosBlancosDeQueretaro' },
   { equipo: 'Guadalajara', img: 'guadalajara' },
   { equipo: 'León', img: 'leon' },
-  { equipo: 'Mazatlán FC', img: 'mazatlanFc' },
   { equipo: 'Monterrey', img: 'monterrey' },
   { equipo: 'Necaxa', img: 'necaxa' },
   { equipo: 'Pachuca', img: 'pachuca' },

@@ -22,6 +22,7 @@ import {
   readImageFromClipboard,
   uploadPlayerImage,
 } from '../utils/playerImageUpload.js';
+import { hasMatchEnded } from '../utils/matchStatus.js';
 
 // Imports de Material para el formulario de edición
 import '@material/web/button/filled-button.js';
@@ -1096,6 +1097,8 @@ export class TeamPage extends LitElement {
     match: Match,
     isLocal: boolean,
   ) {
+    if (!hasMatchEnded(match)) return;
+
     const lineup = isLocal ? match.lineupLocal : match.lineupVisitor;
     const teamTag = isLocal ? 'local' : 'visitor';
     if (!lineup) return;

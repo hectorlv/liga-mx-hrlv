@@ -6,14 +6,14 @@ import './match-detail-page.js';
 
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { LIGUILLA } from '../utils/constants.js';
-import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
+import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
 import {
-  getPhaseEvents,
   getPlayoffSeriesMatches,
   getPlayoffSeriesResult,
   PlayoffSeriesConfig,
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { isMatchLive } from '../utils/matchStatus.js';
 
 interface BracketSeries {
   key: string;
@@ -496,7 +496,7 @@ export class BracketPage extends LitElement {
 
   private _renderLeg(label: string, match: Match | null) {
     const hasMatch = Boolean(match);
-    const isLive = match ? isMatchLive(getPhaseEvents(match.events)) : false;
+    const isLive = match ? isMatchLive(match) : false;
 
     return html`
       <button

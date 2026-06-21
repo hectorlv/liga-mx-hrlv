@@ -34,6 +34,7 @@ import {
   getPhaseEvents,
 } from '../utils/functionUtils.js';
 import { LIGUILLA, REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
+import { hasMatchStarted } from '../utils/matchStatus.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -160,8 +161,10 @@ export class MatchDetailPage extends LitElement {
         gap: 8px;
         flex: 1;
         border-radius: 12px;
+        color: inherit;
         cursor: pointer;
         padding: 8px;
+        text-decoration: none;
         transition:
           background-color 0.2s,
           transform 0.2s;
@@ -536,9 +539,7 @@ export class MatchDetailPage extends LitElement {
       aggregateScore.local === aggregateScore.visitante;
     const hasPenaltyScore = this._hasPenaltyScore();
     const tableComparison = this._getRegularSeasonTableComparison();
-    const isPlayed = getPhaseEvents(this.match.events).some(
-      e => e.phase === 'start',
-    );
+    const isPlayed = hasMatchStarted(this.match);
 
     const tableComparisonTemplate = tableComparison
       ? this._renderTableComparison(
@@ -590,17 +591,16 @@ export class MatchDetailPage extends LitElement {
         </div>
 
         <div class="duel-container">
-          <div
+          <a
             class="team-side"
-            role="button"
-            tabindex="0"
-            @click=${() => this._showTeamPage(local)}
-            @keydown=${(event: KeyboardEvent) =>
-              this._handleTeamSideKeydown(event, local)}
+            href=${this._teamHref(local)}
+            @click=${(event: MouseEvent) =>
+              this._onTeamLinkClick(event, local)}
+            aria-label="Abrir detalle de ${local}"
           >
             ${getTeamImage(local)}
             <span class="team-name">${local}</span>
-          </div>
+          </a>
 
           <div class="score-center">
             ${isPlayed
@@ -631,17 +631,16 @@ export class MatchDetailPage extends LitElement {
                 : ''}
           </div>
 
-          <div
+          <a
             class="team-side"
-            role="button"
-            tabindex="0"
-            @click=${() => this._showTeamPage(visitante)}
-            @keydown=${(event: KeyboardEvent) =>
-              this._handleTeamSideKeydown(event, visitante)}
+            href=${this._teamHref(visitante)}
+            @click=${(event: MouseEvent) =>
+              this._onTeamLinkClick(event, visitante)}
+            aria-label="Abrir detalle de ${visitante}"
           >
             ${getTeamImage(visitante)}
             <span class="team-name">${visitante}</span>
-          </div>
+          </a>
         </div>
 
         ${this.isEditing
@@ -845,10 +844,22 @@ export class MatchDetailPage extends LitElement {
     this.selectedTeam = null;
   };
 
-  private _handleTeamSideKeydown(event: KeyboardEvent, teamName: string) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
+  private _onTeamLinkClick(event: MouseEvent, teamName: string) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
     event.preventDefault();
     this._showTeamPage(teamName);
+  }
+
+  private _teamHref(teamName: string): string {
+    return `?tab=Tabla%20General&team=${encodeURIComponent(teamName)}`;
   }
 
   private _goBack() {

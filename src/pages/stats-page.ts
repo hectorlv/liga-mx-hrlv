@@ -6,9 +6,9 @@ import { getTeamImage } from '../utils/imageUtils.js';
 import {
   getCardEvents,
   getGoalEvents,
-  getPhaseEvents,
   getSubstitutionEvents,
 } from '../utils/functionUtils';
+import { hasMatchEnded } from '../utils/matchStatus.js';
 
 interface PlayerStats {
   key: string;
@@ -26,7 +26,9 @@ interface TeamStats {
   goalsFor: number;
   goalsAgainst: number;
   yellows: number;
-  reds: number;
+  indirectReds: number;
+  directReds: number;
+  fairPlayPoints: number;
   u23PlayersCount: number;
   u23totalMinutes: number;
   u23countedMinutes: number;
@@ -443,7 +445,7 @@ export class StatsPage extends LitElement {
         <div class="card">
           <div class="card-header">
             <h3><md-icon>style</md-icon> Ranking Fair Play</h3>
-            <div class="meta">Menos puntos es mejor (A=1, R=2)</div>
+            <div class="meta">Menos puntos es mejor (A=1, RI=3, RD=4)</div>
           </div>
           <div class="table-wrapper">
             ${fairPlay.length === 0
@@ -456,7 +458,8 @@ export class StatsPage extends LitElement {
                         <th>Equipo</th>
                         <th class="num-col">Pts</th>
                         <th class="num-col" style="color:#B8860B">A</th>
-                        <th class="num-col" style="color:#D32F2F">R</th>
+                        <th class="num-col" style="color:#D32F2F">RI</th>
+                        <th class="num-col" style="color:#D32F2F">RD</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -470,10 +473,11 @@ export class StatsPage extends LitElement {
                               </div>
                             </td>
                             <td class="num-col" style="font-weight:bold;">
-                              ${t.yellows + t.reds * 2}
+                              ${t.fairPlayPoints}
                             </td>
                             <td class="num-col">${t.yellows}</td>
-                            <td class="num-col">${t.reds}</td>
+                            <td class="num-col">${t.indirectReds}</td>
+                            <td class="num-col">${t.directReds}</td>
                           </tr>
                         `,
                       )}
@@ -550,7 +554,9 @@ export class StatsPage extends LitElement {
           goalsFor: 0,
           goalsAgainst: 0,
           yellows: 0,
-          reds: 0,
+          indirectReds: 0,
+          directReds: 0,
+          fairPlayPoints: 0,
           u23PlayersCount: 0,
           u23totalMinutes: 0,
           u23countedMinutes: 0,
@@ -733,15 +739,24 @@ export class StatsPage extends LitElement {
         const stat = ensurePlayer(teamName, card.player, teamPlayers);
         if (card.cardType === 'yellow') {
           stat.yellows += 1;
-          ensureTeam(teamName).yellows += 1;
+          const teamStat = ensureTeam(teamName);
+          teamStat.yellows += 1;
+          teamStat.fairPlayPoints += 1;
+        } else if (card.foulType === 'dobleAmarilla') {
+          stat.reds += 1;
+          const teamStat = ensureTeam(teamName);
+          teamStat.indirectReds += 1;
+          teamStat.fairPlayPoints += 3;
         } else {
           stat.reds += 1;
-          ensureTeam(teamName).reds += 1;
+          const teamStat = ensureTeam(teamName);
+          teamStat.directReds += 1;
+          teamStat.fairPlayPoints += 4;
         }
       });
 
       // Minutes played
-      if (getPhaseEvents(match.events)?.some(e => e.phase === 'fulltime')) {
+      if (hasMatchEnded(match)) {
         addLineupMinutes(
           match,
           match.lineupLocal || [],
@@ -758,7 +773,7 @@ export class StatsPage extends LitElement {
         );
       }
       // U23 Minutes
-      if (getPhaseEvents(match.events)?.some(e => e.phase === 'fulltime')) {
+      if (hasMatchEnded(match)) {
         calculateU23Minutes(
           match,
           match.lineupLocal || [],
@@ -798,9 +813,9 @@ export class StatsPage extends LitElement {
       .slice(0, 10);
     const fairPlay = [...teamArray]
       .sort((a, b) => {
-        const ptsA = a.yellows + a.reds * 2;
-        const ptsB = b.yellows + b.reds * 2;
-        if (ptsA !== ptsB) return ptsA - ptsB;
+        if (a.fairPlayPoints !== b.fairPlayPoints) {
+          return a.fairPlayPoints - b.fairPlayPoints;
+        }
         return a.team.localeCompare(b.team);
       })
       .slice(0, 10);
