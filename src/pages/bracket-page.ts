@@ -6,14 +6,14 @@ import './match-detail-page.js';
 
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { LIGUILLA } from '../utils/constants.js';
-import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
+import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
 import {
-  getPhaseEvents,
   getPlayoffSeriesMatches,
   getPlayoffSeriesResult,
   PlayoffSeriesConfig,
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import { isMatchLive } from '../utils/matchStatus.js';
 
 interface BracketSeries {
   key: string;
@@ -156,7 +156,11 @@ export class BracketPage extends LitElement {
       }
 
       .series-card.winner-known {
-        border-color: color-mix(in srgb, var(--md-sys-color-primary) 45%, var(--md-sys-color-outline-variant));
+        border-color: color-mix(
+          in srgb,
+          var(--md-sys-color-primary) 45%,
+          var(--md-sys-color-outline-variant)
+        );
       }
 
       .series-heading {
@@ -496,7 +500,7 @@ export class BracketPage extends LitElement {
 
   private _renderLeg(label: string, match: Match | null) {
     const hasMatch = Boolean(match);
-    const isLive = match ? isMatchLive(getPhaseEvents(match.events)) : false;
+    const isLive = match ? isMatchLive(match) : false;
 
     return html`
       <button
@@ -504,8 +508,9 @@ export class BracketPage extends LitElement {
         ?disabled=${!hasMatch}
         @click=${() => match && this._showMatchDetails(match)}
         aria-label=${hasMatch
-          ? `${label}: ${match?.local || 'Por definir'} contra ${match
-              ?.visitante || 'Por definir'}`
+          ? `${label}: ${match?.local || 'Por definir'} contra ${
+              match?.visitante || 'Por definir'
+            }`
           : `${label}: Por definir`}
       >
         <div class="leg-content">
@@ -561,7 +566,10 @@ export class BracketPage extends LitElement {
     const visitorScore = result.aggregate[visitor];
 
     const penaltyText = result.penaltyScore
-      ? html`<span>Penales ${result.penaltyScore.local} - ${result.penaltyScore.visitante}</span>`
+      ? html`<span
+          >Penales ${result.penaltyScore.local} -
+          ${result.penaltyScore.visitante}</span
+        >`
       : '';
     const winnerText = result.winner
       ? html`<span class="winner">

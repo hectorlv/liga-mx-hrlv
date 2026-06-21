@@ -115,9 +115,10 @@ function markQualifiedTeams(table: TableEntry[]): void {
         challenger => getMaxPossiblePoints(challenger) < team.pts,
       );
     team.eliminado =
-      index >= totalPostseasonSpots && (team.jj >= REGULAR_SEASON_LAST_JORNADA || 
-      postseasonCutoffTeam != null &&
-      getMaxPossiblePoints(team) < postseasonCutoffTeam.pts);
+      index >= totalPostseasonSpots &&
+      (team.jj >= REGULAR_SEASON_LAST_JORNADA ||
+        (postseasonCutoffTeam != null &&
+          getMaxPossiblePoints(team) < postseasonCutoffTeam.pts));
   });
 }
 

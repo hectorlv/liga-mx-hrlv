@@ -19,13 +19,18 @@ import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
-import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
+import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
   getAggregateScoreForSecondLeg,
-  getPhaseEvents,
   getPlayoffSeriesResult,
 } from '../utils/functionUtils.js';
+import {
+  getLiveMatchPeriodLabel,
+  hasMatchStarted,
+  isMatchLive,
+  lineupsReadyBeforeKickoff,
+} from '../utils/matchStatus.js';
 /**
  * Page for show the fixture
  */
@@ -106,7 +111,9 @@ export class MatchesPage extends LitElement {
           'actions actions actions';
         grid-template-columns: 1fr auto 1fr;
         gap: 12px;
+        color: inherit;
         cursor: pointer;
+        text-decoration: none;
         border: 1px solid transparent;
         transition: all 0.2s ease;
         position: relative;
@@ -214,6 +221,38 @@ export class MatchesPage extends LitElement {
         font-weight: 700;
         line-height: 1;
         white-space: nowrap;
+      }
+
+      .status-chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 20px;
+        border-radius: 999px;
+        padding: 2px 7px;
+        background: var(--md-sys-color-secondary-container);
+        color: var(--md-sys-color-on-secondary-container);
+        font-size: 0.65rem;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .status-chip.live {
+        background: color-mix(in srgb, var(--app-color-danger) 14%, white);
+        color: var(--app-color-danger);
+      }
+
+      .status-chip.lineups {
+        background: color-mix(in srgb, var(--md-sys-color-primary) 12%, white);
+        color: var(--md-sys-color-primary);
       }
 
       /* Cabeceras de tabla (ocultas en móvil) */
@@ -572,19 +611,20 @@ export class MatchesPage extends LitElement {
   }
 
   private renderMatchItem(match: Match) {
-    const isLive = isMatchLive(getPhaseEvents(match.events));
+    const isLive = isMatchLive(match);
+    const periodLabel = getLiveMatchPeriodLabel(match);
+    const hasLineupsReady = lineupsReadyBeforeKickoff(match);
     const aggregateScore = getAggregateScoreForSecondLeg(
       match,
       this.matchesList,
     );
 
     return html`
-      <div
+      <a
         class="match-card"
-        @click=${() =>
-          this._showMatchDetails({
-            target: { getAttribute: () => match.idMatch },
-          } as unknown as Event)}
+        href=${this._matchHref(match)}
+        @click=${(event: MouseEvent) => this._onMatchLinkClick(event, match)}
+        aria-label="Abrir detalle de ${match.local} contra ${match.visitante}"
       >
         <div class="cell-jornada">
           <span>${match.jornada}</span>
@@ -603,8 +643,27 @@ export class MatchesPage extends LitElement {
         </div>
         <div class="cell-score">
           <div class="match-score-primary">
-            ${match.golLocal} - ${match.golVisitante}
+            ${hasMatchStarted(match)
+              ? `${match.golLocal} - ${match.golVisitante}`
+              : 'VS'}
           </div>
+          ${isLive || periodLabel || hasLineupsReady
+            ? html`
+                <div class="status-chips" aria-label="Estado del partido">
+                  ${isLive
+                    ? html`<span class="status-chip live">En vivo</span>`
+                    : ''}
+                  ${periodLabel
+                    ? html`<span class="status-chip live">${periodLabel}</span>`
+                    : ''}
+                  ${hasLineupsReady
+                    ? html`<span class="status-chip lineups"
+                        >Alineaciones listas</span
+                      >`
+                    : ''}
+                </div>
+              `
+            : ''}
           ${aggregateScore
             ? html`<div class="aggregate-score">
                 Global ${aggregateScore.local} - ${aggregateScore.visitante}
@@ -616,7 +675,7 @@ export class MatchesPage extends LitElement {
           <span class="team-name">${match.visitante}</span>
         </div>
         <div class="cell-stadium">${match.estadio}</div>
-      </div>
+      </a>
     `;
   }
   /**
@@ -672,11 +731,7 @@ export class MatchesPage extends LitElement {
     }
   }
 
-  private _showMatchDetails(e: Event) {
-    const index = (e.target as HTMLElement).getAttribute('index');
-    const match = this.matchesList.find(m => m.idMatch === Number(index));
-    if (!match) return;
-
+  private _showMatchDetails(match: Match) {
     //Guardar filtros actuales
     const teamIndex = this.teamsSelect.value || '';
     const matchDayValue = this.matchDaySelect.value || '';
@@ -691,6 +746,24 @@ export class MatchesPage extends LitElement {
     // Reset scroll to top
     window.scrollTo(0, 0);
     this.requestUpdate();
+  }
+
+  private _onMatchLinkClick(event: MouseEvent, match: Match) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    this._showMatchDetails(match);
+  }
+
+  private _matchHref(match: Match): string {
+    return `?tab=Calendario&match=${match.idMatch}`;
   }
 
   private async _backToCalendar() {

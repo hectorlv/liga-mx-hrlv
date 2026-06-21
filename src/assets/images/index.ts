@@ -1,4 +1,5 @@
 import america from './America.png';
+import atlante from './Atlante.png';
 import atlas from './Atlas.png';
 import clubAtleticoDeSanLuis from './Club Atletico de San Luis.png';
 import cruzAzul from './Cruz Azul.png';
@@ -6,7 +7,6 @@ import fcJuarez from './FC Juarez.png';
 import gallosBlancosDeQueretaro from './Gallos Blancos de Queretaro.png';
 import guadalajara from './Guadalajara.png';
 import leon from './Leon.png';
-import mazatlanFc from './Mazatlan FC.png';
 import monterrey from './Monterrey.png';
 import necaxa from './Necaxa.png';
 import pachuca from './Pachuca.png';
@@ -19,6 +19,7 @@ import universidadNacional from './Universidad Nacional.png';
 
 export {
   america,
+  atlante,
   atlas,
   clubAtleticoDeSanLuis,
   cruzAzul,
@@ -26,7 +27,6 @@ export {
   gallosBlancosDeQueretaro,
   guadalajara,
   leon,
-  mazatlanFc,
   monterrey,
   necaxa,
   pachuca,

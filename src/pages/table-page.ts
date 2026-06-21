@@ -2,10 +2,9 @@ import { LitElement, css, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
-import { isMatchLive } from '../utils/dateUtils.js';
+import { isMatchLive } from '../utils/matchStatus.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import './team-page.js';
-import { getPhaseEvents } from '../utils/functionUtils.js';
 
 /**
  * Page for the table of positions
@@ -70,7 +69,9 @@ export class TablePage extends LitElement {
         grid-template-columns: 32px 48px 1fr 45px;
         padding: 12px 8px;
         border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        color: inherit;
         cursor: pointer;
+        text-decoration: none;
         transition: background-color 0.2s;
         gap: 4px 8px;
         align-items: center;
@@ -378,9 +379,12 @@ export class TablePage extends LitElement {
             const statusClass = this.getClass(index);
             const hasLiveMatch = this.teamHasLiveMatch(team.equipo);
             return html`
-              <div
+              <a
                 class="table-row ${statusClass}"
-                @click=${() => this.selectTeam(team.equipo)}
+                href=${this._teamHref(team.equipo)}
+                @click=${(event: MouseEvent) =>
+                  this._onTeamLinkClick(event, team.equipo)}
+                aria-label="Abrir detalle de ${team.equipo}"
               >
                 <div class="indicator-bar"></div>
                 <div class="cell cell-pos">
@@ -417,7 +421,7 @@ export class TablePage extends LitElement {
                 <div class="cell desktop-stat stat-gc">${team.gc}</div>
                 <div class="cell desktop-stat stat-dg">${team.dg}</div>
                 <div class="cell cell-pts">${team.pts}</div>
-              </div>
+              </a>
             `;
           })}
         </div>
@@ -442,11 +446,29 @@ export class TablePage extends LitElement {
     return this.matchesList.some(
       match =>
         (match.local === teamName || match.visitante === teamName) &&
-        isMatchLive(getPhaseEvents(match.events)),
+        isMatchLive(match),
     );
   }
 
   private selectTeam(teamName: string) {
     this.selectedTeam = teamName;
+  }
+
+  private _onTeamLinkClick(event: MouseEvent, teamName: string) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    this.selectTeam(teamName);
+  }
+
+  private _teamHref(teamName: string): string {
+    return `?tab=Tabla%20General&team=${encodeURIComponent(teamName)}`;
   }
 }

@@ -5,9 +5,15 @@ import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, Player, PlayerTeam, TableEntry } from '../types/index.js';
-import { formatDateDDMMYYYY, isMatchLive } from '../utils/dateUtils.js';
-import { getGoalEvents, getPhaseEvents } from '../utils/functionUtils.js';
+import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
+import { getGoalEvents } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
+import {
+  getLiveMatchPeriodLabel,
+  hasMatchStarted,
+  isMatchLive,
+  lineupsReadyBeforeKickoff,
+} from '../utils/matchStatus.js';
 import './match-detail-page.js';
 
 type NavigationTab =
@@ -104,7 +110,9 @@ export class HomePage extends LitElement {
         background: var(--md-sys-color-surface-container);
         border: 1px solid var(--md-sys-color-outline-variant);
         border-radius: var(--radius-m);
+        color: inherit;
         cursor: pointer;
+        text-decoration: none;
         transition:
           transform 0.2s ease,
           border-color 0.2s ease,
@@ -185,6 +193,38 @@ export class HomePage extends LitElement {
         50% {
           opacity: 0.35;
         }
+      }
+
+      .status-chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        border-radius: 999px;
+        padding: 2px 8px;
+        background: var(--md-sys-color-secondary-container);
+        color: var(--md-sys-color-on-secondary-container);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .status-chip.live {
+        background: color-mix(in srgb, var(--app-color-danger) 14%, white);
+        color: var(--app-color-danger);
+      }
+
+      .status-chip.lineups {
+        background: color-mix(in srgb, var(--md-sys-color-primary) 12%, white);
+        color: var(--md-sys-color-primary);
       }
 
       .quick-grid,
@@ -497,14 +537,12 @@ export class HomePage extends LitElement {
 
           ${focusMatch
             ? html`
-                <article
+                <a
                   class="match-focus"
-                  role="button"
-                  tabindex="0"
+                  href=${this._matchHref(focusMatch)}
                   aria-label="Abrir detalle del partido destacado"
-                  @click=${() => this._openMatchDetails(focusMatch)}
-                  @keydown=${(event: KeyboardEvent) =>
-                    this._onFocusMatchKeydown(event, focusMatch)}
+                  @click=${(event: MouseEvent) =>
+                    this._onMatchLinkClick(event, focusMatch)}
                 >
                   <div class="team">
                     ${getTeamImage(focusMatch.local)}
@@ -512,12 +550,13 @@ export class HomePage extends LitElement {
                   </div>
                   <div class="score">
                     <div
-                      class=${isMatchLive(getPhaseEvents(focusMatch.events))
+                      class=${isMatchLive(focusMatch)
                         ? 'match-meta live-badge'
                         : 'match-meta'}
                     >
                       ${focusLabel}
                     </div>
+                    ${this._renderStatusChips(focusMatch)}
                     <div class="score-value">
                       ${this._formatScore(focusMatch)}
                     </div>
@@ -529,7 +568,7 @@ export class HomePage extends LitElement {
                     ${getTeamImage(focusMatch.visitante)}
                     <span class="team-name">${focusMatch.visitante}</span>
                   </div>
-                </article>
+                </a>
               `
             : html`
                 <article class="match-focus" aria-label="Sin partidos">
@@ -581,7 +620,9 @@ export class HomePage extends LitElement {
             </div>
             <div class="table-list">
               ${this.table.length === 0
-                ? html`<p class="empty">La tabla se mostrará al cargar datos.</p>`
+                ? html`<p class="empty">
+                    La tabla se mostrará al cargar datos.
+                  </p>`
                 : this.table
                     .slice(0, 4)
                     .map((team, index) => this._renderTableRow(team, index))}
@@ -611,10 +652,7 @@ export class HomePage extends LitElement {
             </div>
           </section>
 
-          <section
-            class="panel liguilla-panel"
-            aria-label="Zona de liguilla"
-          >
+          <section class="panel liguilla-panel" aria-label="Zona de liguilla">
             <div class="panel-header">
               <div>
                 <h2>Zona de Liguilla</h2>
@@ -628,7 +666,9 @@ export class HomePage extends LitElement {
               </md-outlined-button>
             </div>
             ${qualifiedTeams.length === 0
-              ? html`<p class="empty">La zona se mostrará al cargar la tabla.</p>`
+              ? html`<p class="empty">
+                  La zona se mostrará al cargar la tabla.
+                </p>`
               : html`
                   <div class="qualified-strip">
                     ${qualifiedTeams.map(
@@ -702,9 +742,7 @@ export class HomePage extends LitElement {
     const sortedMatches = [...this.matchesList].sort(
       (a, b) => this._matchTime(a) - this._matchTime(b),
     );
-    const liveMatch = sortedMatches.find(match =>
-      isMatchLive(getPhaseEvents(match.events)),
-    );
+    const liveMatch = sortedMatches.find(match => isMatchLive(match));
     if (liveMatch) return liveMatch;
 
     const today = new Date();
@@ -714,14 +752,16 @@ export class HomePage extends LitElement {
     if (todayMatch) return todayMatch;
 
     const now = Date.now();
-    const nextMatch = sortedMatches.find(match => this._matchTime(match) >= now);
+    const nextMatch = sortedMatches.find(
+      match => this._matchTime(match) >= now,
+    );
     if (nextMatch) return nextMatch;
 
     return sortedMatches[sortedMatches.length - 1];
   }
 
   private _getFocusLabel(match: Match): string {
-    if (isMatchLive(getPhaseEvents(match.events))) return 'En vivo';
+    if (isMatchLive(match)) return 'En vivo';
     if (this._isSameDay(match.fecha, new Date())) return 'Hoy';
     if (this._matchTime(match) >= Date.now()) return 'Próximo partido';
     return 'Último resultado';
@@ -772,7 +812,9 @@ export class HomePage extends LitElement {
   private _formatScore(match: Match): string {
     const hasScore =
       Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
-    return hasScore ? `${match.golLocal} - ${match.golVisitante}` : 'vs';
+    return hasMatchStarted(match) && hasScore
+      ? `${match.golLocal} - ${match.golVisitante}`
+      : 'VS';
   }
 
   private _formatMatchDate(match: Match): string {
@@ -810,10 +852,40 @@ export class HomePage extends LitElement {
     window.scrollTo(0, 0);
   }
 
-  private _onFocusMatchKeydown(event: KeyboardEvent, match: Match) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
+  private _onMatchLinkClick(event: MouseEvent, match: Match) {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
     event.preventDefault();
     this._openMatchDetails(match);
+  }
+
+  private _matchHref(match: Match): string {
+    return `?tab=Inicio&match=${match.idMatch}`;
+  }
+
+  private _renderStatusChips(match: Match) {
+    const periodLabel = getLiveMatchPeriodLabel(match);
+    const hasLineupsReady = lineupsReadyBeforeKickoff(match);
+
+    if (!periodLabel && !hasLineupsReady) return '';
+
+    return html`
+      <div class="status-chips" aria-label="Estado del partido">
+        ${periodLabel
+          ? html`<span class="status-chip live">${periodLabel}</span>`
+          : ''}
+        ${hasLineupsReady
+          ? html`<span class="status-chip lineups">Alineaciones listas</span>`
+          : ''}
+      </div>
+    `;
   }
 
   private _backToHome() {
