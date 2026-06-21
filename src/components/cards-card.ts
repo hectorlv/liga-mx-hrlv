@@ -366,287 +366,297 @@ export class CardsCard extends LitElement {
 
         ${this.isAdmin
           ? html`<div class="add-card-section">
-          <div class="add-card-header">
-            <md-icon>add_circle</md-icon> Registrar Tarjeta
-          </div>
+              <div class="add-card-header">
+                <md-icon>add_circle</md-icon> Registrar Tarjeta
+              </div>
 
-          <div class="form-grid">
-            <div class="radio-group full-width">
-              <span
-                style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
-                >Equipo:</span
-              >
-              <label
-                ><md-radio
-                  name="cardTeam"
-                  value="local"
-                  .checked=${this.cardTeam === 'local'}
-                  @change=${(e: Event) => {
-                    this.cardTeam = (e.target as MdRadio).value as TeamSide;
-                    this._onCardTeamChange();
-                  }}
-                ></md-radio>
-                Local</label
-              >
-              <label
-                ><md-radio
-                  name="cardTeam"
-                  value="visitor"
-                  .checked=${this.cardTeam === 'visitor'}
-                  @change=${(e: Event) => {
-                    this.cardTeam = (e.target as MdRadio).value as TeamSide;
-                    this._onCardTeamChange();
-                  }}
-                ></md-radio>
-                Visitante</label
-              >
-            </div>
+              <div class="form-grid">
+                <div class="radio-group full-width">
+                  <span
+                    style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                    >Equipo:</span
+                  >
+                  <label
+                    ><md-radio
+                      name="cardTeam"
+                      value="local"
+                      .checked=${this.cardTeam === 'local'}
+                      @change=${(e: Event) => {
+                        this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                        this._onCardTeamChange();
+                      }}
+                    ></md-radio>
+                    Local</label
+                  >
+                  <label
+                    ><md-radio
+                      name="cardTeam"
+                      value="visitor"
+                      .checked=${this.cardTeam === 'visitor'}
+                      @change=${(e: Event) => {
+                        this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                        this._onCardTeamChange();
+                      }}
+                    ></md-radio>
+                    Visitante</label
+                  >
+                </div>
 
-            <md-filled-text-field
-              label="Minuto"
-              type="number"
-              id="cardMinute"
-              min="0"
-              max="120"
-              @input=${this._validateAddCard}
-              @change=${this._validateAddCard}
-              required
-            ></md-filled-text-field>
+                <md-filled-text-field
+                  label="Minuto"
+                  type="number"
+                  id="cardMinute"
+                  min="0"
+                  max="120"
+                  @input=${this._validateAddCard}
+                  @change=${this._validateAddCard}
+                  required
+                ></md-filled-text-field>
 
-            ${this.showAddedTime
-              ? html`
-                  <md-filled-text-field
-                    label="Tiempo Adicional"
-                    type="number"
-                    id="addedTime"
-                    min="0"
-                    max="30"
-                    @change=${this._validateAddCard}
-                  ></md-filled-text-field>
-                `
-              : ''}
+                ${this.showAddedTime
+                  ? html`
+                      <md-filled-text-field
+                        label="Tiempo Adicional"
+                        type="number"
+                        id="addedTime"
+                        min="0"
+                        max="30"
+                        @change=${this._validateAddCard}
+                      ></md-filled-text-field>
+                    `
+                  : ''}
 
-            <md-outlined-select
-              id="cardPlayer"
-              label="Jugador"
-              @change=${this._validateAddCard}
-              required
-            >
-              <md-select-option value="" disabled selected></md-select-option>
-              ${(cardSide === 'local'
-                ? this.localPlayers
-                : this.visitorPlayers
-              ).map(
-                p =>
-                  html`<md-select-option value=${p.number}
-                    >${p.name}</md-select-option
-                  >`,
-              )}
-            </md-outlined-select>
+                <md-outlined-select
+                  id="cardPlayer"
+                  label="Jugador"
+                  @change=${this._validateAddCard}
+                  required
+                >
+                  <md-select-option
+                    value=""
+                    disabled
+                    selected
+                  ></md-select-option>
+                  ${(cardSide === 'local'
+                    ? this.localPlayers
+                    : this.visitorPlayers
+                  ).map(
+                    p =>
+                      html`<md-select-option value=${p.number}
+                        >${p.name}</md-select-option
+                      >`,
+                  )}
+                </md-outlined-select>
 
-            <div class="radio-group">
-              <span
-                style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
-                >Tipo:</span
-              >
-              <label
-                ><md-radio
-                  name="cardType"
-                  value="yellow"
-                  .checked=${this.cardTypeState === 'yellow'}
-                  @change=${(e: Event) => {
-                    this.cardTypeState = (e.target as MdRadio)
-                      .value as CardType;
-                    this._onCardTypeChange();
-                  }}
-                ></md-radio>
-                Amarilla</label
-              >
-              <label
-                ><md-radio
-                  name="cardType"
-                  value="red"
-                  .checked=${this.cardTypeState === 'red'}
-                  @change=${(e: Event) => {
-                    this.cardTypeState = (e.target as MdRadio)
-                      .value as CardType;
-                    this._onCardTypeChange();
-                  }}
-                ></md-radio>
-                Roja</label
-              >
-            </div>
+                <div class="radio-group">
+                  <span
+                    style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                    >Tipo:</span
+                  >
+                  <label
+                    ><md-radio
+                      name="cardType"
+                      value="yellow"
+                      .checked=${this.cardTypeState === 'yellow'}
+                      @change=${(e: Event) => {
+                        this.cardTypeState = (e.target as MdRadio)
+                          .value as CardType;
+                        this._onCardTypeChange();
+                      }}
+                    ></md-radio>
+                    Amarilla</label
+                  >
+                  <label
+                    ><md-radio
+                      name="cardType"
+                      value="red"
+                      .checked=${this.cardTypeState === 'red'}
+                      @change=${(e: Event) => {
+                        this.cardTypeState = (e.target as MdRadio)
+                          .value as CardType;
+                        this._onCardTypeChange();
+                      }}
+                    ></md-radio>
+                    Roja</label
+                  >
+                </div>
 
-            <md-outlined-select
-              id="cardFoulType"
-              label="Motivo (Opcional)"
-              @change=${this._validateAddCard}
-              ?disabled=${!cardTypeSelected}
-            >
-              <md-select-option value="" disabled selected></md-select-option>
-              ${addFoulOptions.map(
-                option =>
-                  html`<md-select-option value=${option.value}
-                    >${option.label}</md-select-option
-                  >`,
-              )}
-            </md-outlined-select>
+                <md-outlined-select
+                  id="cardFoulType"
+                  label="Motivo (Opcional)"
+                  @change=${this._validateAddCard}
+                  ?disabled=${!cardTypeSelected}
+                >
+                  <md-select-option
+                    value=""
+                    disabled
+                    selected
+                  ></md-select-option>
+                  ${addFoulOptions.map(
+                    option =>
+                      html`<md-select-option value=${option.value}
+                        >${option.label}</md-select-option
+                      >`,
+                  )}
+                </md-outlined-select>
 
-            <md-filled-button
-              class="action-btn full-width"
-              ?disabled=${this.disableAddCard}
-              @click=${this._addCard}
-            >
-              <md-icon slot="icon">warning</md-icon> Agregar Tarjeta
-            </md-filled-button>
-          </div>
-        </div>`
+                <md-filled-button
+                  class="action-btn full-width"
+                  ?disabled=${this.disableAddCard}
+                  @click=${this._addCard}
+                >
+                  <md-icon slot="icon">warning</md-icon> Agregar Tarjeta
+                </md-filled-button>
+              </div>
+            </div>`
           : null}
       </div>
 
       ${this.isAdmin
         ? html`<md-dialog id="editCardDialog" type="modal">
-        <div slot="headline">Editar tarjeta</div>
-        <div slot="content" class="form-grid" style="margin-top: 8px;">
-          <div class="radio-group full-width">
-            <span
-              style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
-              >Equipo:</span
-            >
-            <label
-              ><md-radio
-                name="editCardTeam"
-                value="local"
-                .checked=${this.editCardTeamState === 'local'}
-                @change=${(e: Event) => {
-                  this.editCardTeamState = (e.target as MdRadio)
-                    .value as TeamSide;
-                  this._onCardTeamChange();
-                }}
-              ></md-radio>
-              Local</label
-            >
-            <label
-              ><md-radio
-                name="editCardTeam"
-                value="visitor"
-                .checked=${this.editCardTeamState === 'visitor'}
-                @change=${(e: Event) => {
-                  this.editCardTeamState = (e.target as MdRadio)
-                    .value as TeamSide;
-                  this._onCardTeamChange();
-                }}
-              ></md-radio>
-              Visitante</label
-            >
-          </div>
+            <div slot="headline">Editar tarjeta</div>
+            <div slot="content" class="form-grid" style="margin-top: 8px;">
+              <div class="radio-group full-width">
+                <span
+                  style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                  >Equipo:</span
+                >
+                <label
+                  ><md-radio
+                    name="editCardTeam"
+                    value="local"
+                    .checked=${this.editCardTeamState === 'local'}
+                    @change=${(e: Event) => {
+                      this.editCardTeamState = (e.target as MdRadio)
+                        .value as TeamSide;
+                      this._onCardTeamChange();
+                    }}
+                  ></md-radio>
+                  Local</label
+                >
+                <label
+                  ><md-radio
+                    name="editCardTeam"
+                    value="visitor"
+                    .checked=${this.editCardTeamState === 'visitor'}
+                    @change=${(e: Event) => {
+                      this.editCardTeamState = (e.target as MdRadio)
+                        .value as TeamSide;
+                      this._onCardTeamChange();
+                    }}
+                  ></md-radio>
+                  Visitante</label
+                >
+              </div>
 
-          <md-filled-text-field
-            label="Minuto"
-            type="number"
-            id="editCardMinute"
-            min="0"
-            max="120"
-            @input=${this._validateEditForm}
-            @change=${this._validateEditForm}
-            required
-          ></md-filled-text-field>
+              <md-filled-text-field
+                label="Minuto"
+                type="number"
+                id="editCardMinute"
+                min="0"
+                max="120"
+                @input=${this._validateEditForm}
+                @change=${this._validateEditForm}
+                required
+              ></md-filled-text-field>
 
-          ${this.showEditAddedTime
-            ? html`
-                <md-filled-text-field
-                  label="Tiempo Adicional"
-                  type="number"
-                  id="editAddedTime"
-                  min="0"
-                  max="30"
-                  @change=${this._validateEditForm}
-                ></md-filled-text-field>
-              `
-            : ''}
+              ${this.showEditAddedTime
+                ? html`
+                    <md-filled-text-field
+                      label="Tiempo Adicional"
+                      type="number"
+                      id="editAddedTime"
+                      min="0"
+                      max="30"
+                      @change=${this._validateEditForm}
+                    ></md-filled-text-field>
+                  `
+                : ''}
 
-          <md-outlined-select
-            id="editCardPlayer"
-            label="Jugador"
-            @change=${this._validateEditForm}
-            required
-          >
-            ${this.editPlayers.map(
-              p =>
-                html`<md-select-option value=${p.number}
-                  >${p.name}</md-select-option
-                >`,
-            )}
-          </md-outlined-select>
+              <md-outlined-select
+                id="editCardPlayer"
+                label="Jugador"
+                @change=${this._validateEditForm}
+                required
+              >
+                ${this.editPlayers.map(
+                  p =>
+                    html`<md-select-option value=${p.number}
+                      >${p.name}</md-select-option
+                    >`,
+                )}
+              </md-outlined-select>
 
-          <div class="radio-group full-width">
-            <span
-              style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
-              >Tipo:</span
-            >
-            <label
-              ><md-radio
-                name="editCardType"
-                value="yellow"
-                .checked=${this.editCardTypeState === 'yellow'}
-                @change=${(e: Event) => {
-                  this.editCardTypeState = (e.target as MdRadio)
-                    .value as CardType;
-                  this._onEditCardTypeChange();
-                }}
-              ></md-radio>
-              Amarilla</label
-            >
-            <label
-              ><md-radio
-                name="editCardType"
-                value="red"
-                .checked=${this.editCardTypeState === 'red'}
-                @change=${(e: Event) => {
-                  this.editCardTypeState = (e.target as MdRadio)
-                    .value as CardType;
-                  this._onEditCardTypeChange();
-                }}
-              ></md-radio>
-              Roja</label
-            >
-          </div>
+              <div class="radio-group full-width">
+                <span
+                  style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                  >Tipo:</span
+                >
+                <label
+                  ><md-radio
+                    name="editCardType"
+                    value="yellow"
+                    .checked=${this.editCardTypeState === 'yellow'}
+                    @change=${(e: Event) => {
+                      this.editCardTypeState = (e.target as MdRadio)
+                        .value as CardType;
+                      this._onEditCardTypeChange();
+                    }}
+                  ></md-radio>
+                  Amarilla</label
+                >
+                <label
+                  ><md-radio
+                    name="editCardType"
+                    value="red"
+                    .checked=${this.editCardTypeState === 'red'}
+                    @change=${(e: Event) => {
+                      this.editCardTypeState = (e.target as MdRadio)
+                        .value as CardType;
+                      this._onEditCardTypeChange();
+                    }}
+                  ></md-radio>
+                  Roja</label
+                >
+              </div>
 
-          <md-outlined-select
-            id="editCardFoulType"
-            label="Motivo (Opcional)"
-            @change=${this._validateEditForm}
-            ?disabled=${!editCardTypeSelected}
-            class="full-width"
-          >
-            <md-select-option value="" disabled selected></md-select-option>
-            ${editFoulOptions.map(
-              option =>
-                html`<md-select-option value=${option.value}
-                  >${option.label}</md-select-option
-                >`,
-            )}
-          </md-outlined-select>
+              <md-outlined-select
+                id="editCardFoulType"
+                label="Motivo (Opcional)"
+                @change=${this._validateEditForm}
+                ?disabled=${!editCardTypeSelected}
+                class="full-width"
+              >
+                <md-select-option value="" disabled selected></md-select-option>
+                ${editFoulOptions.map(
+                  option =>
+                    html`<md-select-option value=${option.value}
+                      >${option.label}</md-select-option
+                    >`,
+                )}
+              </md-outlined-select>
 
-          <md-filled-text-field
-            id="sequenceInput"
-            label="Secuencia"
-            type="number"
-            min="1"
-            @change=${this._validateAddCard}
-          ></md-filled-text-field>
-        </div>
-        <div slot="actions">
-          <md-filled-button class="action-btn" @click=${this._closeEditDialog}
-            >Cancelar</md-filled-button
-          >
-          <md-filled-button
-            @click=${this._saveEditedCard}
-            ?disabled=${this.disableSaveEditedCard}
-            >Guardar</md-filled-button
-          >
-        </div>
-      </md-dialog>`
+              <md-filled-text-field
+                id="sequenceInput"
+                label="Secuencia"
+                type="number"
+                min="1"
+                @change=${this._validateAddCard}
+              ></md-filled-text-field>
+            </div>
+            <div slot="actions">
+              <md-filled-button
+                class="action-btn"
+                @click=${this._closeEditDialog}
+                >Cancelar</md-filled-button
+              >
+              <md-filled-button
+                @click=${this._saveEditedCard}
+                ?disabled=${this.disableSaveEditedCard}
+                >Guardar</md-filled-button
+              >
+            </div>
+          </md-dialog>`
         : null}
     `;
   }

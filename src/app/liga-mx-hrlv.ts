@@ -3,7 +3,13 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 
 // Firebase imports
 import { FirebaseApp, initializeApp } from 'firebase/app';
-import { Auth, getAuth, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import {
+  Auth,
+  getAuth,
+  onAuthStateChanged,
+  signOut,
+  User,
+} from 'firebase/auth';
 import { getDatabase, onValue, ref, Unsubscribe } from 'firebase/database';
 
 // Material Web imports
@@ -137,7 +143,6 @@ export class LigaMxHrlv extends LitElement {
         }
       }
 
-
       /* ÁREA DE CONTENIDO */
       main {
         flex: 1;
@@ -239,31 +244,31 @@ export class LigaMxHrlv extends LitElement {
     return html`
       <header>
         <div class="header-content">
-              <md-tabs
-                .activeTabIndex=${this._getTabIndex(this.selectedTab)}
-                @change=${this._onTabsChange}
-              >
-                <md-primary-tab aria-label="Inicio">
-                  <md-icon slot="icon">home</md-icon>
-                  Inicio
-                </md-primary-tab>
-                <md-primary-tab aria-label="Calendario">
-                  <md-icon slot="icon">calendar_month</md-icon>
-                  Calendario
-                </md-primary-tab>
-                <md-primary-tab aria-label="Tabla General">
-                  <md-icon slot="icon">format_list_numbered</md-icon>
-                  Tabla
-                </md-primary-tab>
-                <md-primary-tab aria-label="Liguilla">
-                  <md-icon slot="icon">account_tree</md-icon>
-                  Liguilla
-                </md-primary-tab>
-                <md-primary-tab aria-label="Estadísticas">
-                  <md-icon slot="icon">bar_chart</md-icon>
-                  Estadísticas
-                </md-primary-tab>
-              </md-tabs>
+          <md-tabs
+            .activeTabIndex=${this._getTabIndex(this.selectedTab)}
+            @change=${this._onTabsChange}
+          >
+            <md-primary-tab aria-label="Inicio">
+              <md-icon slot="icon">home</md-icon>
+              Inicio
+            </md-primary-tab>
+            <md-primary-tab aria-label="Calendario">
+              <md-icon slot="icon">calendar_month</md-icon>
+              Calendario
+            </md-primary-tab>
+            <md-primary-tab aria-label="Tabla General">
+              <md-icon slot="icon">format_list_numbered</md-icon>
+              Tabla
+            </md-primary-tab>
+            <md-primary-tab aria-label="Liguilla">
+              <md-icon slot="icon">account_tree</md-icon>
+              Liguilla
+            </md-primary-tab>
+            <md-primary-tab aria-label="Estadísticas">
+              <md-icon slot="icon">bar_chart</md-icon>
+              Estadísticas
+            </md-primary-tab>
+          </md-tabs>
           <div class="admin-actions">
             ${this.user
               ? html`

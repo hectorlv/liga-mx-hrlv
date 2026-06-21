@@ -654,9 +654,7 @@ export class MatchesPage extends LitElement {
                     ? html`<span class="status-chip live">En vivo</span>`
                     : ''}
                   ${periodLabel
-                    ? html`<span class="status-chip live"
-                        >${periodLabel}</span
-                      >`
+                    ? html`<span class="status-chip live">${periodLabel}</span>`
                     : ''}
                   ${hasLineupsReady
                     ? html`<span class="status-chip lineups"

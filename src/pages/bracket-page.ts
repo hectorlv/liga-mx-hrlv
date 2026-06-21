@@ -156,7 +156,11 @@ export class BracketPage extends LitElement {
       }
 
       .series-card.winner-known {
-        border-color: color-mix(in srgb, var(--md-sys-color-primary) 45%, var(--md-sys-color-outline-variant));
+        border-color: color-mix(
+          in srgb,
+          var(--md-sys-color-primary) 45%,
+          var(--md-sys-color-outline-variant)
+        );
       }
 
       .series-heading {
@@ -504,8 +508,9 @@ export class BracketPage extends LitElement {
         ?disabled=${!hasMatch}
         @click=${() => match && this._showMatchDetails(match)}
         aria-label=${hasMatch
-          ? `${label}: ${match?.local || 'Por definir'} contra ${match
-              ?.visitante || 'Por definir'}`
+          ? `${label}: ${match?.local || 'Por definir'} contra ${
+              match?.visitante || 'Por definir'
+            }`
           : `${label}: Por definir`}
       >
         <div class="leg-content">
@@ -561,7 +566,10 @@ export class BracketPage extends LitElement {
     const visitorScore = result.aggregate[visitor];
 
     const penaltyText = result.penaltyScore
-      ? html`<span>Penales ${result.penaltyScore.local} - ${result.penaltyScore.visitante}</span>`
+      ? html`<span
+          >Penales ${result.penaltyScore.local} -
+          ${result.penaltyScore.visitante}</span
+        >`
       : '';
     const winnerText = result.winner
       ? html`<span class="winner">

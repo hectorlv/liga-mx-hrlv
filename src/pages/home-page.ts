@@ -620,7 +620,9 @@ export class HomePage extends LitElement {
             </div>
             <div class="table-list">
               ${this.table.length === 0
-                ? html`<p class="empty">La tabla se mostrará al cargar datos.</p>`
+                ? html`<p class="empty">
+                    La tabla se mostrará al cargar datos.
+                  </p>`
                 : this.table
                     .slice(0, 4)
                     .map((team, index) => this._renderTableRow(team, index))}
@@ -650,10 +652,7 @@ export class HomePage extends LitElement {
             </div>
           </section>
 
-          <section
-            class="panel liguilla-panel"
-            aria-label="Zona de liguilla"
-          >
+          <section class="panel liguilla-panel" aria-label="Zona de liguilla">
             <div class="panel-header">
               <div>
                 <h2>Zona de Liguilla</h2>
@@ -667,7 +666,9 @@ export class HomePage extends LitElement {
               </md-outlined-button>
             </div>
             ${qualifiedTeams.length === 0
-              ? html`<p class="empty">La zona se mostrará al cargar la tabla.</p>`
+              ? html`<p class="empty">
+                  La zona se mostrará al cargar la tabla.
+                </p>`
               : html`
                   <div class="qualified-strip">
                     ${qualifiedTeams.map(
@@ -751,7 +752,9 @@ export class HomePage extends LitElement {
     if (todayMatch) return todayMatch;
 
     const now = Date.now();
-    const nextMatch = sortedMatches.find(match => this._matchTime(match) >= now);
+    const nextMatch = sortedMatches.find(
+      match => this._matchTime(match) >= now,
+    );
     if (nextMatch) return nextMatch;
 
     return sortedMatches[sortedMatches.length - 1];
@@ -875,7 +878,9 @@ export class HomePage extends LitElement {
 
     return html`
       <div class="status-chips" aria-label="Estado del partido">
-        ${periodLabel ? html`<span class="status-chip live">${periodLabel}</span>` : ''}
+        ${periodLabel
+          ? html`<span class="status-chip live">${periodLabel}</span>`
+          : ''}
         ${hasLineupsReady
           ? html`<span class="status-chip lineups">Alineaciones listas</span>`
           : ''}

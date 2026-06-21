@@ -615,127 +615,133 @@ export class TeamPage extends LitElement {
             <md-dialog id="dialogEditPlayer" type="modal">
               <div slot="headline">Editar Jugador</div>
               <div slot="content" class="dialog-form">
-          <md-filled-text-field
-            label="Número de jersey"
-            type="number"
-            value="${this.editingPlayer?.number || ''}"
-            disabled
-            title="El número no se puede cambiar para no romper las estadísticas"
-          ></md-filled-text-field>
-          <md-filled-text-field
-            id="editName"
-            label="Nombre corto"
-            required
-            value="${this.editingPlayer?.name || ''}"
-          ></md-filled-text-field>
-          <md-filled-select
-            id="editPosition"
-            label="Posición"
-            class="full-width"
-          >
-            <md-select-option
-              value="Portero"
-              ?selected=${this.editingPlayer?.position === 'Portero'}
-              ><div slot="headline">Portero</div></md-select-option
-            >
-            <md-select-option
-              value="Defensa"
-              ?selected=${this.editingPlayer?.position === 'Defensa'}
-              ><div slot="headline">Defensa</div></md-select-option
-            >
-            <md-select-option
-              value="Medio"
-              ?selected=${this.editingPlayer?.position === 'Medio'}
-              ><div slot="headline">Medio</div></md-select-option
-            >
-            <md-select-option
-              value="Delantero"
-              ?selected=${this.editingPlayer?.position === 'Delantero'}
-              ><div slot="headline">Delantero</div></md-select-option
-            >
-          </md-filled-select>
-          <md-filled-text-field
-            id="editFullName"
-            label="Nombre Completo"
-            class="full-width"
-            value="${this.editingPlayer?.fullName || ''}"
-          ></md-filled-text-field>
-          <md-filled-text-field
-            id="editNationality"
-            label="Nacionalidad"
-            value="${this.editingPlayer?.nationality || ''}"
-          ></md-filled-text-field>
-          <md-filled-text-field
-            id="editBirthDate"
-            label="Nacimiento"
-            type="date"
-            value="${this._formatDateForInput(
-              this.editingPlayer?.rawBirthDate,
-            )}"
-          ></md-filled-text-field>
-          <div class="image-input-section full-width">
-            <div
-              class="image-paste-zone ${this._getEditImagePreview()
-                ? 'has-image'
-                : ''}"
-              tabindex="0"
-              role="button"
-              @paste=${this._handleEditImagePaste}
-              title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
-            >
-              ${this._getEditImagePreview()
-                ? html`<img
-                    class="image-preview"
-                    src="${this._getEditImagePreview()}"
-                    alt="Vista previa de la foto del jugador"
-                  />`
-                : html`<div>
-                    <md-icon>content_paste</md-icon>
-                    <p>Pega aquí la foto del jugador</p>
-                    <p class="image-help">
-                      En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
-                      Leer portapapeles.
+                <md-filled-text-field
+                  label="Número de jersey"
+                  type="number"
+                  value="${this.editingPlayer?.number || ''}"
+                  disabled
+                  title="El número no se puede cambiar para no romper las estadísticas"
+                ></md-filled-text-field>
+                <md-filled-text-field
+                  id="editName"
+                  label="Nombre corto"
+                  required
+                  value="${this.editingPlayer?.name || ''}"
+                ></md-filled-text-field>
+                <md-filled-select
+                  id="editPosition"
+                  label="Posición"
+                  class="full-width"
+                >
+                  <md-select-option
+                    value="Portero"
+                    ?selected=${this.editingPlayer?.position === 'Portero'}
+                    ><div slot="headline">Portero</div></md-select-option
+                  >
+                  <md-select-option
+                    value="Defensa"
+                    ?selected=${this.editingPlayer?.position === 'Defensa'}
+                    ><div slot="headline">Defensa</div></md-select-option
+                  >
+                  <md-select-option
+                    value="Medio"
+                    ?selected=${this.editingPlayer?.position === 'Medio'}
+                    ><div slot="headline">Medio</div></md-select-option
+                  >
+                  <md-select-option
+                    value="Delantero"
+                    ?selected=${this.editingPlayer?.position === 'Delantero'}
+                    ><div slot="headline">Delantero</div></md-select-option
+                  >
+                </md-filled-select>
+                <md-filled-text-field
+                  id="editFullName"
+                  label="Nombre Completo"
+                  class="full-width"
+                  value="${this.editingPlayer?.fullName || ''}"
+                ></md-filled-text-field>
+                <md-filled-text-field
+                  id="editNationality"
+                  label="Nacionalidad"
+                  value="${this.editingPlayer?.nationality || ''}"
+                ></md-filled-text-field>
+                <md-filled-text-field
+                  id="editBirthDate"
+                  label="Nacimiento"
+                  type="date"
+                  value="${this._formatDateForInput(
+                    this.editingPlayer?.rawBirthDate,
+                  )}"
+                ></md-filled-text-field>
+                <div class="image-input-section full-width">
+                  <div
+                    class="image-paste-zone ${this._getEditImagePreview()
+                      ? 'has-image'
+                      : ''}"
+                    tabindex="0"
+                    role="button"
+                    @paste=${this._handleEditImagePaste}
+                    title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
+                  >
+                    ${this._getEditImagePreview()
+                      ? html`<img
+                          class="image-preview"
+                          src="${this._getEditImagePreview()}"
+                          alt="Vista previa de la foto del jugador"
+                        />`
+                      : html`<div>
+                          <md-icon>content_paste</md-icon>
+                          <p>Pega aquí la foto del jugador</p>
+                          <p class="image-help">
+                            En escritorio usa Ctrl+V o Cmd+V. En móvil usa el
+                            botón Leer portapapeles.
+                          </p>
+                        </div>`}
+                  </div>
+                  <div class="image-actions">
+                    <p
+                      class="${this.editImageError
+                        ? 'image-error'
+                        : 'image-help'}"
+                    >
+                      ${this.editImageError ||
+                      'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'}
                     </p>
-                  </div>`}
-            </div>
-            <div class="image-actions">
-              <p class="${this.editImageError ? 'image-error' : 'image-help'}">
-                ${this.editImageError ||
-                'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'}
-              </p>
-              ${this.editPastedImagePreviewUrl
-                ? html`
-                    <md-outlined-button @click=${this._clearEditPastedImage}>
-                      Quitar imagen nueva
+                    ${this.editPastedImagePreviewUrl
+                      ? html`
+                          <md-outlined-button
+                            @click=${this._clearEditPastedImage}
+                          >
+                            Quitar imagen nueva
+                          </md-outlined-button>
+                        `
+                      : null}
+                    <md-outlined-button
+                      @click=${this._readEditImageFromClipboard}
+                      ?disabled=${this.editIsReadingClipboardImage ||
+                      this.editIsUploadingImage}
+                    >
+                      <md-icon slot="icon">content_paste_go</md-icon>
+                      ${this.editIsReadingClipboardImage
+                        ? 'Leyendo...'
+                        : 'Leer portapapeles'}
                     </md-outlined-button>
-                  `
-                : null}
-              <md-outlined-button
-                @click=${this._readEditImageFromClipboard}
-                ?disabled=${this.editIsReadingClipboardImage ||
-                this.editIsUploadingImage}
-              >
-                <md-icon slot="icon">content_paste_go</md-icon>
-                ${this.editIsReadingClipboardImage
-                  ? 'Leyendo...'
-                  : 'Leer portapapeles'}
-              </md-outlined-button>
-            </div>
-          </div>
-        </div>
-        <div slot="actions">
-          <md-outlined-button
-            @click=${this._closeEditPlayer}
-            ?disabled=${this.editIsUploadingImage}
-            >Cancelar</md-outlined-button
-          >
-          <md-filled-button
-            @click=${this._saveEditedPlayer}
-            ?disabled=${this.editIsUploadingImage}
-            >Guardar</md-filled-button
-          >
-        </div>
-      </md-dialog>
+                  </div>
+                </div>
+              </div>
+              <div slot="actions">
+                <md-outlined-button
+                  @click=${this._closeEditPlayer}
+                  ?disabled=${this.editIsUploadingImage}
+                  >Cancelar</md-outlined-button
+                >
+                <md-filled-button
+                  @click=${this._saveEditedPlayer}
+                  ?disabled=${this.editIsUploadingImage}
+                  >Guardar</md-filled-button
+                >
+              </div>
+            </md-dialog>
           `
         : null}
     `;

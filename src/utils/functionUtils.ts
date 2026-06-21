@@ -166,7 +166,10 @@ export function getPlayoffSeriesResult(
     winner = vuelta.visitante;
   } else if (isFinalSeries(series)) {
     requiresExtraTimeOrPenalties = true;
-    if (hasPenaltyScore(vuelta) && vuelta.penaltyLocal !== vuelta.penaltyVisitante) {
+    if (
+      hasPenaltyScore(vuelta) &&
+      vuelta.penaltyLocal !== vuelta.penaltyVisitante
+    ) {
       penaltyScore = {
         local: vuelta.penaltyLocal || 0,
         visitante: vuelta.penaltyVisitante || 0,

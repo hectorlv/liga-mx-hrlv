@@ -574,7 +574,9 @@ export class LineupsCard extends LitElement {
   private _playersFromLineup(players: Player[], lineup: Match['lineupLocal']) {
     return lineup
       .filter(playerGame => playerGame.titular)
-      .map(playerGame => players.find(player => player.number === playerGame.number))
+      .map(playerGame =>
+        players.find(player => player.number === playerGame.number),
+      )
       .filter((player): player is Player => Boolean(player));
   }
 

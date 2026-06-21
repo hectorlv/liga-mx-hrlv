@@ -580,12 +580,12 @@ export class MatchDetailPage extends LitElement {
                 `
               : this.isAdmin
                 ? html`
-                  <md-icon-button
-                    @click=${() => (this.isEditing = true)}
-                    title="Editar información"
-                    ><md-icon>edit</md-icon></md-icon-button
-                  >
-                `
+                    <md-icon-button
+                      @click=${() => (this.isEditing = true)}
+                      title="Editar información"
+                      ><md-icon>edit</md-icon></md-icon-button
+                    >
+                  `
                 : null}
           </div>
         </div>
@@ -594,8 +594,7 @@ export class MatchDetailPage extends LitElement {
           <a
             class="team-side"
             href=${this._teamHref(local)}
-            @click=${(event: MouseEvent) =>
-              this._onTeamLinkClick(event, local)}
+            @click=${(event: MouseEvent) => this._onTeamLinkClick(event, local)}
             aria-label="Abrir detalle de ${local}"
           >
             ${getTeamImage(local)}
@@ -670,8 +669,7 @@ export class MatchDetailPage extends LitElement {
                         ?selected=${stadium === estadio}
                       >
                         <div slot="headline">${stadium}</div>
-                      </md-select-option
-                      >`,
+                      </md-select-option>`,
                   )}
                 </md-filled-select>
                 ${isFinalSecondLeg
@@ -912,7 +910,9 @@ export class MatchDetailPage extends LitElement {
     this.isEditing = false;
   }
 
-  private _getPenaltyInputValue(input: MdFilledTextField | null): number | null {
+  private _getPenaltyInputValue(
+    input: MdFilledTextField | null,
+  ): number | null {
     if (!input || input.value === '') return null;
     const value = Number(input.value);
     if (!Number.isFinite(value) || value < 0) return null;
