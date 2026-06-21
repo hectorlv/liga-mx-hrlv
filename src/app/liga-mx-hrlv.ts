@@ -624,18 +624,19 @@ export class LigaMxHrlv extends LitElement {
   }
 
   private _closeRoutedMatch() {
-    this.routedMatchId = null;
     this._clearMatchRoute();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   private _closeRoutedTeam() {
-    this.routedTeamName = null;
     this._clearMatchRoute();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   private _clearMatchRoute() {
+    this.routedMatchId = null;
+    this.routedTeamName = null;
+
     const url = new URL(window.location.href);
     if (!url.searchParams.has('match') && !url.searchParams.has('team')) return;
 
