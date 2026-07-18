@@ -471,7 +471,11 @@ export class MatchesPage extends LitElement {
    * @param changed
    */
   override updated(changed: PropertyValues) {
-    if (changed.has('teams') && this.filters.team && this.teamsSelect) {
+    if (
+      changed.has('teams') &&
+      this._hasRestoredFilters() &&
+      this.teamsSelect
+    ) {
       this._restoreFilters();
       return;
     }
@@ -757,6 +761,15 @@ export class MatchesPage extends LitElement {
       jornadaValue,
       todaySelected,
       onlyPlayOffSelected,
+    );
+  }
+
+  private _hasRestoredFilters(): boolean {
+    return (
+      this.filters.team !== undefined ||
+      this.filters.jornada !== undefined ||
+      this.filters.playoff !== undefined ||
+      this.filters.today !== undefined
     );
   }
 
