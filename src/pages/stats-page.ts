@@ -10,6 +10,8 @@ import {
 } from '../utils/functionUtils';
 import { hasMatchEnded } from '../utils/matchStatus.js';
 
+const REQUIRED_U23_MINUTES = 1170;
+
 interface PlayerStats {
   key: string;
   name: string;
@@ -32,7 +34,6 @@ interface TeamStats {
   u23PlayersCount: number;
   u23totalMinutes: number;
   u23countedMinutes: number;
-  u23minutesToFulfill: number;
 }
 
 @customElement('stats-page')
@@ -386,7 +387,12 @@ export class StatsPage extends LitElement {
                     </thead>
                     <tbody>
                       ${teamStatsByU23.map((t, i) => {
-                        const isFulfilled = t.u23minutesToFulfill === 0;
+                        const isFulfilled =
+                          t.u23countedMinutes >= REQUIRED_U23_MINUTES;
+                        const minutesToFulfill = Math.max(
+                          0,
+                          REQUIRED_U23_MINUTES - t.u23countedMinutes,
+                        );
                         const relativeProgress =
                           (t.u23countedMinutes / maxU23CountedMinutes) * 100;
 
@@ -429,7 +435,7 @@ export class StatsPage extends LitElement {
                                 >
                                   ${isFulfilled
                                     ? '✓ Meta cubierta'
-                                    : `Faltan ${t.u23minutesToFulfill}'`}
+                                    : `Faltan ${minutesToFulfill}'`}
                                 </span>
                               </div>
                             </td>
@@ -560,7 +566,6 @@ export class StatsPage extends LitElement {
           u23PlayersCount: 0,
           u23totalMinutes: 0,
           u23countedMinutes: 0,
-          u23minutesToFulfill: 0,
         });
       }
       return teamStats.get(teamName)!;
@@ -572,6 +577,8 @@ export class StatsPage extends LitElement {
       }
       return u23PlayersTeam.get(teamName)!;
     };
+
+    this.teams.forEach(ensureTeam);
 
     const ensurePlayer = (
       teamName: string,
@@ -694,11 +701,6 @@ export class StatsPage extends LitElement {
       // Máximo 225 minutos contables por partido
       teamStat.u23countedMinutes += Math.min(minutesByU23, 225);
       teamStat.u23PlayersCount = u23PlayersSet(teamName).size;
-      const requiredMinutes = 1170;
-      teamStat.u23minutesToFulfill = Math.max(
-        0,
-        requiredMinutes - teamStat.u23countedMinutes,
-      );
     };
 
     this.matchesList.forEach(match => {
