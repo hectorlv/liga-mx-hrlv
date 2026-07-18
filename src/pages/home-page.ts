@@ -119,6 +119,13 @@ export class HomePage extends LitElement {
           background-color 0.2s ease;
       }
 
+      .hero-cards {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        min-width: 0;
+      }
+
       .match-focus:hover,
       .match-focus:focus-visible {
         border-color: var(--md-sys-color-primary);
@@ -404,9 +411,13 @@ export class HomePage extends LitElement {
 
       @media (min-width: 760px) {
         .hero {
-          grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
-          align-items: center;
+          grid-template-columns: minmax(0, 1fr);
+          align-items: stretch;
           padding: 28px;
+        }
+
+        .hero-cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .quick-grid {
@@ -498,8 +509,7 @@ export class HomePage extends LitElement {
       `;
     }
 
-    const focusMatch = this._getFocusMatch();
-    const focusLabel = focusMatch ? this._getFocusLabel(focusMatch) : '';
+    const focusMatches = this._getFocusMatches();
     const topScorer = this._getLeader('goals');
     const topAssist = this._getLeader('assists');
     const qualifiedTeams = this.table.slice(0, 8);
@@ -535,40 +545,13 @@ export class HomePage extends LitElement {
             </div>
           </div>
 
-          ${focusMatch
+          ${focusMatches.length > 0
             ? html`
-                <a
-                  class="match-focus"
-                  href=${this._matchHref(focusMatch)}
-                  aria-label="Abrir detalle del partido destacado"
-                  @click=${(event: MouseEvent) =>
-                    this._onMatchLinkClick(event, focusMatch)}
-                >
-                  <div class="team">
-                    ${getTeamImage(focusMatch.local)}
-                    <span class="team-name">${focusMatch.local}</span>
-                  </div>
-                  <div class="score">
-                    <div
-                      class=${isMatchLive(focusMatch)
-                        ? 'match-meta live-badge'
-                        : 'match-meta'}
-                    >
-                      ${focusLabel}
-                    </div>
-                    ${this._renderStatusChips(focusMatch)}
-                    <div class="score-value">
-                      ${this._formatScore(focusMatch)}
-                    </div>
-                    <div class="match-meta">
-                      ${this._formatMatchDate(focusMatch)}
-                    </div>
-                  </div>
-                  <div class="team">
-                    ${getTeamImage(focusMatch.visitante)}
-                    <span class="team-name">${focusMatch.visitante}</span>
-                  </div>
-                </a>
+                <div class="hero-cards" aria-label="Partidos destacados">
+                  ${focusMatches.map(match =>
+                    this._renderFocusMatch(match),
+                  )}
+                </div>
               `
             : html`
                 <article class="match-focus" aria-label="Sin partidos">
@@ -758,6 +741,49 @@ export class HomePage extends LitElement {
     if (nextMatch) return nextMatch;
 
     return sortedMatches[sortedMatches.length - 1];
+  }
+
+  private _getFocusMatches(): Match[] {
+    const focusMatch = this._getFocusMatch();
+    if (!focusMatch) return [];
+
+    const focusTime = this._matchTime(focusMatch);
+    return this.matchesList
+      .filter(match => this._matchTime(match) === focusTime)
+      .sort((a, b) => a.idMatch - b.idMatch);
+  }
+
+  private _renderFocusMatch(match: Match) {
+    const focusLabel = this._getFocusLabel(match);
+    return html`
+      <a
+        class="match-focus"
+        href=${this._matchHref(match)}
+        aria-label="Abrir detalle de ${match.local} contra ${match.visitante}"
+        @click=${(event: MouseEvent) => this._onMatchLinkClick(event, match)}
+      >
+        <div class="team">
+          ${getTeamImage(match.local)}
+          <span class="team-name">${match.local}</span>
+        </div>
+        <div class="score">
+          <div
+            class=${isMatchLive(match)
+              ? 'match-meta live-badge'
+              : 'match-meta'}
+          >
+            ${focusLabel}
+          </div>
+          ${this._renderStatusChips(match)}
+          <div class="score-value">${this._formatScore(match)}</div>
+          <div class="match-meta">${this._formatMatchDate(match)}</div>
+        </div>
+        <div class="team">
+          ${getTeamImage(match.visitante)}
+          <span class="team-name">${match.visitante}</span>
+        </div>
+      </a>
+    `;
   }
 
   private _getFocusLabel(match: Match): string {
