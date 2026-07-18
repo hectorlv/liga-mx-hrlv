@@ -14,10 +14,8 @@ import { getDatabase, onValue, ref, Unsubscribe } from 'firebase/database';
 
 // Material Web imports
 import '@material/web/icon/icon.js';
-import '@material/web/tabs/primary-tab.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/text-button.js';
-import { MdTabs } from '@material/web/tabs/tabs.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
 // Styles and components
@@ -48,6 +46,20 @@ import {
 import { calculateTable } from '../utils/tableCalculator.js';
 import { APP_VERSION } from '../utils/version.js';
 import '../utils/material.js';
+
+interface NavigationTab {
+  label: string;
+  icon: string;
+  shortLabel?: string;
+}
+
+const NAVIGATION_TABS: readonly NavigationTab[] = [
+  { label: 'Inicio', icon: 'home' },
+  { label: 'Calendario', icon: 'calendar_month' },
+  { label: 'Tabla General', icon: 'format_list_numbered', shortLabel: 'Tabla' },
+  { label: 'Liguilla', icon: 'account_tree' },
+  { label: 'Estadísticas', icon: 'bar_chart' },
+];
 
 /**
  * Main class for LigaMX
@@ -85,11 +97,40 @@ export class LigaMxHrlv extends LitElement {
         padding: 0 12px;
       }
 
-      /* TABS CENTRADOS EN PC */
-      md-tabs {
+      .main-navigation {
+        display: flex;
+        align-items: stretch;
         max-width: 800px;
-        margin: 0;
-        --md-primary-tab-container-color: transparent;
+        min-width: 0;
+        overflow-x: auto;
+      }
+
+      .main-navigation a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 48px;
+        padding: 0 16px;
+        border-bottom: 3px solid transparent;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .main-navigation a:hover,
+      .main-navigation a:focus-visible {
+        background: var(--md-sys-color-surface-container);
+        color: var(--md-sys-color-primary);
+        outline: none;
+      }
+
+      .main-navigation a[aria-current='page'] {
+        border-bottom-color: var(--md-sys-color-primary);
+        color: var(--md-sys-color-primary);
+        font-weight: 800;
       }
 
       .admin-actions {
@@ -112,8 +153,13 @@ export class LigaMxHrlv extends LitElement {
           padding: 8px 52px 10px 8px;
         }
 
-        md-tabs {
+        .main-navigation {
           width: 100%;
+        }
+
+        .main-navigation a {
+          flex: 1 0 auto;
+          padding: 0 10px;
         }
 
         .admin-actions {
@@ -147,7 +193,6 @@ export class LigaMxHrlv extends LitElement {
       main {
         flex: 1;
         width: 100%;
-        max-width: max-content;
         margin: 0 auto;
         padding: 16px 0; /* Padding superior para separar del header */
         box-sizing: border-box;
@@ -244,31 +289,21 @@ export class LigaMxHrlv extends LitElement {
     return html`
       <header>
         <div class="header-content">
-          <md-tabs
-            .activeTabIndex=${this._getTabIndex(this.selectedTab)}
-            @change=${this._onTabsChange}
-          >
-            <md-primary-tab aria-label="Inicio">
-              <md-icon slot="icon">home</md-icon>
-              Inicio
-            </md-primary-tab>
-            <md-primary-tab aria-label="Calendario">
-              <md-icon slot="icon">calendar_month</md-icon>
-              Calendario
-            </md-primary-tab>
-            <md-primary-tab aria-label="Tabla General">
-              <md-icon slot="icon">format_list_numbered</md-icon>
-              Tabla
-            </md-primary-tab>
-            <md-primary-tab aria-label="Liguilla">
-              <md-icon slot="icon">account_tree</md-icon>
-              Liguilla
-            </md-primary-tab>
-            <md-primary-tab aria-label="Estadísticas">
-              <md-icon slot="icon">bar_chart</md-icon>
-              Estadísticas
-            </md-primary-tab>
-          </md-tabs>
+          <nav class="main-navigation" aria-label="Navegación principal">
+            ${NAVIGATION_TABS.map(
+              tab => html`
+                <a
+                  href=${this._tabHref(tab.label)}
+                  aria-current=${this.selectedTab === tab.label
+                    ? 'page'
+                    : 'false'}
+                >
+                  <md-icon>${tab.icon}</md-icon>
+                  ${tab.shortLabel || tab.label}
+                </a>
+              `,
+            )}
+          </nav>
           <div class="admin-actions">
             ${this.user
               ? html`
@@ -356,6 +391,7 @@ export class LigaMxHrlv extends LitElement {
         }
       }
     }
+    this._syncDocumentTitle();
   }
 
   private _getTab() {
@@ -379,7 +415,7 @@ export class LigaMxHrlv extends LitElement {
           .players=${this.players}
           .stadiums=${this.stadiums}
           .isAdmin=${this.isAdmin}
-          @back-to-calendar=${this._closeRoutedMatch}
+          @back-to-calendar=${() => this._closeRoutedMatch()}
           @edit-match=${this._editMatch}
         ></match-detail-page>
       `;
@@ -408,7 +444,7 @@ export class LigaMxHrlv extends LitElement {
               match.visitante === routedTeamName,
           )}
           .isAdmin=${this.isAdmin}
-          @back=${this._closeRoutedTeam}
+          @back=${() => this._closeRoutedTeam()}
           @edit-match=${this._editMatch}
         ></team-page>
       `;
@@ -424,10 +460,7 @@ export class LigaMxHrlv extends LitElement {
             .stadiums=${this.stadiums}
             .players=${this.players}
             .isAdmin=${this.isAdmin}
-            .navigateToTab=${(tab: string) => this._selectTab(tab)}
             @edit-match="${this._editMatch}"
-            @navigate-tab=${(event: CustomEvent<{ tab: string }>) =>
-              this._navigateToTab(event)}
           ></home-page>
         `;
       case 'Calendario':
@@ -563,53 +596,6 @@ export class LigaMxHrlv extends LitElement {
     this.user = null;
   }
 
-  private _getTabIndex(tab: string): number {
-    switch (tab) {
-      case 'Inicio':
-        return 0;
-      case 'Calendario':
-        return 1;
-      case 'Tabla General':
-        return 2;
-      case 'Liguilla':
-        return 3;
-      case 'Estadísticas':
-        return 4;
-      default:
-        return 0;
-    }
-  }
-
-  private _navigateToTab(e: CustomEvent<{ tab: string }>) {
-    this._selectTab(e.detail.tab);
-  }
-
-  private _selectTab(tab: string) {
-    if (this.selectedTab !== tab) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      this.selectedTab = tab;
-    }
-    this._clearMatchRoute();
-  }
-
-  private _onTabsChange(e: Event) {
-    const tabs = e.target as MdTabs;
-    const index = tabs.activeTabIndex ?? 0;
-    const tabNames = [
-      'Inicio',
-      'Calendario',
-      'Tabla General',
-      'Liguilla',
-      'Estadísticas',
-    ];
-    const next = tabNames[index] || 'Calendario';
-    if (this.selectedTab !== next) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      this.selectedTab = next;
-    }
-    this._clearMatchRoute();
-  }
-
   private _syncRouteFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const matchParam = params.get('match');
@@ -618,9 +604,14 @@ export class LigaMxHrlv extends LitElement {
     this.routedTeamName = params.get('team');
 
     const tab = params.get('tab');
-    if (tab) {
-      this.selectedTab = tab;
-    }
+    this.selectedTab = NAVIGATION_TABS.some(item => item.label === tab)
+      ? tab!
+      : 'Inicio';
+    this._syncDocumentTitle();
+  }
+
+  private _tabHref(tab: string): string {
+    return `?tab=${encodeURIComponent(tab)}`;
   }
 
   private _closeRoutedMatch() {
@@ -638,7 +629,10 @@ export class LigaMxHrlv extends LitElement {
     this.routedTeamName = null;
 
     const url = new URL(window.location.href);
-    if (!url.searchParams.has('match') && !url.searchParams.has('team')) return;
+    if (!url.searchParams.has('match') && !url.searchParams.has('team')) {
+      this._syncDocumentTitle();
+      return;
+    }
 
     url.searchParams.delete('match');
     url.searchParams.delete('team');
@@ -646,5 +640,33 @@ export class LigaMxHrlv extends LitElement {
       url.searchParams.set('tab', this.selectedTab);
     }
     window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    this._syncDocumentTitle();
+  }
+
+  private _syncDocumentTitle() {
+    document.title = `liga-mx-hrlv - ${this._documentTitleSuffix()}`;
+  }
+
+  private _documentTitleSuffix(): string {
+    if (this.routedTeamName) return this.routedTeamName;
+
+    if (this.routedMatchId !== null) {
+      const match = this.matchesList.find(
+        candidate => candidate.idMatch === this.routedMatchId,
+      );
+      if (match) return `${match.local} vs ${match.visitante}`;
+    }
+
+    switch (this.selectedTab) {
+      case 'Tabla General':
+        return 'Tabla';
+      case 'Inicio':
+      case 'Calendario':
+      case 'Liguilla':
+      case 'Estadísticas':
+        return this.selectedTab;
+      default:
+        return 'Inicio';
+    }
   }
 }

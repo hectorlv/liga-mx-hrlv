@@ -51,6 +51,8 @@ export class MatchDetailPage extends LitElement {
       :host {
         display: block;
         padding: 16px;
+        width: 100%;
+        box-sizing: border-box;
         /* Colores base para la página */
         --card-bg: var(--md-sys-color-surface, #ffffff);
         --header-bg: var(--md-sys-color-surface-container, #f8fafc);
@@ -551,7 +553,7 @@ export class MatchDetailPage extends LitElement {
     return html`
       <div class="desktop-back-button">
         <md-icon-button
-          @click=${this._goBack}
+          @click=${() => this._goBack()}
           aria-label="Volver al calendario"
           title="Volver al calendario"
         >
@@ -561,7 +563,7 @@ export class MatchDetailPage extends LitElement {
 
       <section class="match-header-card">
         <div class="top-nav">
-          <md-icon-button @click=${this._goBack} aria-label="Volver">
+          <md-icon-button @click=${() => this._goBack()} aria-label="Volver">
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
 
