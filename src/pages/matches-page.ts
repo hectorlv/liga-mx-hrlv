@@ -471,6 +471,11 @@ export class MatchesPage extends LitElement {
    * @param changed
    */
   override updated(changed: PropertyValues) {
+    if (changed.has('filters') && this.teamsSelect) {
+      this._restoreFilters();
+      return;
+    }
+
     if (
       changed.has('teams') &&
       this._hasRestoredFilters() &&
