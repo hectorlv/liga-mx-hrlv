@@ -471,7 +471,14 @@ export class MatchesPage extends LitElement {
    * @param changed
    */
   override updated(changed: PropertyValues) {
-    if (changed.has('filters') && this.teamsSelect) {
+    const previousFilters = changed.get('filters') as
+      | MatchFilters
+      | undefined;
+    if (
+      changed.has('filters') &&
+      !this._hasSameFilters(previousFilters, this.filters) &&
+      this.teamsSelect
+    ) {
       this._restoreFilters();
       return;
     }
@@ -775,6 +782,18 @@ export class MatchesPage extends LitElement {
       this.filters.jornada !== undefined ||
       this.filters.playoff !== undefined ||
       this.filters.today !== undefined
+    );
+  }
+
+  private _hasSameFilters(
+    first: MatchFilters | undefined,
+    second: MatchFilters,
+  ): boolean {
+    return (
+      first?.team === second.team &&
+      first?.jornada === second.jornada &&
+      first?.playoff === second.playoff &&
+      first?.today === second.today
     );
   }
 
