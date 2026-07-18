@@ -12,7 +12,6 @@ import {
   state,
 } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
-import './match-detail-page.js';
 
 import { MdFilledButton } from '@material/web/button/filled-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
@@ -43,6 +42,8 @@ export class MatchesPage extends LitElement {
         display: block;
         padding: 16px;
         width: 100%;
+        max-width: max-content;
+        margin: 0 auto;
         box-sizing: border-box;
         /* Tus variables globales ya deberían estar aplicadas en el index.html o componente padre */
         --card-bg: var(--md-sys-color-surface, #fff);
@@ -386,18 +387,10 @@ export class MatchesPage extends LitElement {
   @property({ type: Boolean }) isAdmin = false;
 
   @state() matchesRender: Match[] = [];
-  @state() showDetails: boolean = false;
-  @state() selectedMatch: Match | null = null;
 
   private readonly todayDate: Date = new Date();
   private todayDateSelected: boolean = false;
 
-  private savedFilters: {
-    teamIndex: string;
-    matchDayValue: string;
-    todayDateSelected: boolean;
-    onlyPlayOffSelected: boolean;
-  } | null = null;
   private isMobile: boolean = window.innerWidth < 600;
   private openRowMenuId: number | null = null;
 
@@ -462,33 +455,21 @@ export class MatchesPage extends LitElement {
    */
   override updated(changed: PropertyValues) {
     if (changed.has('matchesList')) {
-      if (this.showDetails) {
-        // in details view, just update the selected match reference
-        if (this.selectedMatch) {
-          const updatedMatch = this.matchesList.find(
-            m => m.idMatch === this.selectedMatch?.idMatch,
-          );
-          if (updatedMatch) {
-            this.selectedMatch = updatedMatch;
-          }
+      const today = new Date();
+      this.matchesList.some(match => {
+        if (
+          match.fecha instanceof Date &&
+          match.fecha.getFullYear() === today.getFullYear() &&
+          match.fecha.getMonth() === today.getMonth() &&
+          match.fecha.getDate() === today.getDate()
+        ) {
+          this.todayDateSelected = true;
+          if (this.todayDateCheckbox) this.todayDateCheckbox.selected = true;
+          return true;
         }
-      } else {
-        const today = new Date();
-        this.matchesList.some(match => {
-          if (
-            match.fecha instanceof Date &&
-            match.fecha.getFullYear() === today.getFullYear() &&
-            match.fecha.getMonth() === today.getMonth() &&
-            match.fecha.getDate() === today.getDate()
-          ) {
-            this.todayDateSelected = true;
-            if (this.todayDateCheckbox) this.todayDateCheckbox.selected = true;
-            return true;
-          }
-          return false;
-        });
-        this._filtersChanged();
-      }
+        return false;
+      });
+      this._filtersChanged();
     }
   }
 
@@ -500,20 +481,6 @@ export class MatchesPage extends LitElement {
   }
 
   override render() {
-    if (this.showDetails && this.selectedMatch) {
-      return html` <main>
-        <match-detail-page
-          .match="${this.selectedMatch}"
-          .matchesList="${this.matchesList}"
-          .table="${this.table}"
-          .teams="${this.teams}"
-          .players="${this.players}"
-          .stadiums="${this.stadiums}"
-          .isAdmin=${this.isAdmin}
-          @back-to-calendar="${this._backToCalendar}"
-        ></match-detail-page>
-      </main>`;
-    }
     return html`
       <main>
         <div class="filters-container">
@@ -623,7 +590,6 @@ export class MatchesPage extends LitElement {
       <a
         class="match-card"
         href=${this._matchHref(match)}
-        @click=${(event: MouseEvent) => this._onMatchLinkClick(event, match)}
         aria-label="Abrir detalle de ${match.local} contra ${match.visitante}"
       >
         <div class="cell-jornada">
@@ -731,56 +697,7 @@ export class MatchesPage extends LitElement {
     }
   }
 
-  private _showMatchDetails(match: Match) {
-    //Guardar filtros actuales
-    const teamIndex = this.teamsSelect.value || '';
-    const matchDayValue = this.matchDaySelect.value || '';
-    this.savedFilters = {
-      teamIndex,
-      matchDayValue,
-      todayDateSelected: this.todayDateSelected,
-      onlyPlayOffSelected: this.onlyPlayOffSwitch.selected,
-    };
-    this.selectedMatch = match;
-    this.showDetails = true;
-    // Reset scroll to top
-    window.scrollTo(0, 0);
-    this.requestUpdate();
-  }
-
-  private _onMatchLinkClick(event: MouseEvent, match: Match) {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-    event.preventDefault();
-    this._showMatchDetails(match);
-  }
-
   private _matchHref(match: Match): string {
     return `?tab=Calendario&match=${match.idMatch}`;
-  }
-
-  private async _backToCalendar() {
-    this.showDetails = false;
-    //Restaurar filtros
-    await this.updateComplete;
-    if (this.savedFilters) {
-      this.teamsSelect.value = this.savedFilters.teamIndex;
-      this.matchDaySelect.value = this.savedFilters.matchDayValue;
-      this.todayDateSelected = this.savedFilters.todayDateSelected;
-      if (this.todayDateCheckbox)
-        this.todayDateCheckbox.selected = this.todayDateSelected;
-      this.onlyPlayOffSwitch.selected = this.savedFilters.onlyPlayOffSelected;
-      this.savedFilters = null;
-      this.requestUpdate();
-      await this.updateComplete;
-      this._filtersChanged();
-    }
   }
 }

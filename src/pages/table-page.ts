@@ -1,10 +1,9 @@
 import { LitElement, css, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { isMatchLive } from '../utils/matchStatus.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import './team-page.js';
 
 /**
  * Page for the table of positions
@@ -17,6 +16,10 @@ export class TablePage extends LitElement {
       :host {
         display: block;
         padding: var(--space-16);
+        width: 100%;
+        max-width: max-content;
+        margin: 0 auto;
+        box-sizing: border-box;
       }
 
       /* Leyenda de clasificación */
@@ -322,27 +325,7 @@ export class TablePage extends LitElement {
   @property({ type: Array }) matchesList!: Match[];
   @property({ type: Boolean }) isAdmin = false;
 
-  @state() private selectedTeam: string | null = null;
-
   override render() {
-    if (this.selectedTeam) {
-      return html`
-        <team-page
-          .team=${this.table.find(t => t.equipo === this.selectedTeam)!}
-          .teamPosition=${this.table.findIndex(
-            t => t.equipo === this.selectedTeam,
-          ) + 1}
-          .players=${this.players.get(this.selectedTeam.replaceAll('.', ''))!}
-          .matchesList=${this.matchesList.filter(
-            m =>
-              m.local === this.selectedTeam ||
-              m.visitante === this.selectedTeam,
-          )}
-          .isAdmin=${this.isAdmin}
-          @back=${() => (this.selectedTeam = null)}
-        ></team-page>
-      `;
-    }
     return html`
       <main>
         <div class="legend">
@@ -382,8 +365,6 @@ export class TablePage extends LitElement {
               <a
                 class="table-row ${statusClass}"
                 href=${this._teamHref(team.equipo)}
-                @click=${(event: MouseEvent) =>
-                  this._onTeamLinkClick(event, team.equipo)}
                 aria-label="Abrir detalle de ${team.equipo}"
               >
                 <div class="indicator-bar"></div>
@@ -448,24 +429,6 @@ export class TablePage extends LitElement {
         (match.local === teamName || match.visitante === teamName) &&
         isMatchLive(match),
     );
-  }
-
-  private selectTeam(teamName: string) {
-    this.selectedTeam = teamName;
-  }
-
-  private _onTeamLinkClick(event: MouseEvent, teamName: string) {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-    event.preventDefault();
-    this.selectTeam(teamName);
   }
 
   private _teamHref(teamName: string): string {

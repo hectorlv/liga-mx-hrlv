@@ -1,8 +1,6 @@
 import '@material/web/icon/icon.js';
-import '@material/web/button/filled-button.js';
-import '@material/web/button/outlined-button.js';
-import { css, html, LitElement, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { css, html, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, Player, PlayerTeam, TableEntry } from '../types/index.js';
 import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
@@ -14,7 +12,6 @@ import {
   isMatchLive,
   lineupsReadyBeforeKickoff,
 } from '../utils/matchStatus.js';
-import './match-detail-page.js';
 
 type NavigationTab =
   | 'Calendario'
@@ -409,6 +406,42 @@ export class HomePage extends LitElement {
         gap: 10px;
       }
 
+      .action-link,
+      .panel-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid var(--md-sys-color-primary);
+        border-radius: 999px;
+        color: var(--md-sys-color-primary);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .action-link.primary {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+      }
+
+      .action-link:hover,
+      .action-link:focus-visible,
+      .panel-link:hover,
+      .panel-link:focus-visible {
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+        outline: 2px solid var(--md-sys-color-primary);
+        outline-offset: 2px;
+      }
+
+      .action-link.primary:hover,
+      .action-link.primary:focus-visible {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+      }
+
       @media (min-width: 760px) {
         .hero {
           grid-template-columns: minmax(0, 1fr);
@@ -479,36 +512,7 @@ export class HomePage extends LitElement {
   @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Object }) players: PlayerTeam = new Map();
   @property({ type: Boolean }) isAdmin = false;
-  @property({ attribute: false }) navigateToTab?: (tab: NavigationTab) => void;
-
-  @state() private showDetails = false;
-  @state() private selectedMatch: Match | null = null;
-
-  override updated(changedProperties: PropertyValues) {
-    if (changedProperties.has('matchesList') && this.selectedMatch) {
-      const updatedMatch = this.matchesList.find(
-        match => match.idMatch === this.selectedMatch?.idMatch,
-      );
-      if (updatedMatch) this.selectedMatch = updatedMatch;
-    }
-  }
-
   override render() {
-    if (this.showDetails && this.selectedMatch) {
-      return html`
-        <match-detail-page
-          .match=${this.selectedMatch}
-          .matchesList=${this.matchesList}
-          .table=${this.table}
-          .teams=${this.teams}
-          .players=${this.players}
-          .stadiums=${this.stadiums}
-          .isAdmin=${this.isAdmin}
-          @back-to-calendar=${this._backToHome}
-        ></match-detail-page>
-      `;
-    }
-
     const focusMatches = this._getFocusMatches();
     const topScorer = this._getLeader('goals');
     const topAssist = this._getLeader('assists');
@@ -528,20 +532,22 @@ export class HomePage extends LitElement {
               actividad y accesos directos a las vistas completas.
             </p>
             <div class="actions">
-              <md-filled-button
-                @click=${() => this._navigate('Calendario')}
+              <a
+                class="action-link primary"
+                href=${this._tabHref('Calendario')}
                 aria-label="Ir al calendario"
               >
-                <md-icon slot="icon">calendar_month</md-icon>
+                <md-icon>calendar_month</md-icon>
                 Calendario
-              </md-filled-button>
-              <md-outlined-button
-                @click=${() => this._navigate('Tabla General')}
+              </a>
+              <a
+                class="action-link"
+                href=${this._tabHref('Tabla General')}
                 aria-label="Ir a la tabla general"
               >
-                <md-icon slot="icon">format_list_numbered</md-icon>
+                <md-icon>format_list_numbered</md-icon>
                 Tabla
-              </md-outlined-button>
+              </a>
             </div>
           </div>
 
@@ -594,12 +600,13 @@ export class HomePage extends LitElement {
                 <h2>Top de la tabla</h2>
                 <p class="panel-subtitle">Primeros cuatro lugares</p>
               </div>
-              <md-outlined-button
-                @click=${() => this._navigate('Tabla General')}
+              <a
+                class="panel-link"
+                href=${this._tabHref('Tabla General')}
                 aria-label="Ver tabla completa"
               >
                 Ver tabla
-              </md-outlined-button>
+              </a>
             </div>
             <div class="table-list">
               ${this.table.length === 0
@@ -618,12 +625,13 @@ export class HomePage extends LitElement {
                 <h2>Actividad</h2>
                 <p class="panel-subtitle">Líderes disponibles por eventos</p>
               </div>
-              <md-outlined-button
-                @click=${() => this._navigate('Estadísticas')}
+              <a
+                class="panel-link"
+                href=${this._tabHref('Estadísticas')}
                 aria-label="Ver estadísticas completas"
               >
                 Ver stats
-              </md-outlined-button>
+              </a>
             </div>
             <div class="leader-list">
               ${topScorer
@@ -641,12 +649,13 @@ export class HomePage extends LitElement {
                 <h2>Zona de Liguilla</h2>
                 <p class="panel-subtitle">Equipos mejor sembrados</p>
               </div>
-              <md-outlined-button
-                @click=${() => this._navigate('Liguilla')}
+              <a
+                class="panel-link"
+                href=${this._tabHref('Liguilla')}
                 aria-label="Ver liguilla"
               >
                 Ver bracket
-              </md-outlined-button>
+              </a>
             </div>
             ${qualifiedTeams.length === 0
               ? html`<p class="empty">
@@ -677,10 +686,9 @@ export class HomePage extends LitElement {
   ) {
     const title = tab === 'Tabla General' ? 'Tabla' : tab;
     return html`
-      <button
+      <a
         class="quick-card"
-        type="button"
-        @click=${() => this._navigate(tab)}
+        href=${this._tabHref(tab)}
       >
         <span class="quick-icon"><md-icon>${icon}</md-icon></span>
         <span class="quick-copy">
@@ -688,7 +696,7 @@ export class HomePage extends LitElement {
           <p>${description}</p>
         </span>
         <md-icon>chevron_right</md-icon>
-      </button>
+      </a>
     `;
   }
 
@@ -760,7 +768,6 @@ export class HomePage extends LitElement {
         class="match-focus"
         href=${this._matchHref(match)}
         aria-label="Abrir detalle de ${match.local} contra ${match.visitante}"
-        @click=${(event: MouseEvent) => this._onMatchLinkClick(event, match)}
       >
         <div class="team">
           ${getTeamImage(match.local)}
@@ -861,39 +868,12 @@ export class HomePage extends LitElement {
     );
   }
 
-  private _navigate(tab: NavigationTab) {
-    this.navigateToTab?.(tab);
-    this.dispatchEvent(
-      new CustomEvent('navigate-tab', {
-        detail: { tab },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  }
-
-  private _openMatchDetails(match: Match) {
-    this.selectedMatch = match;
-    this.showDetails = true;
-    window.scrollTo(0, 0);
-  }
-
-  private _onMatchLinkClick(event: MouseEvent, match: Match) {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-    event.preventDefault();
-    this._openMatchDetails(match);
-  }
-
   private _matchHref(match: Match): string {
     return `?tab=Inicio&match=${match.idMatch}`;
+  }
+
+  private _tabHref(tab: NavigationTab): string {
+    return `?tab=${encodeURIComponent(tab)}`;
   }
 
   private _renderStatusChips(match: Match) {
@@ -914,9 +894,4 @@ export class HomePage extends LitElement {
     `;
   }
 
-  private _backToHome() {
-    this.showDetails = false;
-    this.selectedMatch = null;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
 }

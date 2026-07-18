@@ -59,6 +59,8 @@ export class TeamPage extends LitElement {
       :host {
         display: block;
         padding: 16px;
+        width: 100%;
+        box-sizing: border-box;
         --card-bg: var(--md-sys-color-surface);
         animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
       }
@@ -471,7 +473,7 @@ export class TeamPage extends LitElement {
     return html`
       <main>
         <div class="header-container">
-          <md-icon-button @click=${this._goBack} title="Volver">
+          <md-icon-button @click=${() => this._goBack()} title="Volver">
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
           ${getTeamImage(this.team.equipo)}
