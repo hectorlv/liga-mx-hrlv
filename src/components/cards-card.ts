@@ -452,7 +452,7 @@ export class CardsCard extends LitElement {
                     ).map(
                       p =>
                         html`<md-select-option value=${p.number}
-                          >${p.name}</md-select-option
+                          >${p.number}- ${p.name}</md-select-option
                         >`,
                     )}
                   </md-outlined-select>
@@ -595,7 +595,7 @@ export class CardsCard extends LitElement {
                   ${this.editPlayers.map(
                     p =>
                       html`<md-select-option value=${p.number}
-                        >${p.name}</md-select-option
+                        >${p.number}- ${p.name}</md-select-option
                       >`,
                   )}
                 </md-outlined-select>

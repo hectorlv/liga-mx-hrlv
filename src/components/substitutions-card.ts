@@ -415,7 +415,7 @@ export class SubstitutionsCard extends LitElement {
                     ${this._getSubstitutePlayers(side).map(
                       p =>
                         html`<md-select-option value=${p.number}
-                          >${p.name}</md-select-option
+                          >${p.number}- ${p.name}</md-select-option
                         >`,
                     )}
                   </md-outlined-select>
@@ -432,7 +432,7 @@ export class SubstitutionsCard extends LitElement {
                     ${this._getActivePlayers(side).map(
                       p =>
                         html`<md-select-option value=${p.number}
-                          >${p.name}</md-select-option
+                          >${p.number}- ${p.name}</md-select-option
                         >`,
                     )}
                   </md-outlined-select>
@@ -514,7 +514,7 @@ export class SubstitutionsCard extends LitElement {
                   ${this.editInPlayers.map(
                     p =>
                       html`<md-select-option value=${p.number}
-                        >${p.name}</md-select-option
+                        >${p.number}- ${p.name}</md-select-option
                       >`,
                   )}
                 </md-outlined-select>
@@ -526,7 +526,7 @@ export class SubstitutionsCard extends LitElement {
                   ${this.editOutPlayers.map(
                     p =>
                       html`<md-select-option value=${p.number}
-                        >${p.name}</md-select-option
+                        >${p.number}- ${p.name}</md-select-option
                       >`,
                   )}
                 </md-outlined-select>
