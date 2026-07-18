@@ -278,15 +278,17 @@ export class EventsTimeline extends LitElement {
         </div>
 
         <div class="timeline-container">
-          ${items.length === 0
-            ? html`<div class="no-events">
-                El partido no ha comenzado o no hay eventos registrados.
-              </div>`
-            : html`
-                <div class="timeline">
-                  ${items.map(item => this._renderItem(item))}
-                </div>
-              `}
+          ${
+            items.length === 0
+              ? html`<div class="no-events">
+                  El partido no ha comenzado o no hay eventos registrados.
+                </div>`
+              : html`
+                  <div class="timeline">
+                    ${items.map(item => this._renderItem(item))}
+                  </div>
+                `
+          }
         </div>
       </div>
     `;
@@ -324,22 +326,26 @@ export class EventsTimeline extends LitElement {
               <md-icon>sports_soccer</md-icon>
               ${item.ownGoal ? 'Autogol' : 'Gol'}
             </span>
-            ${item.goalType
-              ? html`<span
-                  class="badge"
-                  style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
-                  >${GOAL_TYPE_LABELS[item.goalType]}</span
-                >`
-              : ''}
+            ${
+              item.goalType
+                ? html`<span
+                    class="badge"
+                    style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
+                    >${GOAL_TYPE_LABELS[item.goalType]}</span
+                  >`
+                : ''
+            }
           </div>
           <div class="event-text">
             ${this._playerName(playerTeam, item.player)}
           </div>
-          ${item.assist
-            ? html`<div class="event-subtext">
-                A: ${this._playerName(item.team, item.assist)}
-              </div>`
-            : ''}
+          ${
+            item.assist
+              ? html`<div class="event-subtext">
+                  A: ${this._playerName(item.team, item.assist)}
+                </div>`
+              : ''
+          }
         </div>
       </div>
     `;
@@ -363,13 +369,15 @@ export class EventsTimeline extends LitElement {
               >
               ${isYellow ? 'Amarilla' : 'Roja'}
             </span>
-            ${item.foulType
-              ? html`<span
-                  class="badge"
-                  style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
-                  >${FOUL_TYPE_LABELS[item.foulType] || item.foulType}</span
-                >`
-              : ''}
+            ${
+              item.foulType
+                ? html`<span
+                    class="badge"
+                    style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface)"
+                    >${FOUL_TYPE_LABELS[item.foulType] || item.foulType}</span
+                  >`
+                : ''
+            }
           </div>
           <div class="event-text">
             ${this._playerName(item.team, item.player)}

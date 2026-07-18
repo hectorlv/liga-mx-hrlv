@@ -285,41 +285,43 @@ export class StatsPage extends LitElement {
             <div class="meta">Los 10 mejores romperedes</div>
           </div>
           <div class="table-wrapper">
-            ${topScorers.length === 0
-              ? html`<p class="meta">Sin goles registrados.</p>`
-              : html`
-                  <table class="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Jugador</th>
-                        <th>Equipo</th>
-                        <th class="num-col">G</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${topScorers.map(
-                        (p, i) => html`
-                          <tr class="${i === 0 ? 'rank-1' : ''}">
-                            <td>${i + 1}</td>
-                            <td style="font-weight: bold;">${p.name}</td>
-                            <td>
-                              <div class="team-cell">
-                                ${getTeamImage(p.team)} ${p.team}
-                              </div>
-                            </td>
-                            <td
-                              class="num-col"
-                              style="font-weight:bold; color: var(--md-sys-color-primary)"
-                            >
-                              ${p.goals}
-                            </td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
-                `}
+            ${
+              topScorers.length === 0
+                ? html`<p class="meta">Sin goles registrados.</p>`
+                : html`
+                    <table class="modern-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Jugador</th>
+                          <th>Equipo</th>
+                          <th class="num-col">G</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${topScorers.map(
+                          (p, i) => html`
+                            <tr class="${i === 0 ? 'rank-1' : ''}">
+                              <td>${i + 1}</td>
+                              <td style="font-weight: bold;">${p.name}</td>
+                              <td>
+                                <div class="team-cell">
+                                  ${getTeamImage(p.team)} ${p.team}
+                                </div>
+                              </td>
+                              <td
+                                class="num-col"
+                                style="font-weight:bold; color: var(--md-sys-color-primary)"
+                              >
+                                ${p.goals}
+                              </td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  `
+            }
           </div>
         </div>
 
@@ -329,41 +331,43 @@ export class StatsPage extends LitElement {
             <div class="meta">Los 10 mejores pasadores</div>
           </div>
           <div class="table-wrapper">
-            ${topAssists.length === 0
-              ? html`<p class="meta">Sin asistencias registradas.</p>`
-              : html`
-                  <table class="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Jugador</th>
-                        <th>Equipo</th>
-                        <th class="num-col">Ast</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${topAssists.map(
-                        (p, i) => html`
-                          <tr class="${i === 0 ? 'rank-1' : ''}">
-                            <td>${i + 1}</td>
-                            <td style="font-weight: bold;">${p.name}</td>
-                            <td>
-                              <div class="team-cell">
-                                ${getTeamImage(p.team)} ${p.team}
-                              </div>
-                            </td>
-                            <td
-                              class="num-col"
-                              style="font-weight:bold; color: var(--md-sys-color-primary)"
-                            >
-                              ${p.assists}
-                            </td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
-                `}
+            ${
+              topAssists.length === 0
+                ? html`<p class="meta">Sin asistencias registradas.</p>`
+                : html`
+                    <table class="modern-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Jugador</th>
+                          <th>Equipo</th>
+                          <th class="num-col">Ast</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${topAssists.map(
+                          (p, i) => html`
+                            <tr class="${i === 0 ? 'rank-1' : ''}">
+                              <td>${i + 1}</td>
+                              <td style="font-weight: bold;">${p.name}</td>
+                              <td>
+                                <div class="team-cell">
+                                  ${getTeamImage(p.team)} ${p.team}
+                                </div>
+                              </td>
+                              <td
+                                class="num-col"
+                                style="font-weight:bold; color: var(--md-sys-color-primary)"
+                              >
+                                ${p.assists}
+                              </td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  `
+            }
           </div>
         </div>
 
@@ -373,78 +377,88 @@ export class StatsPage extends LitElement {
             <div class="meta">Minutos acumulados para cumplir la norma</div>
           </div>
           <div class="table-wrapper">
-            ${teamStats.length === 0
-              ? html`<p class="meta">No hay datos.</p>`
-              : html`
-                  <table class="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Equipo</th>
-                        <th class="num-col">Menores Alineados</th>
-                        <th class="num-col">Minutos Acumulados</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${teamStatsByU23.map((t, i) => {
-                        const isFulfilled =
-                          t.u23countedMinutes >= REQUIRED_U23_MINUTES;
-                        const minutesToFulfill = Math.max(
-                          0,
-                          REQUIRED_U23_MINUTES - t.u23countedMinutes,
-                        );
-                        const relativeProgress =
-                          (t.u23countedMinutes / maxU23CountedMinutes) * 100;
+            ${
+              teamStats.length === 0
+                ? html`<p class="meta">No hay datos.</p>`
+                : html`
+                    <table class="modern-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Equipo</th>
+                          <th class="num-col">Menores Alineados</th>
+                          <th class="num-col">Minutos Acumulados</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${teamStatsByU23.map((t, i) => {
+                          const isFulfilled =
+                            t.u23countedMinutes >= REQUIRED_U23_MINUTES;
+                          const minutesToFulfill = Math.max(
+                            0,
+                            REQUIRED_U23_MINUTES - t.u23countedMinutes,
+                          );
+                          const relativeProgress =
+                            (t.u23countedMinutes / maxU23CountedMinutes) * 100;
 
-                        return html`
-                          <tr class="team-summary-row">
-                            <td class="team-rank-cell" rowspan="2">${i + 1}</td>
-                            <td>
-                              <div class="team-cell">
-                                ${getTeamImage(t.team)} ${t.team}
-                              </div>
-                            </td>
-                            <td class="num-col">${t.u23PlayersCount}</td>
-                            <td class="num-col">${t.u23totalMinutes}'</td>
-                          </tr>
-                          <tr class="progress-row">
-                            <td class="progress-cell" colspan="3">
-                              <div class="progress-head">
-                                <span
-                                  class="progress-status ${isFulfilled
-                                    ? 'fulfilled'
-                                    : 'pending'}"
-                                >
-                                  ${isFulfilled ? 'Cumplido' : 'Pendiente'}
-                                </span>
-                              </div>
-                              <div class="progress-track">
-                                <div
-                                  class="progress-fill ${isFulfilled
-                                    ? 'fulfilled'
-                                    : 'pending'}"
-                                  style="width: ${relativeProgress}%;"
-                                ></div>
-                              </div>
-                              <div class="progress-meta">
-                                <span>${t.u23countedMinutes}' acreditados</span>
-                                <span
-                                  style="color: ${isFulfilled
-                                    ? 'var(--md-sys-color-primary)'
-                                    : 'var(--app-color-danger, #D32F2F)'}; font-weight: 700;"
-                                >
-                                  ${isFulfilled
-                                    ? '✓ Meta cubierta'
-                                    : `Faltan ${minutesToFulfill}'`}
-                                </span>
-                              </div>
-                            </td>
-                          </tr>
-                        `;
-                      })}
-                    </tbody>
-                  </table>
-                `}
+                          return html`
+                            <tr class="team-summary-row">
+                              <td class="team-rank-cell" rowspan="2">
+                                ${i + 1}
+                              </td>
+                              <td>
+                                <div class="team-cell">
+                                  ${getTeamImage(t.team)} ${t.team}
+                                </div>
+                              </td>
+                              <td class="num-col">${t.u23PlayersCount}</td>
+                              <td class="num-col">${t.u23totalMinutes}'</td>
+                            </tr>
+                            <tr class="progress-row">
+                              <td class="progress-cell" colspan="3">
+                                <div class="progress-head">
+                                  <span
+                                    class="progress-status ${
+                                      isFulfilled ? 'fulfilled' : 'pending'
+                                    }"
+                                  >
+                                    ${isFulfilled ? 'Cumplido' : 'Pendiente'}
+                                  </span>
+                                </div>
+                                <div class="progress-track">
+                                  <div
+                                    class="progress-fill ${
+                                      isFulfilled ? 'fulfilled' : 'pending'
+                                    }"
+                                    style="width: ${relativeProgress}%;"
+                                  ></div>
+                                </div>
+                                <div class="progress-meta">
+                                  <span
+                                    >${t.u23countedMinutes}' acreditados</span
+                                  >
+                                  <span
+                                    style="color: ${
+                                      isFulfilled
+                                        ? 'var(--md-sys-color-primary)'
+                                        : 'var(--app-color-danger, #D32F2F)'
+                                    }; font-weight: 700;"
+                                  >
+                                    ${
+                                      isFulfilled
+                                        ? '✓ Meta cubierta'
+                                        : `Faltan ${minutesToFulfill}'`
+                                    }
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          `;
+                        })}
+                      </tbody>
+                    </table>
+                  `
+            }
           </div>
         </div>
 
@@ -454,42 +468,44 @@ export class StatsPage extends LitElement {
             <div class="meta">Menos puntos es mejor (A=1, RI=3, RD=4)</div>
           </div>
           <div class="table-wrapper">
-            ${fairPlay.length === 0
-              ? html`<p class="meta">Sin tarjetas.</p>`
-              : html`
-                  <table class="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Equipo</th>
-                        <th class="num-col">Pts</th>
-                        <th class="num-col" style="color:#B8860B">A</th>
-                        <th class="num-col" style="color:#D32F2F">RI</th>
-                        <th class="num-col" style="color:#D32F2F">RD</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${fairPlay.map(
-                        (t, i) => html`
-                          <tr class="${i === 0 ? 'rank-1' : ''}">
-                            <td>${i + 1}</td>
-                            <td>
-                              <div class="team-cell">
-                                ${getTeamImage(t.team)} ${t.team}
-                              </div>
-                            </td>
-                            <td class="num-col" style="font-weight:bold;">
-                              ${t.fairPlayPoints}
-                            </td>
-                            <td class="num-col">${t.yellows}</td>
-                            <td class="num-col">${t.indirectReds}</td>
-                            <td class="num-col">${t.directReds}</td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
-                `}
+            ${
+              fairPlay.length === 0
+                ? html`<p class="meta">Sin tarjetas.</p>`
+                : html`
+                    <table class="modern-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Equipo</th>
+                          <th class="num-col">Pts</th>
+                          <th class="num-col" style="color:#B8860B">A</th>
+                          <th class="num-col" style="color:#D32F2F">RI</th>
+                          <th class="num-col" style="color:#D32F2F">RD</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${fairPlay.map(
+                          (t, i) => html`
+                            <tr class="${i === 0 ? 'rank-1' : ''}">
+                              <td>${i + 1}</td>
+                              <td>
+                                <div class="team-cell">
+                                  ${getTeamImage(t.team)} ${t.team}
+                                </div>
+                              </td>
+                              <td class="num-col" style="font-weight:bold;">
+                                ${t.fairPlayPoints}
+                              </td>
+                              <td class="num-col">${t.yellows}</td>
+                              <td class="num-col">${t.indirectReds}</td>
+                              <td class="num-col">${t.directReds}</td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  `
+            }
           </div>
         </div>
 
@@ -499,49 +515,51 @@ export class StatsPage extends LitElement {
             <div class="meta">Goles a favor y en contra</div>
           </div>
           <div class="table-wrapper">
-            ${teamStats.length === 0
-              ? html`<p class="meta">No hay datos.</p>`
-              : html`
-                  <table class="modern-table">
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Equipo</th>
-                        <th class="num-col">GF</th>
-                        <th class="num-col">GC</th>
-                        <th class="num-col">Dif</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${teamStats.slice(0, 10).map(
-                        (t, i) => html`
-                          <tr>
-                            <td>${i + 1}</td>
-                            <td>
-                              <div class="team-cell">
-                                ${getTeamImage(t.team)} ${t.team}
-                              </div>
-                            </td>
-                            <td class="num-col">${t.goalsFor}</td>
-                            <td class="num-col">${t.goalsAgainst}</td>
-                            <td
-                              class="num-col"
-                              style="font-weight:bold; color:${t.goalsFor -
-                                t.goalsAgainst >
-                              0
-                                ? 'var(--md-sys-color-primary)'
-                                : 'inherit'}"
-                            >
-                              ${t.goalsFor - t.goalsAgainst > 0
-                                ? '+'
-                                : ''}${t.goalsFor - t.goalsAgainst}
-                            </td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
-                `}
+            ${
+              teamStats.length === 0
+                ? html`<p class="meta">No hay datos.</p>`
+                : html`
+                    <table class="modern-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Equipo</th>
+                          <th class="num-col">GF</th>
+                          <th class="num-col">GC</th>
+                          <th class="num-col">Dif</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${teamStats.slice(0, 10).map(
+                          (t, i) => html`
+                            <tr>
+                              <td>${i + 1}</td>
+                              <td>
+                                <div class="team-cell">
+                                  ${getTeamImage(t.team)} ${t.team}
+                                </div>
+                              </td>
+                              <td class="num-col">${t.goalsFor}</td>
+                              <td class="num-col">${t.goalsAgainst}</td>
+                              <td
+                                class="num-col"
+                                style="font-weight:bold; color:${
+                                  t.goalsFor - t.goalsAgainst > 0
+                                    ? 'var(--md-sys-color-primary)'
+                                    : 'inherit'
+                                }"
+                              >
+                                ${
+                                  t.goalsFor - t.goalsAgainst > 0 ? '+' : ''
+                                }${t.goalsFor - t.goalsAgainst}
+                              </td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  `
+            }
           </div>
         </div>
       </div>

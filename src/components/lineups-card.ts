@@ -270,115 +270,119 @@ export class LineupsCard extends LitElement {
       <div class="card">
         <div class="section-header">
           <h3><md-icon>group</md-icon> Alineaciones</h3>
-          ${this._lineupsReady()
-            ? html`
-                <md-outlined-button
-                  @click=${this._toggleLineups}
-                  title="${lineupsLabel}"
-                >
-                  <md-icon slot="icon">${lineupsIcon}</md-icon>
-                  ${lineupsLabel}
-                </md-outlined-button>
-              `
-            : null}
+          ${
+            this._lineupsReady()
+              ? html`
+                  <md-outlined-button
+                    @click=${this._toggleLineups}
+                    title="${lineupsLabel}"
+                  >
+                    <md-icon slot="icon">${lineupsIcon}</md-icon>
+                    ${lineupsLabel}
+                  </md-outlined-button>
+                `
+              : null
+          }
         </div>
 
-        ${this.lineupsCollapsed
-          ? html`
-              <p class="lineup-collapsed-hint">
-                Las alineaciones iniciales están guardadas y listas.<br />
-                Usa el botón de arriba si necesitas hacer cambios.
-              </p>
-            `
-          : html`
-              <div class="lineup">
-                <div class="team-column">
-                  <div class="lineup-header">
-                    <h4>${local} (Local)</h4>
-                    <md-icon-button
-                      @click=${() => this._openAddPlayerDialog('local')}
-                      title="Agregar jugador"
-                    >
-                      <md-icon>person_add</md-icon>
-                    </md-icon-button>
+        ${
+          this.lineupsCollapsed
+            ? html`
+                <p class="lineup-collapsed-hint">
+                  Las alineaciones iniciales están guardadas y listas.<br />
+                  Usa el botón de arriba si necesitas hacer cambios.
+                </p>
+              `
+            : html`
+                <div class="lineup">
+                  <div class="team-column">
+                    <div class="lineup-header">
+                      <h4>${local} (Local)</h4>
+                      <md-icon-button
+                        @click=${() => this._openAddPlayerDialog('local')}
+                        title="Agregar jugador"
+                      >
+                        <md-icon>person_add</md-icon>
+                      </md-icon-button>
+                    </div>
+
+                    ${this.localPlayers.map(player => {
+                      const isTitular = lineupLocal?.some(
+                        p => p.number === player.number && p.titular,
+                      );
+                      return html`
+                        <div
+                          class="player-row ${isTitular ? 'selected' : ''}"
+                          role="button"
+                          tabindex="0"
+                          @click=${(e: Event) =>
+                            this._toggleRow(e, 'local', player.number)}
+                        >
+                          <md-checkbox
+                            id="lineupLocal-${player.number}"
+                            .checked=${isTitular}
+                            @change=${(e: Event) =>
+                              this._onLineupChange(e, 'local', player.number)}
+                            @click=${(e: Event) => e.stopPropagation()}
+                          ></md-checkbox>
+                          <div class="player-info-wrapper">
+                            <player-info .player=${player}></player-info>
+                          </div>
+                        </div>
+                      `;
+                    })}
                   </div>
 
-                  ${this.localPlayers.map(player => {
-                    const isTitular = lineupLocal?.some(
-                      p => p.number === player.number && p.titular,
-                    );
-                    return html`
-                      <div
-                        class="player-row ${isTitular ? 'selected' : ''}"
-                        role="button"
-                        tabindex="0"
-                        @click=${(e: Event) =>
-                          this._toggleRow(e, 'local', player.number)}
+                  <div class="team-column">
+                    <div class="lineup-header">
+                      <h4>${visitante} (Visitante)</h4>
+                      <md-icon-button
+                        @click=${() => this._openAddPlayerDialog('visitor')}
+                        title="Agregar jugador"
                       >
-                        <md-checkbox
-                          id="lineupLocal-${player.number}"
-                          .checked=${isTitular}
-                          @change=${(e: Event) =>
-                            this._onLineupChange(e, 'local', player.number)}
-                          @click=${(e: Event) => e.stopPropagation()}
-                        ></md-checkbox>
-                        <div class="player-info-wrapper">
-                          <player-info .player=${player}></player-info>
-                        </div>
-                      </div>
-                    `;
-                  })}
-                </div>
+                        <md-icon>person_add</md-icon>
+                      </md-icon-button>
+                    </div>
 
-                <div class="team-column">
-                  <div class="lineup-header">
-                    <h4>${visitante} (Visitante)</h4>
-                    <md-icon-button
-                      @click=${() => this._openAddPlayerDialog('visitor')}
-                      title="Agregar jugador"
-                    >
-                      <md-icon>person_add</md-icon>
-                    </md-icon-button>
+                    ${this.visitorPlayers.map(player => {
+                      const isTitular = lineupVisitor?.some(
+                        p => p.number === player.number && p.titular,
+                      );
+                      return html`
+                        <div
+                          class="player-row ${isTitular ? 'selected' : ''}"
+                          role="button"
+                          tabindex="0"
+                          @click=${(e: Event) =>
+                            this._toggleRow(e, 'visitor', player.number)}
+                        >
+                          <md-checkbox
+                            id="lineupVisitor-${player.number}"
+                            .checked=${isTitular}
+                            @change=${(e: Event) =>
+                              this._onLineupChange(e, 'visitor', player.number)}
+                            @click=${(e: Event) => e.stopPropagation()}
+                          ></md-checkbox>
+                          <div class="player-info-wrapper">
+                            <player-info .player=${player}></player-info>
+                          </div>
+                        </div>
+                      `;
+                    })}
                   </div>
-
-                  ${this.visitorPlayers.map(player => {
-                    const isTitular = lineupVisitor?.some(
-                      p => p.number === player.number && p.titular,
-                    );
-                    return html`
-                      <div
-                        class="player-row ${isTitular ? 'selected' : ''}"
-                        role="button"
-                        tabindex="0"
-                        @click=${(e: Event) =>
-                          this._toggleRow(e, 'visitor', player.number)}
-                      >
-                        <md-checkbox
-                          id="lineupVisitor-${player.number}"
-                          .checked=${isTitular}
-                          @change=${(e: Event) =>
-                            this._onLineupChange(e, 'visitor', player.number)}
-                          @click=${(e: Event) => e.stopPropagation()}
-                        ></md-checkbox>
-                        <div class="player-info-wrapper">
-                          <player-info .player=${player}></player-info>
-                        </div>
-                      </div>
-                    `;
-                  })}
                 </div>
-              </div>
 
-              <div class="card-footer">
-                <md-filled-button
-                  ?disabled=${!this._lineupsReady()}
-                  @click=${this.updateLineups}
-                >
-                  <md-icon slot="icon">save</md-icon>
-                  Guardar Alineaciones
-                </md-filled-button>
-              </div>
-            `}
+                <div class="card-footer">
+                  <md-filled-button
+                    ?disabled=${!this._lineupsReady()}
+                    @click=${this.updateLineups}
+                  >
+                    <md-icon slot="icon">save</md-icon>
+                    Guardar Alineaciones
+                  </md-filled-button>
+                </div>
+              `
+        }
       </div>
 
       <md-dialog id="dialogLineups" type="alert">
@@ -395,9 +399,11 @@ export class LineupsCard extends LitElement {
 
       <md-dialog id="dialogAddPlayer" type="modal">
         <div slot="headline">
-          ${this.addPlayerSide === 'local'
-            ? 'Agregar jugador local'
-            : 'Agregar jugador visitante'}
+          ${
+            this.addPlayerSide === 'local'
+              ? 'Agregar jugador local'
+              : 'Agregar jugador visitante'
+          }
         </div>
         <div slot="content" class="dialog-form">
           <md-filled-text-field
@@ -445,50 +451,59 @@ export class LineupsCard extends LitElement {
           ></md-filled-text-field>
           <div class="image-input-section full-width">
             <div
-              class="image-paste-zone ${this.pastedImagePreviewUrl
-                ? 'has-image'
-                : ''}"
+              class="image-paste-zone ${
+                this.pastedImagePreviewUrl ? 'has-image' : ''
+              }"
               tabindex="0"
               role="button"
               @paste=${this._handleImagePaste}
               title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
             >
-              ${this.pastedImagePreviewUrl
-                ? html`<img
-                    class="image-preview"
-                    src="${this.pastedImagePreviewUrl}"
-                    alt="Vista previa de la foto del jugador"
-                  />`
-                : html`<div>
-                    <md-icon>content_paste</md-icon>
-                    <p>Pega aquí la foto del jugador</p>
-                    <p class="image-help">
-                      En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
-                      Leer portapapeles.
-                    </p>
-                  </div>`}
+              ${
+                this.pastedImagePreviewUrl
+                  ? html`<img
+                      class="image-preview"
+                      src="${this.pastedImagePreviewUrl}"
+                      alt="Vista previa de la foto del jugador"
+                    />`
+                  : html`<div>
+                      <md-icon>content_paste</md-icon>
+                      <p>Pega aquí la foto del jugador</p>
+                      <p class="image-help">
+                        En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
+                        Leer portapapeles.
+                      </p>
+                    </div>`
+              }
             </div>
             <div class="image-actions">
               <p class="${this.imageError ? 'image-error' : 'image-help'}">
-                ${this.imageError ||
-                'La imagen se convertirá a JPEG y se subirá al guardar.'}
+                ${
+                  this.imageError ||
+                  'La imagen se convertirá a JPEG y se subirá al guardar.'
+                }
               </p>
-              ${this.pastedImagePreviewUrl
-                ? html`
-                    <md-outlined-button @click=${this._clearPastedImage}>
-                      Quitar imagen
-                    </md-outlined-button>
-                  `
-                : null}
+              ${
+                this.pastedImagePreviewUrl
+                  ? html`
+                      <md-outlined-button @click=${this._clearPastedImage}>
+                        Quitar imagen
+                      </md-outlined-button>
+                    `
+                  : null
+              }
               <md-outlined-button
                 @click=${this._readImageFromClipboard}
-                ?disabled=${this.isReadingClipboardImage ||
-                this.isUploadingImage}
+                ?disabled=${
+                  this.isReadingClipboardImage || this.isUploadingImage
+                }
               >
                 <md-icon slot="icon">content_paste_go</md-icon>
-                ${this.isReadingClipboardImage
-                  ? 'Leyendo...'
-                  : 'Leer portapapeles'}
+                ${
+                  this.isReadingClipboardImage
+                    ? 'Leyendo...'
+                    : 'Leer portapapeles'
+                }
               </md-outlined-button>
             </div>
           </div>
@@ -528,45 +543,47 @@ export class LineupsCard extends LitElement {
           <h3><md-icon>group</md-icon> Alineaciones</h3>
         </div>
 
-        ${localStarters.length === 0 && visitorStarters.length === 0
-          ? html`
-              <p class="lineup-collapsed-hint">
-                Aún no hay alineaciones registradas.
-              </p>
-            `
-          : html`
-              <div class="lineup">
-                <div class="team-column">
-                  <div class="lineup-header">
-                    <h4>${local} (Local)</h4>
-                  </div>
-                  ${localStarters.map(
-                    player => html`
-                      <div class="player-row selected">
-                        <div class="player-info-wrapper">
-                          <player-info .player=${player}></player-info>
+        ${
+          localStarters.length === 0 && visitorStarters.length === 0
+            ? html`
+                <p class="lineup-collapsed-hint">
+                  Aún no hay alineaciones registradas.
+                </p>
+              `
+            : html`
+                <div class="lineup">
+                  <div class="team-column">
+                    <div class="lineup-header">
+                      <h4>${local} (Local)</h4>
+                    </div>
+                    ${localStarters.map(
+                      player => html`
+                        <div class="player-row selected">
+                          <div class="player-info-wrapper">
+                            <player-info .player=${player}></player-info>
+                          </div>
                         </div>
-                      </div>
-                    `,
-                  )}
-                </div>
+                      `,
+                    )}
+                  </div>
 
-                <div class="team-column">
-                  <div class="lineup-header">
-                    <h4>${visitante} (Visitante)</h4>
-                  </div>
-                  ${visitorStarters.map(
-                    player => html`
-                      <div class="player-row selected">
-                        <div class="player-info-wrapper">
-                          <player-info .player=${player}></player-info>
+                  <div class="team-column">
+                    <div class="lineup-header">
+                      <h4>${visitante} (Visitante)</h4>
+                    </div>
+                    ${visitorStarters.map(
+                      player => html`
+                        <div class="player-row selected">
+                          <div class="player-info-wrapper">
+                            <player-info .player=${player}></player-info>
+                          </div>
                         </div>
-                      </div>
-                    `,
-                  )}
+                      `,
+                    )}
+                  </div>
                 </div>
-              </div>
-            `}
+              `
+        }
       </div>
     `;
   }
