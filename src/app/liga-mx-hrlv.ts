@@ -22,6 +22,7 @@ import { MdDialog } from '@material/web/dialog/dialog.js';
 import '../pages/login-page.js';
 import '../pages/home-page.js';
 import '../pages/matches-page.js';
+import type { MatchFilters } from '../pages/matches-page.js';
 import '../pages/bracket-page.js';
 import '../pages/table-page.js';
 import '../pages/stats-page.js';
@@ -584,6 +585,7 @@ export class LigaMxHrlv extends LitElement {
             .stadiums="${this.stadiums}"
             .players="${this.players}"
             .isAdmin=${this.isAdmin}
+            .filters=${this._calendarFiltersFromUrl()}
             @edit-match="${this._editMatch}"
           ></matches-page>
         `;
@@ -751,8 +753,23 @@ export class LigaMxHrlv extends LitElement {
     if (!url.searchParams.has('tab')) {
       url.searchParams.set('tab', this.selectedTab);
     }
-    window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    window.history.replaceState(
+      {},
+      '',
+      `${url.pathname}${url.search}${url.hash}`,
+    );
     this._syncDocumentTitle();
+  }
+
+  private _calendarFiltersFromUrl(): MatchFilters {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      team: params.get('filterTeam') ?? undefined,
+      jornada: params.get('filterJornada') ?? undefined,
+      playoff:
+        params.get('filterPlayoff') === '1' ? true : undefined,
+      today: params.get('filterToday') === '1' ? true : undefined,
+    };
   }
 
   private _syncDocumentTitle() {

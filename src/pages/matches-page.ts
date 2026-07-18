@@ -30,6 +30,14 @@ import {
   isMatchLive,
   lineupsReadyBeforeKickoff,
 } from '../utils/matchStatus.js';
+
+export interface MatchFilters {
+  team?: string;
+  jornada?: string;
+  playoff?: boolean;
+  today?: boolean;
+}
+
 /**
  * Page for show the fixture
  */
@@ -385,11 +393,13 @@ export class MatchesPage extends LitElement {
   @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Array }) players: PlayerTeam[] = [];
   @property({ type: Boolean }) isAdmin = false;
+  @property({ attribute: false }) filters: MatchFilters = {};
 
   @state() matchesRender: Match[] = [];
 
   private readonly todayDate: Date = new Date();
   private todayDateSelected: boolean = false;
+  private defaultTodayPending = false;
 
   private isMobile: boolean = window.innerWidth < 600;
   private openRowMenuId: number | null = null;
@@ -447,6 +457,13 @@ export class MatchesPage extends LitElement {
 
   override firstUpdated() {
     this._onResize();
+    this.defaultTodayPending =
+      this.filters.today === undefined &&
+      !this.filters.team &&
+      !this.filters.jornada &&
+      !this.filters.playoff;
+    this._restoreFilters();
+    this._applyDefaultTodayFilter();
   }
 
   /**
@@ -454,22 +471,17 @@ export class MatchesPage extends LitElement {
    * @param changed
    */
   override updated(changed: PropertyValues) {
+    if (changed.has('teams') && this.filters.team && this.teamsSelect) {
+      this._restoreFilters();
+      return;
+    }
+
     if (changed.has('matchesList')) {
-      const today = new Date();
-      this.matchesList.some(match => {
-        if (
-          match.fecha instanceof Date &&
-          match.fecha.getFullYear() === today.getFullYear() &&
-          match.fecha.getMonth() === today.getMonth() &&
-          match.fecha.getDate() === today.getDate()
-        ) {
-          this.todayDateSelected = true;
-          if (this.todayDateCheckbox) this.todayDateCheckbox.selected = true;
-          return true;
-        }
-        return false;
-      });
-      this._filtersChanged();
+      if (this.defaultTodayPending) {
+        this._applyDefaultTodayFilter();
+      } else {
+        this._filtersChanged();
+      }
     }
   }
 
@@ -652,22 +664,35 @@ export class MatchesPage extends LitElement {
       this.teamsSelect.value = '';
       this.matchDaySelect.value = '';
     }
+    this._filterMatches(
+      this.teamsSelect.value,
+      this.matchDaySelect.value,
+      this.todayDateSelected,
+      this.onlyPlayOffSwitch.selected,
+    );
+  }
+
+  private _filterMatches(
+    teamValue: string,
+    matchDayValue: string,
+    todaySelected: boolean,
+    onlyPlayOffSelected: boolean,
+  ) {
     const team =
-      this.teamsSelect.value === ''
+      teamValue === ''
         ? ''
-        : this.teams[Number(this.teamsSelect.value)];
-    const matchDay =
-      this.matchDaySelect.value === '' ? '' : Number(this.matchDaySelect.value);
+        : (this.teams[Number(teamValue)] ?? teamValue);
+    const matchDay = matchDayValue === '' ? '' : Number(matchDayValue);
     this.matchesRender = this.matchesList.filter(match => {
       const findTeam =
         team === '' ? true : match.local === team || match.visitante === team;
       const findMatchDay = matchDay === '' ? true : match.jornada === matchDay;
       const onlyPlayOff =
-        !this.onlyPlayOffSwitch.selected ||
+        !onlyPlayOffSelected ||
         match.jornada > this.teams.length - 1;
       const todayDate =
-        !this.todayDateSelected ||
-        (this.todayDateSelected &&
+        !todaySelected ||
+        (todaySelected &&
           match.fecha instanceof Date &&
           match.fecha.getFullYear() === this.todayDate.getFullYear() &&
           match.fecha.getMonth() === this.todayDate.getMonth() &&
@@ -697,7 +722,72 @@ export class MatchesPage extends LitElement {
     }
   }
 
+  private _restoreFilters() {
+    const teamIndex = this.teams.indexOf(this.filters.team ?? '');
+    const teamValue =
+      teamIndex >= 0
+        ? String(teamIndex)
+        : (this.filters.team ?? '');
+    const jornadaValue = this.filters.jornada ?? '';
+    const todaySelected = this.filters.today ?? false;
+    const onlyPlayOffSelected = this.filters.playoff ?? false;
+
+    this.teamsSelect.value = teamValue;
+    this.matchDaySelect.value = jornadaValue;
+    this.todayDateSelected = todaySelected;
+    this.todayDateCheckbox.selected = todaySelected;
+    this.onlyPlayOffSwitch.selected = onlyPlayOffSelected;
+    this._filterMatches(
+      teamValue,
+      jornadaValue,
+      todaySelected,
+      onlyPlayOffSelected,
+    );
+  }
+
+  private _applyDefaultTodayFilter() {
+    if (!this.defaultTodayPending || this.matchesList.length === 0) return;
+
+    this.defaultTodayPending = false;
+    this.todayDateSelected = this.matchesList.some(
+      match =>
+        match.fecha instanceof Date &&
+        match.fecha.getFullYear() === this.todayDate.getFullYear() &&
+        match.fecha.getMonth() === this.todayDate.getMonth() &&
+        match.fecha.getDate() === this.todayDate.getDate(),
+    );
+    this.todayDateCheckbox.selected = this.todayDateSelected;
+    this._filtersChanged();
+  }
+
   private _matchHref(match: Match): string {
-    return `?tab=Calendario&match=${match.idMatch}`;
+    const params = new URLSearchParams({
+      tab: 'Calendario',
+      match: String(match.idMatch),
+    });
+
+    const teamValue = this.teamsSelect?.value ?? this.filters.team;
+    const jornada = this.matchDaySelect?.value ?? this.filters.jornada;
+    const playoff = this.onlyPlayOffSwitch?.selected ?? this.filters.playoff;
+    const today = this.todayDateCheckbox?.selected ?? this.filters.today;
+    const team =
+      teamValue === undefined || teamValue === ''
+        ? undefined
+        : (this.teams[Number(teamValue)] ?? teamValue);
+
+    if (team !== undefined) {
+      params.set('filterTeam', team);
+    }
+    if (jornada !== undefined && jornada !== '') {
+      params.set('filterJornada', jornada);
+    }
+    if (playoff) {
+      params.set('filterPlayoff', '1');
+    }
+    if (today) {
+      params.set('filterToday', '1');
+    }
+
+    return `?${params.toString()}`;
   }
 }
