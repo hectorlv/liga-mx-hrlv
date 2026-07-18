@@ -514,9 +514,9 @@ export class MatchDetailPage extends LitElement {
           <team-page
             .team=${selectedTeamData.team}
             .teamPosition=${selectedTeamData.position}
-            .players=${this.players.get(
-              this.selectedTeam.replaceAll('.', ''),
-            ) || []}
+            .players=${
+              this.players.get(this.selectedTeam.replaceAll('.', '')) || []
+            }
             .matchesList=${this._getTeamMatches(this.selectedTeam)}
             .isAdmin=${this.isAdmin}
             @back=${this._backToMatchDetail}
@@ -569,26 +569,28 @@ export class MatchDetailPage extends LitElement {
 
           <div class="action-buttons">
             ${this.isAdmin ? this.renderPhaseButton() : null}
-            ${this.isAdmin && this.isEditing
-              ? html`
-                  <md-icon-button @click=${this.editMatchInfo} title="Guardar"
-                    ><md-icon>save</md-icon></md-icon-button
-                  >
-                  <md-icon-button
-                    @click=${() => (this.isEditing = false)}
-                    title="Cancelar"
-                    ><md-icon>cancel</md-icon></md-icon-button
-                  >
-                `
-              : this.isAdmin
+            ${
+              this.isAdmin && this.isEditing
                 ? html`
+                    <md-icon-button @click=${this.editMatchInfo} title="Guardar"
+                      ><md-icon>save</md-icon></md-icon-button
+                    >
                     <md-icon-button
-                      @click=${() => (this.isEditing = true)}
-                      title="Editar información"
-                      ><md-icon>edit</md-icon></md-icon-button
+                      @click=${() => (this.isEditing = false)}
+                      title="Cancelar"
+                      ><md-icon>cancel</md-icon></md-icon-button
                     >
                   `
-                : null}
+                : this.isAdmin
+                  ? html`
+                      <md-icon-button
+                        @click=${() => (this.isEditing = true)}
+                        title="Editar información"
+                        ><md-icon>edit</md-icon></md-icon-button
+                      >
+                    `
+                  : null
+            }
           </div>
         </div>
 
@@ -604,32 +606,38 @@ export class MatchDetailPage extends LitElement {
           </a>
 
           <div class="score-center">
-            ${isPlayed
-              ? html`<div class="score-numbers">
-                  ${golLocal} - ${golVisitante}
-                </div>`
-              : html`<div
-                  class="score-numbers"
-                  style="font-size: 2rem; color: var(--md-sys-color-on-surface-variant)"
-                >
-                  VS
-                </div>`}
-            ${aggregateScore
-              ? html`<div class="aggregate-score">
-                  Global ${aggregateScore.local} - ${aggregateScore.visitante}
-                </div>`
-              : ''}
-            ${hasPenaltyScore
-              ? html`<div class="aggregate-score">
-                  Penales ${this.match.penaltyLocal} -
-                  ${this.match.penaltyVisitante}
-                </div>`
-              : isFinalAggregateTied
-                ? html`<div class="match-resolution-note">
-                    Global empatado: continúa con tiempos extra y, si sigue
-                    empatado, penales.
+            ${
+              isPlayed
+                ? html`<div class="score-numbers">
+                    ${golLocal} - ${golVisitante}
                   </div>`
-                : ''}
+                : html`<div
+                    class="score-numbers"
+                    style="font-size: 2rem; color: var(--md-sys-color-on-surface-variant)"
+                  >
+                    VS
+                  </div>`
+            }
+            ${
+              aggregateScore
+                ? html`<div class="aggregate-score">
+                    Global ${aggregateScore.local} - ${aggregateScore.visitante}
+                  </div>`
+                : ''
+            }
+            ${
+              hasPenaltyScore
+                ? html`<div class="aggregate-score">
+                    Penales ${this.match.penaltyLocal} -
+                    ${this.match.penaltyVisitante}
+                  </div>`
+                : isFinalAggregateTied
+                  ? html`<div class="match-resolution-note">
+                      Global empatado: continúa con tiempos extra y, si sigue
+                      empatado, penales.
+                    </div>`
+                  : ''
+            }
           </div>
 
           <a
@@ -644,77 +652,86 @@ export class MatchDetailPage extends LitElement {
           </a>
         </div>
 
-        ${this.isEditing
-          ? html`
-              <div class="edit-form">
-                <md-filled-text-field
-                  label="Fecha"
-                  id="fechaInput"
-                  type="date"
-                  .value=${formatDateYYYYMMDD(fecha as Date)}
-                ></md-filled-text-field>
-                <md-filled-text-field
-                  label="Hora"
-                  id="horaInput"
-                  type="time"
-                  .value=${hora}
-                ></md-filled-text-field>
-                <md-filled-select
-                  label="Estadio"
-                  id="estadioSelect"
-                  .value=${estadio}
-                >
-                  ${this.stadiums.map(
-                    stadium =>
-                      html`<md-select-option
-                        value="${stadium}"
-                        ?selected=${stadium === estadio}
-                      >
-                        <div slot="headline">${stadium}</div>
-                      </md-select-option>`,
-                  )}
-                </md-filled-select>
-                ${isFinalSecondLeg
-                  ? html`
-                      <md-filled-text-field
-                        label="Penales local"
-                        id="penaltyLocalInput"
-                        type="number"
-                        min="0"
-                        max="20"
-                        .value=${this.match.penaltyLocal == null
-                          ? ''
-                          : String(this.match.penaltyLocal)}
-                      ></md-filled-text-field>
-                      <md-filled-text-field
-                        label="Penales visitante"
-                        id="penaltyVisitanteInput"
-                        type="number"
-                        min="0"
-                        max="20"
-                        .value=${this.match.penaltyVisitante == null
-                          ? ''
-                          : String(this.match.penaltyVisitante)}
-                      ></md-filled-text-field>
-                    `
-                  : ''}
-              </div>
-            `
-          : html`
-              <div class="match-meta">
-                <div class="meta-item">
-                  <md-icon style="font-size: 18px">calendar_today</md-icon>
-                  ${formatDateDDMMYYYY(fecha as Date)}
+        ${
+          this.isEditing
+            ? html`
+                <div class="edit-form">
+                  <md-filled-text-field
+                    label="Fecha"
+                    id="fechaInput"
+                    type="date"
+                    .value=${formatDateYYYYMMDD(fecha as Date)}
+                  ></md-filled-text-field>
+                  <md-filled-text-field
+                    label="Hora"
+                    id="horaInput"
+                    type="time"
+                    .value=${hora}
+                  ></md-filled-text-field>
+                  <md-filled-select
+                    label="Estadio"
+                    id="estadioSelect"
+                    .value=${estadio}
+                  >
+                    ${this.stadiums.map(
+                      stadium =>
+                        html`<md-select-option
+                          value="${stadium}"
+                          ?selected=${stadium === estadio}
+                        >
+                          <div slot="headline">${stadium}</div>
+                        </md-select-option>`,
+                    )}
+                  </md-filled-select>
+                  ${
+                    isFinalSecondLeg
+                      ? html`
+                          <md-filled-text-field
+                            label="Penales local"
+                            id="penaltyLocalInput"
+                            type="number"
+                            min="0"
+                            max="20"
+                            .value=${
+                              this.match.penaltyLocal == null
+                                ? ''
+                                : String(this.match.penaltyLocal)
+                            }
+                          ></md-filled-text-field>
+                          <md-filled-text-field
+                            label="Penales visitante"
+                            id="penaltyVisitanteInput"
+                            type="number"
+                            min="0"
+                            max="20"
+                            .value=${
+                              this.match.penaltyVisitante == null
+                                ? ''
+                                : String(this.match.penaltyVisitante)
+                            }
+                          ></md-filled-text-field>
+                        `
+                      : ''
+                  }
                 </div>
-                <div class="meta-item">
-                  <md-icon style="font-size: 18px">schedule</md-icon> ${hora}
+              `
+            : html`
+                <div class="match-meta">
+                  <div class="meta-item">
+                    <md-icon style="font-size: 18px">calendar_today</md-icon>
+                    ${formatDateDDMMYYYY(fecha as Date)}
+                  </div>
+                  <div class="meta-item">
+                    <md-icon style="font-size: 18px">schedule</md-icon> ${hora}
+                  </div>
+                  <div class="meta-item">
+                    <md-icon style="font-size: 18px">stadium</md-icon>
+                    ${estadio}
+                  </div>
                 </div>
-                <div class="meta-item">
-                  <md-icon style="font-size: 18px">stadium</md-icon> ${estadio}
-                </div>
-              </div>
-              ${tableComparisonTemplate}
-            `}
+                ${tableComparisonTemplate}
+              `
+        }
       </section>
 
       <div class="match-components-grid">
@@ -969,12 +986,12 @@ export class MatchDetailPage extends LitElement {
         <md-icon-button
           id="halftimeButton"
           @click=${() => this._savePhaseEvent('halftime')}
-          title=${halftimeEvent
-            ? 'Actualizar medio tiempo'
-            : 'Guardar medio tiempo'}
-          aria-label=${halftimeEvent
-            ? 'Actualizar medio tiempo'
-            : 'Guardar medio tiempo'}
+          title=${
+            halftimeEvent ? 'Actualizar medio tiempo' : 'Guardar medio tiempo'
+          }
+          aria-label=${
+            halftimeEvent ? 'Actualizar medio tiempo' : 'Guardar medio tiempo'
+          }
         >
           <md-icon>pause_circle</md-icon>
         </md-icon-button>
@@ -1023,12 +1040,16 @@ export class MatchDetailPage extends LitElement {
         <md-icon-button
           id="fulltimeButton"
           @click=${() => this._savePhaseEvent('fulltime')}
-          title=${fulltimeEvent
-            ? 'Actualizar tiempo completo'
-            : 'Guardar tiempo completo'}
-          aria-label=${fulltimeEvent
-            ? 'Actualizar tiempo completo'
-            : 'Guardar tiempo completo'}
+          title=${
+            fulltimeEvent
+              ? 'Actualizar tiempo completo'
+              : 'Guardar tiempo completo'
+          }
+          aria-label=${
+            fulltimeEvent
+              ? 'Actualizar tiempo completo'
+              : 'Guardar tiempo completo'
+          }
         >
           <md-icon>stop_circle</md-icon>
         </md-icon-button>

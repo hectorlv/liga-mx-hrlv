@@ -102,16 +102,18 @@ export class PlayerInfo extends LitElement {
     return html`
       <div class="player-card">
         <div class="player-photo-wrapper">
-          ${imageSrc
-            ? html`
-                <img
-                  class="player-photo"
-                  src="${imageSrc}"
-                  alt="Photo of ${this.player.name}"
-                  title="${this.player.fullName}"
-                />
-              `
-            : html` <md-icon title="${this.player.fullName}">person</md-icon>`}
+          ${
+            imageSrc
+              ? html`
+                  <img
+                    class="player-photo"
+                    src="${imageSrc}"
+                    alt="Photo of ${this.player.name}"
+                    title="${this.player.fullName}"
+                  />
+                `
+              : html` <md-icon title="${this.player.fullName}">person</md-icon>`
+          }
           ${isU23 ? html`<span class="u23-badge">U23</span>` : null}
         </div>
         <div class="player-details">

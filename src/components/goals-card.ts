@@ -332,13 +332,15 @@ export class GoalsCard extends LitElement {
               <span>Local</span>
               <span class="score-pill">${localGoals.length}</span>
             </div>
-            ${localGoals.length === 0
-              ? html`<div
-                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
-                >
-                  Sin goles
-                </div>`
-              : ''}
+            ${
+              localGoals.length === 0
+                ? html`<div
+                    style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                  >
+                    Sin goles
+                  </div>`
+                : ''
+            }
             ${localGoals.map(({ goal, index }) =>
               this.renderGoalEntry(goal, index, 'local'),
             )}
@@ -349,48 +351,189 @@ export class GoalsCard extends LitElement {
               <span>Visitante</span>
               <span class="score-pill">${visitorGoals.length}</span>
             </div>
-            ${visitorGoals.length === 0
-              ? html`<div
-                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
-                >
-                  Sin goles
-                </div>`
-              : ''}
+            ${
+              visitorGoals.length === 0
+                ? html`<div
+                    style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                  >
+                    Sin goles
+                  </div>`
+                : ''
+            }
             ${visitorGoals.map(({ goal, index }) =>
               this.renderGoalEntry(goal, index, 'visitor'),
             )}
           </div>
         </div>
 
-        ${this.isAdmin
-          ? html`
-              <div class="add-goal-section">
-                <div class="add-goal-header">
-                  <md-icon>add_circle</md-icon> Registrar Nuevo Gol
-                </div>
+        ${
+          this.isAdmin
+            ? html`
+                <div class="add-goal-section">
+                  <div class="add-goal-header">
+                    <md-icon>add_circle</md-icon> Registrar Nuevo Gol
+                  </div>
 
-                <div class="add-goal-form">
-                  <div class="radio-group full-width">
+                  <div class="add-goal-form">
+                    <div class="radio-group full-width">
+                      <label
+                        ><md-radio
+                          name="goalTeam"
+                          value="local"
+                          ?checked=${this.goalTeamState === 'local'}
+                          @change=${() => {
+                            this.goalTeamState = 'local';
+                            this._validateForm();
+                          }}
+                        ></md-radio>
+                        Local</label
+                      >
+                      <label
+                        ><md-radio
+                          name="goalTeam"
+                          value="visitor"
+                          ?checked=${this.goalTeamState === 'visitor'}
+                          @change=${() => {
+                            this.goalTeamState = 'visitor';
+                            this._validateForm();
+                          }}
+                        ></md-radio>
+                        Visitante</label
+                      >
+                      <label
+                        style="margin-left: auto; display:flex; align-items:center; gap:4px;"
+                      >
+                        <md-checkbox
+                          id="newGoalOwn"
+                          @change=${this._validateForm}
+                        ></md-checkbox>
+                        Autogol
+                      </label>
+                    </div>
+
+                    <md-filled-text-field
+                      label="Minuto"
+                      type="number"
+                      id="newGoalMinute"
+                      min="0"
+                      max="120"
+                      @input=${this._validateForm}
+                      @change=${this._validateForm}
+                      required
+                    ></md-filled-text-field>
+
+                    ${
+                      this.showAddedTime
+                        ? html`<md-filled-text-field
+                            label="Tiempo agregado"
+                            type="number"
+                            id="addedTime"
+                            min="0"
+                            max="30"
+                            @change=${this._validateForm}
+                          ></md-filled-text-field>`
+                        : ''
+                    }
+
+                    <md-outlined-select
+                      id="newGoalPlayer"
+                      label="Anotador"
+                      @change=${this._validateForm}
+                      required
+                    >
+                      <md-select-option
+                        value=""
+                        disabled
+                        selected
+                      ></md-select-option>
+                      ${this.activePlayers.map(
+                        p =>
+                          html`<md-select-option value=${p.number}
+                            >${p.name}</md-select-option
+                          >`,
+                      )}
+                    </md-outlined-select>
+
+                    <md-outlined-select
+                      id="newGoalAssist"
+                      label="Asistencia"
+                      ?disabled=${this.newGoalOwnCheckbox?.checked}
+                      @change=${this._validateForm}
+                    >
+                      <md-select-option value="" selected
+                        >Sin asistencia</md-select-option
+                      >
+                      ${this.assistPlayers.map(
+                        p =>
+                          html`<md-select-option value=${p.number}
+                            >${p.name}</md-select-option
+                          >`,
+                      )}
+                    </md-outlined-select>
+
+                    <md-outlined-select
+                      id="newGoalType"
+                      label="Tipo"
+                      @change=${this._validateForm}
+                      required
+                    >
+                      <md-select-option
+                        value=""
+                        disabled
+                        selected
+                      ></md-select-option>
+                      ${GOAL_TYPES.map(
+                        o =>
+                          html`<md-select-option value=${o.value}
+                            >${o.label}</md-select-option
+                          >`,
+                      )}
+                    </md-outlined-select>
+
+                    <md-filled-button
+                      id="addGoalButton"
+                      ?disabled=${this.disableAddGoalButton}
+                      @click=${this._addGoal}
+                    >
+                      <md-icon slot="icon">add</md-icon> Agregar
+                    </md-filled-button>
+                  </div>
+                </div>
+              `
+            : null
+        }
+      </div>
+
+      ${
+        this.isAdmin
+          ? html`
+              <md-dialog id="editGoalDialog" type="modal">
+                <div slot="headline">Editar gol</div>
+                <div slot="content" class="dialog-form">
+                  <div
+                    class="radio-group full-width"
+                    style="margin-bottom: 8px;"
+                  >
                     <label
                       ><md-radio
-                        name="goalTeam"
+                        name="editGoalTeam"
                         value="local"
-                        ?checked=${this.goalTeamState === 'local'}
+                        .checked=${this.editGoalTeamState === 'local'}
                         @change=${() => {
-                          this.goalTeamState = 'local';
-                          this._validateForm();
+                          this.editGoalTeamState = 'local';
+                          this._validateEditForm();
                         }}
                       ></md-radio>
                       Local</label
                     >
                     <label
                       ><md-radio
-                        name="goalTeam"
+                        name="editGoalTeam"
                         value="visitor"
-                        ?checked=${this.goalTeamState === 'visitor'}
+                        .checked=${this.editGoalTeamState === 'visitor'}
                         @change=${() => {
-                          this.goalTeamState = 'visitor';
-                          this._validateForm();
+                          this.editGoalTeamState = 'visitor';
+                          this._validateEditForm();
                         }}
                       ></md-radio>
                       Visitante</label
@@ -399,8 +542,8 @@ export class GoalsCard extends LitElement {
                       style="margin-left: auto; display:flex; align-items:center; gap:4px;"
                     >
                       <md-checkbox
-                        id="newGoalOwn"
-                        @change=${this._validateForm}
+                        id="editGoalOwn"
+                        @change=${this._validateEditForm}
                       ></md-checkbox>
                       Autogol
                     </label>
@@ -409,37 +552,34 @@ export class GoalsCard extends LitElement {
                   <md-filled-text-field
                     label="Minuto"
                     type="number"
-                    id="newGoalMinute"
+                    id="editGoalMinute"
                     min="0"
                     max="120"
-                    @input=${this._validateForm}
-                    @change=${this._validateForm}
+                    @input=${this._validateEditForm}
+                    @change=${this._validateEditForm}
                     required
                   ></md-filled-text-field>
 
-                  ${this.showAddedTime
-                    ? html`<md-filled-text-field
-                        label="Tiempo agregado"
-                        type="number"
-                        id="addedTime"
-                        min="0"
-                        max="30"
-                        @change=${this._validateForm}
-                      ></md-filled-text-field>`
-                    : ''}
+                  ${
+                    this.showEditAddedTime
+                      ? html`<md-filled-text-field
+                          label="Tiempo agregado"
+                          type="number"
+                          id="editAddedTime"
+                          min="0"
+                          max="30"
+                          @change=${this._validateEditForm}
+                        ></md-filled-text-field>`
+                      : ''
+                  }
 
                   <md-outlined-select
-                    id="newGoalPlayer"
+                    id="editGoalPlayer"
                     label="Anotador"
-                    @change=${this._validateForm}
+                    @change=${this._validateEditForm}
                     required
                   >
-                    <md-select-option
-                      value=""
-                      disabled
-                      selected
-                    ></md-select-option>
-                    ${this.activePlayers.map(
+                    ${this.editActivePlayers.map(
                       p =>
                         html`<md-select-option value=${p.number}
                           >${p.name}</md-select-option
@@ -448,16 +588,25 @@ export class GoalsCard extends LitElement {
                   </md-outlined-select>
 
                   <md-outlined-select
-                    id="newGoalType"
-                    label="Tipo"
-                    @change=${this._validateForm}
-                    required
+                    id="editGoalAssist"
+                    label="Asistencia"
+                    ?disabled=${this.editGoalOwnCheckbox?.checked}
+                    @change=${this._validateEditForm}
                   >
-                    <md-select-option
-                      value=""
-                      disabled
-                      selected
-                    ></md-select-option>
+                    <md-select-option value="">Sin asistencia</md-select-option>
+                    ${this.editAssistPlayers.map(
+                      p =>
+                        html`<md-select-option value=${p.number}
+                          >${p.name}</md-select-option
+                        >`,
+                    )}
+                  </md-outlined-select>
+
+                  <md-outlined-select
+                    id="editGoalType"
+                    label="Tipo"
+                    @change=${this._validateEditForm}
+                  >
                     ${GOAL_TYPES.map(
                       o =>
                         html`<md-select-option value=${o.value}
@@ -466,164 +615,30 @@ export class GoalsCard extends LitElement {
                     )}
                   </md-outlined-select>
 
-                  <md-outlined-select
-                    id="newGoalAssist"
-                    label="Asistencia"
-                    ?disabled=${this.newGoalOwnCheckbox?.checked}
-                    @change=${this._validateForm}
-                  >
-                    <md-select-option value="" selected
-                      >Sin asistencia</md-select-option
-                    >
-                    ${this.assistPlayers.map(
-                      p =>
-                        html`<md-select-option value=${p.number}
-                          >${p.name}</md-select-option
-                        >`,
-                    )}
-                  </md-outlined-select>
-
+                  <md-filled-text-field
+                    id="sequenceInput"
+                    label="Secuencia"
+                    type="number"
+                    min="1"
+                    @change=${this._validateEditForm}
+                  ></md-filled-text-field>
+                </div>
+                <div slot="actions">
                   <md-filled-button
-                    id="addGoalButton"
-                    ?disabled=${this.disableAddGoalButton}
-                    @click=${this._addGoal}
+                    class="action-btn"
+                    @click=${this._closeEditDialog}
+                    >Cancelar</md-filled-button
                   >
-                    <md-icon slot="icon">add</md-icon> Agregar
-                  </md-filled-button>
+                  <md-filled-button
+                    @click=${this._saveEditedGoal}
+                    ?disabled=${this.disableSaveEditedGoal}
+                    >Guardar</md-filled-button
+                  >
                 </div>
-              </div>
+              </md-dialog>
             `
-          : null}
-      </div>
-
-      ${this.isAdmin
-        ? html`
-            <md-dialog id="editGoalDialog" type="modal">
-              <div slot="headline">Editar gol</div>
-              <div slot="content" class="dialog-form">
-                <div class="radio-group full-width" style="margin-bottom: 8px;">
-                  <label
-                    ><md-radio
-                      name="editGoalTeam"
-                      value="local"
-                      .checked=${this.editGoalTeamState === 'local'}
-                      @change=${() => {
-                        this.editGoalTeamState = 'local';
-                        this._validateEditForm();
-                      }}
-                    ></md-radio>
-                    Local</label
-                  >
-                  <label
-                    ><md-radio
-                      name="editGoalTeam"
-                      value="visitor"
-                      .checked=${this.editGoalTeamState === 'visitor'}
-                      @change=${() => {
-                        this.editGoalTeamState = 'visitor';
-                        this._validateEditForm();
-                      }}
-                    ></md-radio>
-                    Visitante</label
-                  >
-                  <label
-                    style="margin-left: auto; display:flex; align-items:center; gap:4px;"
-                  >
-                    <md-checkbox
-                      id="editGoalOwn"
-                      @change=${this._validateEditForm}
-                    ></md-checkbox>
-                    Autogol
-                  </label>
-                </div>
-
-                <md-filled-text-field
-                  label="Minuto"
-                  type="number"
-                  id="editGoalMinute"
-                  min="0"
-                  max="120"
-                  @input=${this._validateEditForm}
-                  @change=${this._validateEditForm}
-                  required
-                ></md-filled-text-field>
-
-                ${this.showEditAddedTime
-                  ? html`<md-filled-text-field
-                      label="Tiempo agregado"
-                      type="number"
-                      id="editAddedTime"
-                      min="0"
-                      max="30"
-                      @change=${this._validateEditForm}
-                    ></md-filled-text-field>`
-                  : ''}
-
-                <md-outlined-select
-                  id="editGoalPlayer"
-                  label="Anotador"
-                  @change=${this._validateEditForm}
-                  required
-                >
-                  ${this.editActivePlayers.map(
-                    p =>
-                      html`<md-select-option value=${p.number}
-                        >${p.name}</md-select-option
-                      >`,
-                  )}
-                </md-outlined-select>
-
-                <md-outlined-select
-                  id="editGoalType"
-                  label="Tipo"
-                  @change=${this._validateEditForm}
-                >
-                  ${GOAL_TYPES.map(
-                    o =>
-                      html`<md-select-option value=${o.value}
-                        >${o.label}</md-select-option
-                      >`,
-                  )}
-                </md-outlined-select>
-
-                <md-outlined-select
-                  id="editGoalAssist"
-                  label="Asistencia"
-                  ?disabled=${this.editGoalOwnCheckbox?.checked}
-                  @change=${this._validateEditForm}
-                >
-                  <md-select-option value="">Sin asistencia</md-select-option>
-                  ${this.editAssistPlayers.map(
-                    p =>
-                      html`<md-select-option value=${p.number}
-                        >${p.name}</md-select-option
-                      >`,
-                  )}
-                </md-outlined-select>
-
-                <md-filled-text-field
-                  id="sequenceInput"
-                  label="Secuencia"
-                  type="number"
-                  min="1"
-                  @change=${this._validateEditForm}
-                ></md-filled-text-field>
-              </div>
-              <div slot="actions">
-                <md-filled-button
-                  class="action-btn"
-                  @click=${this._closeEditDialog}
-                  >Cancelar</md-filled-button
-                >
-                <md-filled-button
-                  @click=${this._saveEditedGoal}
-                  ?disabled=${this.disableSaveEditedGoal}
-                  >Guardar</md-filled-button
-                >
-              </div>
-            </md-dialog>
-          `
-        : null}
+          : null
+      }
     `;
   }
 
@@ -664,36 +679,46 @@ export class GoalsCard extends LitElement {
             <md-icon style="font-size: 18px; color: var(--md-sys-color-primary)"
               >sports_soccer</md-icon
             >
-            ${goal.ownGoal
-              ? html`<span class="own-goal-text">(Autogol)</span>`
-              : ''}
-            ${goal.goalType
-              ? html`<span class="badge"
-                  >${GOAL_TYPE_LABELS[goal.goalType]}</span
-                >`
-              : ''}
-            ${goal.assist
-              ? html`<span>A: ${assistInfo?.name || goal.assist}</span>`
-              : ''}
+            ${
+              goal.ownGoal
+                ? html`<span class="own-goal-text">(Autogol)</span>`
+                : ''
+            }
+            ${
+              goal.goalType
+                ? html`<span class="badge"
+                    >${GOAL_TYPE_LABELS[goal.goalType]}</span
+                  >`
+                : ''
+            }
+            ${
+              goal.assist
+                ? html`<span>A: ${assistInfo?.name || goal.assist}</span>`
+                : ''
+            }
           </div>
         </div>
 
-        ${this.isAdmin
-          ? html`
-              <div class="goal-actions">
-                <md-icon-button
-                  @click=${() => this._openEditGoal(goal, index)}
-                  title="Editar"
-                  ><md-icon class="edit-btn">edit</md-icon></md-icon-button
-                >
-                <md-icon-button
-                  @click=${() => this._deleteGoal(index)}
-                  title="Eliminar"
-                  ><md-icon class="delete-btn">delete</md-icon></md-icon-button
-                >
-              </div>
-            `
-          : null}
+        ${
+          this.isAdmin
+            ? html`
+                <div class="goal-actions">
+                  <md-icon-button
+                    @click=${() => this._openEditGoal(goal, index)}
+                    title="Editar"
+                    ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+                  >
+                  <md-icon-button
+                    @click=${() => this._deleteGoal(index)}
+                    title="Eliminar"
+                    ><md-icon class="delete-btn"
+                      >delete</md-icon
+                    ></md-icon-button
+                  >
+                </div>
+              `
+            : null
+        }
       </div>
     `;
   }

@@ -377,9 +377,9 @@ export class LigaMxHrlv extends LitElement {
               tab => html`
                 <a
                   href=${this._tabHref(tab.label)}
-                  aria-current=${this.selectedTab === tab.label
-                    ? 'page'
-                    : 'false'}
+                  aria-current=${
+                    this.selectedTab === tab.label ? 'page' : 'false'
+                  }
                 >
                   <md-icon>${tab.icon}</md-icon>
                   ${tab.shortLabel || tab.label}
@@ -388,30 +388,32 @@ export class LigaMxHrlv extends LitElement {
             )}
           </nav>
           <div class="admin-actions">
-            ${this.user
-              ? html`
-                  <span class="admin-status">
-                    ${this.isAdmin ? 'Admin' : 'Sin permisos'}
-                  </span>
-                  <md-text-button
-                    aria-label="Cerrar sesión"
-                    title="Cerrar sesión"
-                    @click=${this._logout}
-                  >
-                    <md-icon slot="icon">logout</md-icon>
-                    <span class="admin-action-label">Salir</span>
-                  </md-text-button>
-                `
-              : html`
-                  <md-outlined-button
-                    aria-label="Abrir acceso admin"
-                    title="Abrir acceso admin"
-                    @click=${this._openAdminLogin}
-                  >
-                    <md-icon slot="icon">admin_panel_settings</md-icon>
-                    <span class="admin-action-label">Admin</span>
-                  </md-outlined-button>
-                `}
+            ${
+              this.user
+                ? html`
+                    <span class="admin-status">
+                      ${this.isAdmin ? 'Admin' : 'Sin permisos'}
+                    </span>
+                    <md-text-button
+                      aria-label="Cerrar sesión"
+                      title="Cerrar sesión"
+                      @click=${this._logout}
+                    >
+                      <md-icon slot="icon">logout</md-icon>
+                      <span class="admin-action-label">Salir</span>
+                    </md-text-button>
+                  `
+                : html`
+                    <md-outlined-button
+                      aria-label="Abrir acceso admin"
+                      title="Abrir acceso admin"
+                      @click=${this._openAdminLogin}
+                    >
+                      <md-icon slot="icon">admin_panel_settings</md-icon>
+                      <span class="admin-action-label">Admin</span>
+                    </md-outlined-button>
+                  `
+            }
           </div>
         </div>
       </header>
@@ -766,8 +768,7 @@ export class LigaMxHrlv extends LitElement {
     return {
       team: params.get('filterTeam') ?? undefined,
       jornada: params.get('filterJornada') ?? undefined,
-      playoff:
-        params.get('filterPlayoff') === '1' ? true : undefined,
+      playoff: params.get('filterPlayoff') === '1' ? true : undefined,
       today: params.get('filterToday') === '1' ? true : undefined,
     };
   }

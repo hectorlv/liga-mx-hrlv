@@ -370,12 +370,14 @@ export class TablePage extends LitElement {
                 <div class="indicator-bar"></div>
                 <div class="cell cell-pos">
                   ${index + 1}
-                  ${hasLiveMatch
-                    ? html`<span
-                        class="live-dot"
-                        title="Partido en curso"
-                      ></span>`
-                    : ''}
+                  ${
+                    hasLiveMatch
+                      ? html`<span
+                          class="live-dot"
+                          title="Partido en curso"
+                        ></span>`
+                      : ''
+                  }
                 </div>
                 <div class="cell cell-logo">${getTeamImage(team.equipo)}</div>
                 <div class="cell cell-team">${team.equipo}</div>

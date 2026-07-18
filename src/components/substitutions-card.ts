@@ -310,13 +310,15 @@ export class SubstitutionsCard extends LitElement {
               <span>Local</span>
               <span class="score-pill">${localSubs.length}</span>
             </div>
-            ${localSubs.length === 0
-              ? html`<div
-                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
-                >
-                  Sin cambios
-                </div>`
-              : ''}
+            ${
+              localSubs.length === 0
+                ? html`<div
+                    style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                  >
+                    Sin cambios
+                  </div>`
+                : ''
+            }
             ${localSubs.map(({ sub, index }) =>
               this.renderSubEntry(sub, index, 'local'),
             )}
@@ -327,47 +329,154 @@ export class SubstitutionsCard extends LitElement {
               <span>Visitante</span>
               <span class="score-pill">${visitorSubs.length}</span>
             </div>
-            ${visitorSubs.length === 0
-              ? html`<div
-                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
-                >
-                  Sin cambios
-                </div>`
-              : ''}
+            ${
+              visitorSubs.length === 0
+                ? html`<div
+                    style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                  >
+                    Sin cambios
+                  </div>`
+                : ''
+            }
             ${visitorSubs.map(({ sub, index }) =>
               this.renderSubEntry(sub, index, 'visitor'),
             )}
           </div>
         </div>
 
-        ${this.isAdmin
-          ? html`<div class="add-sub-section">
-              <div class="add-sub-header">
-                <md-icon>add_circle</md-icon> Registrar Cambio
-              </div>
+        ${
+          this.isAdmin
+            ? html`<div class="add-sub-section">
+                <div class="add-sub-header">
+                  <md-icon>add_circle</md-icon> Registrar Cambio
+                </div>
 
-              <div class="form-grid">
+                <div class="form-grid">
+                  <div class="radio-group full-width">
+                    <label
+                      ><md-radio
+                        name="subTeam"
+                        value="local"
+                        ?checked=${side === 'local'}
+                        @change=${() => {
+                          this.subTeam = 'local';
+                          this._onSubTeamChange();
+                        }}
+                      ></md-radio>
+                      Local</label
+                    >
+                    <label
+                      ><md-radio
+                        name="subTeam"
+                        value="visitor"
+                        ?checked=${side === 'visitor'}
+                        @change=${() => {
+                          this.subTeam = 'visitor';
+                          this._onSubTeamChange();
+                        }}
+                      ></md-radio>
+                      Visitante</label
+                    >
+                  </div>
+
+                  <md-filled-text-field
+                    label="Minuto"
+                    type="number"
+                    id="subMinute"
+                    min="0"
+                    max="120"
+                    @input=${this._validateAddSub}
+                    @change=${this._validateAddSub}
+                  ></md-filled-text-field>
+
+                  ${
+                    this.showAddedTime
+                      ? html`<md-filled-text-field
+                          label="Minutos adicionales"
+                          type="number"
+                          id="addedTime"
+                          min="0"
+                          max="30"
+                          @change=${this._validateAddSub}
+                        ></md-filled-text-field>`
+                      : ''
+                  }
+
+                  <md-outlined-select
+                    id="subIn"
+                    label="Entra (+)"
+                    @change=${this._validateAddSub}
+                  >
+                    <md-select-option
+                      value=""
+                      disabled
+                      selected
+                    ></md-select-option>
+                    ${this._getSubstitutePlayers(side).map(
+                      p =>
+                        html`<md-select-option value=${p.number}
+                          >${p.name}</md-select-option
+                        >`,
+                    )}
+                  </md-outlined-select>
+                  <md-outlined-select
+                    id="subOut"
+                    label="Sale (-)"
+                    @change=${this._validateAddSub}
+                  >
+                    <md-select-option
+                      value=""
+                      disabled
+                      selected
+                    ></md-select-option>
+                    ${this._getActivePlayers(side).map(
+                      p =>
+                        html`<md-select-option value=${p.number}
+                          >${p.name}</md-select-option
+                        >`,
+                    )}
+                  </md-outlined-select>
+
+                  <md-filled-button
+                    id="addSubButton"
+                    class="action-btn"
+                    ?disabled=${this.disableAddSub}
+                    @click=${this._addSub}
+                  >
+                    <md-icon slot="icon">swap_horiz</md-icon> Agregar
+                  </md-filled-button>
+                </div>
+              </div>`
+            : null
+        }
+      </div>
+
+      ${
+        this.isAdmin
+          ? html`<md-dialog id="editSubDialog" type="modal">
+              <div slot="headline">Editar cambio</div>
+              <div slot="content" class="form-grid" style="margin-top: 8px;">
                 <div class="radio-group full-width">
                   <label
                     ><md-radio
-                      name="subTeam"
+                      name="editSubTeam"
                       value="local"
-                      ?checked=${side === 'local'}
+                      ?checked=${this.editSubTeam === 'local'}
                       @change=${() => {
-                        this.subTeam = 'local';
-                        this._onSubTeamChange();
+                        this.editSubTeam = 'local';
+                        this._validateEditForm();
                       }}
                     ></md-radio>
                     Local</label
                   >
                   <label
                     ><md-radio
-                      name="subTeam"
+                      name="editSubTeam"
                       value="visitor"
-                      ?checked=${side === 'visitor'}
+                      ?checked=${this.editSubTeam === 'visitor'}
                       @change=${() => {
-                        this.subTeam = 'visitor';
-                        this._onSubTeamChange();
+                        this.editSubTeam = 'visitor';
+                        this._validateEditForm();
                       }}
                     ></md-radio>
                     Visitante</label
@@ -377,165 +486,66 @@ export class SubstitutionsCard extends LitElement {
                 <md-filled-text-field
                   label="Minuto"
                   type="number"
-                  id="subMinute"
+                  id="editSubMinute"
                   min="0"
                   max="120"
-                  @input=${this._validateAddSub}
-                  @change=${this._validateAddSub}
+                  @input=${this._validateEditForm}
+                  @change=${this._validateEditForm}
                 ></md-filled-text-field>
 
-                ${this.showAddedTime
-                  ? html`<md-filled-text-field
-                      label="Minutos adicionales"
-                      type="number"
-                      id="addedTime"
-                      min="0"
-                      max="30"
-                      @change=${this._validateAddSub}
-                    ></md-filled-text-field>`
-                  : ''}
+                ${
+                  this.showEditAddedTime
+                    ? html`<md-filled-text-field
+                        label="Minutos adicionales"
+                        type="number"
+                        id="editAddedTime"
+                        min="0"
+                        max="30"
+                        @change=${this._validateEditForm}
+                      ></md-filled-text-field>`
+                    : ''
+                }
 
                 <md-outlined-select
-                  id="subOut"
-                  label="Sale (-)"
-                  @change=${this._validateAddSub}
-                >
-                  <md-select-option
-                    value=""
-                    disabled
-                    selected
-                  ></md-select-option>
-                  ${this._getActivePlayers(side).map(
-                    p =>
-                      html`<md-select-option value=${p.number}
-                        >${p.name}</md-select-option
-                      >`,
-                  )}
-                </md-outlined-select>
-
-                <md-outlined-select
-                  id="subIn"
+                  id="editSubIn"
                   label="Entra (+)"
-                  @change=${this._validateAddSub}
+                  @change=${this._validateEditForm}
                 >
-                  <md-select-option
-                    value=""
-                    disabled
-                    selected
-                  ></md-select-option>
-                  ${this._getSubstitutePlayers(side).map(
+                  ${this.editInPlayers.map(
                     p =>
                       html`<md-select-option value=${p.number}
                         >${p.name}</md-select-option
                       >`,
                   )}
                 </md-outlined-select>
-
+                <md-outlined-select
+                  id="editSubOut"
+                  label="Sale (-)"
+                  @change=${this._validateEditForm}
+                >
+                  ${this.editOutPlayers.map(
+                    p =>
+                      html`<md-select-option value=${p.number}
+                        >${p.name}</md-select-option
+                      >`,
+                  )}
+                </md-outlined-select>
+              </div>
+              <div slot="actions">
                 <md-filled-button
-                  id="addSubButton"
                   class="action-btn"
-                  ?disabled=${this.disableAddSub}
-                  @click=${this._addSub}
+                  @click=${this._closeEditDialog}
+                  >Cancelar</md-filled-button
                 >
-                  <md-icon slot="icon">swap_horiz</md-icon> Agregar
-                </md-filled-button>
-              </div>
-            </div>`
-          : null}
-      </div>
-
-      ${this.isAdmin
-        ? html`<md-dialog id="editSubDialog" type="modal">
-            <div slot="headline">Editar cambio</div>
-            <div slot="content" class="form-grid" style="margin-top: 8px;">
-              <div class="radio-group full-width">
-                <label
-                  ><md-radio
-                    name="editSubTeam"
-                    value="local"
-                    ?checked=${this.editSubTeam === 'local'}
-                    @change=${() => {
-                      this.editSubTeam = 'local';
-                      this._validateEditForm();
-                    }}
-                  ></md-radio>
-                  Local</label
-                >
-                <label
-                  ><md-radio
-                    name="editSubTeam"
-                    value="visitor"
-                    ?checked=${this.editSubTeam === 'visitor'}
-                    @change=${() => {
-                      this.editSubTeam = 'visitor';
-                      this._validateEditForm();
-                    }}
-                  ></md-radio>
-                  Visitante</label
+                <md-filled-button
+                  @click=${this._saveEditedSub}
+                  ?disabled=${this.disableSaveEditedSub}
+                  >Guardar</md-filled-button
                 >
               </div>
-
-              <md-filled-text-field
-                label="Minuto"
-                type="number"
-                id="editSubMinute"
-                min="0"
-                max="120"
-                @input=${this._validateEditForm}
-                @change=${this._validateEditForm}
-              ></md-filled-text-field>
-
-              ${this.showEditAddedTime
-                ? html`<md-filled-text-field
-                    label="Minutos adicionales"
-                    type="number"
-                    id="editAddedTime"
-                    min="0"
-                    max="30"
-                    @change=${this._validateEditForm}
-                  ></md-filled-text-field>`
-                : ''}
-
-              <md-outlined-select
-                id="editSubOut"
-                label="Sale (-)"
-                @change=${this._validateEditForm}
-              >
-                ${this.editOutPlayers.map(
-                  p =>
-                    html`<md-select-option value=${p.number}
-                      >${p.name}</md-select-option
-                    >`,
-                )}
-              </md-outlined-select>
-
-              <md-outlined-select
-                id="editSubIn"
-                label="Entra (+)"
-                @change=${this._validateEditForm}
-              >
-                ${this.editInPlayers.map(
-                  p =>
-                    html`<md-select-option value=${p.number}
-                      >${p.name}</md-select-option
-                    >`,
-                )}
-              </md-outlined-select>
-            </div>
-            <div slot="actions">
-              <md-filled-button
-                class="action-btn"
-                @click=${this._closeEditDialog}
-                >Cancelar</md-filled-button
-              >
-              <md-filled-button
-                @click=${this._saveEditedSub}
-                ?disabled=${this.disableSaveEditedSub}
-                >Guardar</md-filled-button
-              >
-            </div>
-          </md-dialog>`
-        : null}
+            </md-dialog>`
+          : null
+      }
     `;
   }
 
@@ -560,42 +570,50 @@ export class SubstitutionsCard extends LitElement {
           <div class="player-row in">
             <md-icon title="Entra">arrow_upward</md-icon>
             <div class="player-wrapper">
-              ${playerIn
-                ? html`<player-info .player=${playerIn}></player-info>`
-                : html`<span style="font-weight: 500;"
-                    >Jugador #${sub.playerIn}</span
-                  >`}
+              ${
+                playerIn
+                  ? html`<player-info .player=${playerIn}></player-info>`
+                  : html`<span style="font-weight: 500;"
+                      >Jugador #${sub.playerIn}</span
+                    >`
+              }
             </div>
           </div>
 
           <div class="player-row out">
             <md-icon title="Sale">arrow_downward</md-icon>
             <div class="player-wrapper">
-              ${playerOut
-                ? html`<player-info .player=${playerOut}></player-info>`
-                : html`<span style="font-weight: 500;"
-                    >Jugador #${sub.playerOut}</span
-                  >`}
+              ${
+                playerOut
+                  ? html`<player-info .player=${playerOut}></player-info>`
+                  : html`<span style="font-weight: 500;"
+                      >Jugador #${sub.playerOut}</span
+                    >`
+              }
             </div>
           </div>
         </div>
 
-        ${this.isAdmin
-          ? html`
-              <div class="sub-actions">
-                <md-icon-button
-                  @click=${() => this._openEditSub(sub, index)}
-                  title="Editar"
-                  ><md-icon class="edit-btn">edit</md-icon></md-icon-button
-                >
-                <md-icon-button
-                  @click=${() => this._deleteSub(index)}
-                  title="Eliminar"
-                  ><md-icon class="delete-btn">delete</md-icon></md-icon-button
-                >
-              </div>
-            `
-          : null}
+        ${
+          this.isAdmin
+            ? html`
+                <div class="sub-actions">
+                  <md-icon-button
+                    @click=${() => this._openEditSub(sub, index)}
+                    title="Editar"
+                    ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+                  >
+                  <md-icon-button
+                    @click=${() => this._deleteSub(index)}
+                    title="Eliminar"
+                    ><md-icon class="delete-btn"
+                      >delete</md-icon
+                    ></md-icon-button
+                  >
+                </div>
+              `
+            : null
+        }
       </div>
     `;
   }

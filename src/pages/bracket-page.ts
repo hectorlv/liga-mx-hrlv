@@ -483,11 +483,13 @@ export class BracketPage extends LitElement {
         <div class="series-heading">
           <span class="series-name">${series.name}</span>
           <span class="series-pill ${result?.winner ? 'done' : ''}">
-            ${result?.winner
-              ? 'Definida'
-              : result?.requiresExtraTimeOrPenalties
-                ? 'TE / Penales'
-                : 'Pendiente'}
+            ${
+              result?.winner
+                ? 'Definida'
+                : result?.requiresExtraTimeOrPenalties
+                  ? 'TE / Penales'
+                  : 'Pendiente'
+            }
           </span>
         </div>
         <div class="legs">
@@ -507,11 +509,13 @@ export class BracketPage extends LitElement {
         class="leg-button"
         ?disabled=${!hasMatch}
         @click=${() => match && this._showMatchDetails(match)}
-        aria-label=${hasMatch
-          ? `${label}: ${match?.local || 'Por definir'} contra ${
-              match?.visitante || 'Por definir'
-            }`
-          : `${label}: Por definir`}
+        aria-label=${
+          hasMatch
+            ? `${label}: ${match?.local || 'Por definir'} contra ${
+                match?.visitante || 'Por definir'
+              }`
+            : `${label}: Por definir`
+        }
       >
         <div class="leg-content">
           <div class="leg-label">

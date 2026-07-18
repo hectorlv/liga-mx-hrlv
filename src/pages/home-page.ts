@@ -14,10 +14,7 @@ import {
 } from '../utils/matchStatus.js';
 
 type NavigationTab =
-  | 'Calendario'
-  | 'Tabla General'
-  | 'Liguilla'
-  | 'Estadísticas';
+  'Calendario' | 'Tabla General' | 'Liguilla' | 'Estadísticas';
 
 interface PlayerLeader {
   name: string;
@@ -551,23 +548,23 @@ export class HomePage extends LitElement {
             </div>
           </div>
 
-          ${focusMatches.length > 0
-            ? html`
-                <div class="hero-cards" aria-label="Partidos destacados">
-                  ${focusMatches.map(match =>
-                    this._renderFocusMatch(match),
-                  )}
-                </div>
-              `
-            : html`
-                <article class="match-focus" aria-label="Sin partidos">
-                  <div class="score">
-                    <div class="match-meta">Calendario</div>
-                    <div class="score-value">-</div>
-                    <div class="match-meta">Sin partidos cargados</div>
+          ${
+            focusMatches.length > 0
+              ? html`
+                  <div class="hero-cards" aria-label="Partidos destacados">
+                    ${focusMatches.map(match => this._renderFocusMatch(match))}
                   </div>
-                </article>
-              `}
+                `
+              : html`
+                  <article class="match-focus" aria-label="Sin partidos">
+                    <div class="score">
+                      <div class="match-meta">Calendario</div>
+                      <div class="score-value">-</div>
+                      <div class="match-meta">Sin partidos cargados</div>
+                    </div>
+                  </article>
+                `
+          }
         </div>
 
         <div class="quick-grid" aria-label="Accesos rápidos">
@@ -609,13 +606,15 @@ export class HomePage extends LitElement {
               </a>
             </div>
             <div class="table-list">
-              ${this.table.length === 0
-                ? html`<p class="empty">
-                    La tabla se mostrará al cargar datos.
-                  </p>`
-                : this.table
-                    .slice(0, 4)
-                    .map((team, index) => this._renderTableRow(team, index))}
+              ${
+                this.table.length === 0
+                  ? html`<p class="empty">
+                      La tabla se mostrará al cargar datos.
+                    </p>`
+                  : this.table
+                      .slice(0, 4)
+                      .map((team, index) => this._renderTableRow(team, index))
+              }
             </div>
           </section>
 
@@ -634,12 +633,16 @@ export class HomePage extends LitElement {
               </a>
             </div>
             <div class="leader-list">
-              ${topScorer
-                ? this._renderLeader('Goleador', topScorer, 'G')
-                : html`<p class="empty">Sin goles registrados.</p>`}
-              ${topAssist
-                ? this._renderLeader('Asistidor', topAssist, 'Ast')
-                : html`<p class="empty">Sin asistencias registradas.</p>`}
+              ${
+                topScorer
+                  ? this._renderLeader('Goleador', topScorer, 'G')
+                  : html`<p class="empty">Sin goles registrados.</p>`
+              }
+              ${
+                topAssist
+                  ? this._renderLeader('Asistidor', topAssist, 'Ast')
+                  : html`<p class="empty">Sin asistencias registradas.</p>`
+              }
             </div>
           </section>
 
@@ -657,22 +660,24 @@ export class HomePage extends LitElement {
                 Ver bracket
               </a>
             </div>
-            ${qualifiedTeams.length === 0
-              ? html`<p class="empty">
-                  La zona se mostrará al cargar la tabla.
-                </p>`
-              : html`
-                  <div class="qualified-strip">
-                    ${qualifiedTeams.map(
-                      team => html`
-                        <div class="qualified-team">
-                          ${getTeamImage(team.equipo)}
-                          <span>${team.equipo}</span>
-                        </div>
-                      `,
-                    )}
-                  </div>
-                `}
+            ${
+              qualifiedTeams.length === 0
+                ? html`<p class="empty">
+                    La zona se mostrará al cargar la tabla.
+                  </p>`
+                : html`
+                    <div class="qualified-strip">
+                      ${qualifiedTeams.map(
+                        team => html`
+                          <div class="qualified-team">
+                            ${getTeamImage(team.equipo)}
+                            <span>${team.equipo}</span>
+                          </div>
+                        `,
+                      )}
+                    </div>
+                  `
+            }
           </section>
         </div>
       </section>
@@ -686,10 +691,7 @@ export class HomePage extends LitElement {
   ) {
     const title = tab === 'Tabla General' ? 'Tabla' : tab;
     return html`
-      <a
-        class="quick-card"
-        href=${this._tabHref(tab)}
-      >
+      <a class="quick-card" href=${this._tabHref(tab)}>
         <span class="quick-icon"><md-icon>${icon}</md-icon></span>
         <span class="quick-copy">
           <h2>${title}</h2>
@@ -775,9 +777,7 @@ export class HomePage extends LitElement {
         </div>
         <div class="score">
           <div
-            class=${isMatchLive(match)
-              ? 'match-meta live-badge'
-              : 'match-meta'}
+            class=${isMatchLive(match) ? 'match-meta live-badge' : 'match-meta'}
           >
             ${focusLabel}
           </div>
@@ -884,14 +884,17 @@ export class HomePage extends LitElement {
 
     return html`
       <div class="status-chips" aria-label="Estado del partido">
-        ${periodLabel
-          ? html`<span class="status-chip live">${periodLabel}</span>`
-          : ''}
-        ${hasLineupsReady
-          ? html`<span class="status-chip lineups">Alineaciones listas</span>`
-          : ''}
+        ${
+          periodLabel
+            ? html`<span class="status-chip live">${periodLabel}</span>`
+            : ''
+        }
+        ${
+          hasLineupsReady
+            ? html`<span class="status-chip lineups">Alineaciones listas</span>`
+            : ''
+        }
       </div>
     `;
   }
-
 }

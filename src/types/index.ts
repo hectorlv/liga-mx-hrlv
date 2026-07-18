@@ -92,20 +92,12 @@ export interface PhaseMatchEvent extends BaseMatchEvent {
 }
 
 export type MatchEvent =
-  | GoalMatchEvent
-  | SubstitutionMatchEvent
-  | CardMatchEvent
-  | PhaseMatchEvent;
+  GoalMatchEvent | SubstitutionMatchEvent | CardMatchEvent | PhaseMatchEvent;
 
 export type FirebaseUpdates = Record<string, unknown>;
 
 export type GoalType =
-  | 'penal'
-  | 'area'
-  | 'fueraArea'
-  | 'tiroLibre'
-  | 'cabeza'
-  | 'otro';
+  'penal' | 'area' | 'fueraArea' | 'tiroLibre' | 'cabeza' | 'otro';
 
 export type FoulType =
   | 'conductaAntideportiva'

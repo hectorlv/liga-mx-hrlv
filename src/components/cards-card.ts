@@ -334,13 +334,15 @@ export class CardsCard extends LitElement {
               <span>Local</span>
               <span class="score-pill">${localCards.length}</span>
             </div>
-            ${localCards.length === 0
-              ? html`<div
-                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
-                >
-                  Sin tarjetas
-                </div>`
-              : ''}
+            ${
+              localCards.length === 0
+                ? html`<div
+                    style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                  >
+                    Sin tarjetas
+                  </div>`
+                : ''
+            }
             ${localCards.map(({ card, index }) =>
               this.renderCardEntry(card, index, 'local'),
             )}
@@ -351,26 +353,180 @@ export class CardsCard extends LitElement {
               <span>Visitante</span>
               <span class="score-pill">${visitorCards.length}</span>
             </div>
-            ${visitorCards.length === 0
-              ? html`<div
-                  style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
-                >
-                  Sin tarjetas
-                </div>`
-              : ''}
+            ${
+              visitorCards.length === 0
+                ? html`<div
+                    style="padding: 16px; color: gray; text-align: center; font-size: 0.9rem;"
+                  >
+                    Sin tarjetas
+                  </div>`
+                : ''
+            }
             ${visitorCards.map(({ card, index }) =>
               this.renderCardEntry(card, index, 'visitor'),
             )}
           </div>
         </div>
 
-        ${this.isAdmin
-          ? html`<div class="add-card-section">
-              <div class="add-card-header">
-                <md-icon>add_circle</md-icon> Registrar Tarjeta
-              </div>
+        ${
+          this.isAdmin
+            ? html`<div class="add-card-section">
+                <div class="add-card-header">
+                  <md-icon>add_circle</md-icon> Registrar Tarjeta
+                </div>
 
-              <div class="form-grid">
+                <div class="form-grid">
+                  <div class="radio-group full-width">
+                    <span
+                      style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                      >Equipo:</span
+                    >
+                    <label
+                      ><md-radio
+                        name="cardTeam"
+                        value="local"
+                        .checked=${this.cardTeam === 'local'}
+                        @change=${(e: Event) => {
+                          this.cardTeam = (e.target as MdRadio)
+                            .value as TeamSide;
+                          this._onCardTeamChange();
+                        }}
+                      ></md-radio>
+                      Local</label
+                    >
+                    <label
+                      ><md-radio
+                        name="cardTeam"
+                        value="visitor"
+                        .checked=${this.cardTeam === 'visitor'}
+                        @change=${(e: Event) => {
+                          this.cardTeam = (e.target as MdRadio)
+                            .value as TeamSide;
+                          this._onCardTeamChange();
+                        }}
+                      ></md-radio>
+                      Visitante</label
+                    >
+                  </div>
+
+                  <md-filled-text-field
+                    label="Minuto"
+                    type="number"
+                    id="cardMinute"
+                    min="0"
+                    max="120"
+                    @input=${this._validateAddCard}
+                    @change=${this._validateAddCard}
+                    required
+                  ></md-filled-text-field>
+
+                  ${
+                    this.showAddedTime
+                      ? html`
+                          <md-filled-text-field
+                            label="Tiempo Adicional"
+                            type="number"
+                            id="addedTime"
+                            min="0"
+                            max="30"
+                            @change=${this._validateAddCard}
+                          ></md-filled-text-field>
+                        `
+                      : ''
+                  }
+
+                  <md-outlined-select
+                    id="cardPlayer"
+                    label="Jugador"
+                    @change=${this._validateAddCard}
+                    required
+                  >
+                    <md-select-option
+                      value=""
+                      disabled
+                      selected
+                    ></md-select-option>
+                    ${(cardSide === 'local'
+                      ? this.localPlayers
+                      : this.visitorPlayers
+                    ).map(
+                      p =>
+                        html`<md-select-option value=${p.number}
+                          >${p.name}</md-select-option
+                        >`,
+                    )}
+                  </md-outlined-select>
+
+                  <div class="radio-group">
+                    <span
+                      style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
+                      >Tipo:</span
+                    >
+                    <label
+                      ><md-radio
+                        name="cardType"
+                        value="yellow"
+                        .checked=${this.cardTypeState === 'yellow'}
+                        @change=${(e: Event) => {
+                          this.cardTypeState = (e.target as MdRadio)
+                            .value as CardType;
+                          this._onCardTypeChange();
+                        }}
+                      ></md-radio>
+                      Amarilla</label
+                    >
+                    <label
+                      ><md-radio
+                        name="cardType"
+                        value="red"
+                        .checked=${this.cardTypeState === 'red'}
+                        @change=${(e: Event) => {
+                          this.cardTypeState = (e.target as MdRadio)
+                            .value as CardType;
+                          this._onCardTypeChange();
+                        }}
+                      ></md-radio>
+                      Roja</label
+                    >
+                  </div>
+
+                  <md-outlined-select
+                    id="cardFoulType"
+                    label="Motivo (Opcional)"
+                    @change=${this._validateAddCard}
+                    ?disabled=${!cardTypeSelected}
+                  >
+                    <md-select-option
+                      value=""
+                      disabled
+                      selected
+                    ></md-select-option>
+                    ${addFoulOptions.map(
+                      option =>
+                        html`<md-select-option value=${option.value}
+                          >${option.label}</md-select-option
+                        >`,
+                    )}
+                  </md-outlined-select>
+
+                  <md-filled-button
+                    class="action-btn full-width"
+                    ?disabled=${this.disableAddCard}
+                    @click=${this._addCard}
+                  >
+                    <md-icon slot="icon">warning</md-icon> Agregar Tarjeta
+                  </md-filled-button>
+                </div>
+              </div>`
+            : null
+        }
+      </div>
+
+      ${
+        this.isAdmin
+          ? html`<md-dialog id="editCardDialog" type="modal">
+              <div slot="headline">Editar tarjeta</div>
+              <div slot="content" class="form-grid" style="margin-top: 8px;">
                 <div class="radio-group full-width">
                   <span
                     style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
@@ -378,11 +534,12 @@ export class CardsCard extends LitElement {
                   >
                   <label
                     ><md-radio
-                      name="cardTeam"
+                      name="editCardTeam"
                       value="local"
-                      .checked=${this.cardTeam === 'local'}
+                      .checked=${this.editCardTeamState === 'local'}
                       @change=${(e: Event) => {
-                        this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                        this.editCardTeamState = (e.target as MdRadio)
+                          .value as TeamSide;
                         this._onCardTeamChange();
                       }}
                     ></md-radio>
@@ -390,11 +547,12 @@ export class CardsCard extends LitElement {
                   >
                   <label
                     ><md-radio
-                      name="cardTeam"
+                      name="editCardTeam"
                       value="visitor"
-                      .checked=${this.cardTeam === 'visitor'}
+                      .checked=${this.editCardTeamState === 'visitor'}
                       @change=${(e: Event) => {
-                        this.cardTeam = (e.target as MdRadio).value as TeamSide;
+                        this.editCardTeamState = (e.target as MdRadio)
+                          .value as TeamSide;
                         this._onCardTeamChange();
                       }}
                     ></md-radio>
@@ -405,42 +563,36 @@ export class CardsCard extends LitElement {
                 <md-filled-text-field
                   label="Minuto"
                   type="number"
-                  id="cardMinute"
+                  id="editCardMinute"
                   min="0"
                   max="120"
-                  @input=${this._validateAddCard}
-                  @change=${this._validateAddCard}
+                  @input=${this._validateEditForm}
+                  @change=${this._validateEditForm}
                   required
                 ></md-filled-text-field>
 
-                ${this.showAddedTime
-                  ? html`
-                      <md-filled-text-field
-                        label="Tiempo Adicional"
-                        type="number"
-                        id="addedTime"
-                        min="0"
-                        max="30"
-                        @change=${this._validateAddCard}
-                      ></md-filled-text-field>
-                    `
-                  : ''}
+                ${
+                  this.showEditAddedTime
+                    ? html`
+                        <md-filled-text-field
+                          label="Tiempo Adicional"
+                          type="number"
+                          id="editAddedTime"
+                          min="0"
+                          max="30"
+                          @change=${this._validateEditForm}
+                        ></md-filled-text-field>
+                      `
+                    : ''
+                }
 
                 <md-outlined-select
-                  id="cardPlayer"
+                  id="editCardPlayer"
                   label="Jugador"
-                  @change=${this._validateAddCard}
+                  @change=${this._validateEditForm}
                   required
                 >
-                  <md-select-option
-                    value=""
-                    disabled
-                    selected
-                  ></md-select-option>
-                  ${(cardSide === 'local'
-                    ? this.localPlayers
-                    : this.visitorPlayers
-                  ).map(
+                  ${this.editPlayers.map(
                     p =>
                       html`<md-select-option value=${p.number}
                         >${p.name}</md-select-option
@@ -448,33 +600,33 @@ export class CardsCard extends LitElement {
                   )}
                 </md-outlined-select>
 
-                <div class="radio-group">
+                <div class="radio-group full-width">
                   <span
                     style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
                     >Tipo:</span
                   >
                   <label
                     ><md-radio
-                      name="cardType"
+                      name="editCardType"
                       value="yellow"
-                      .checked=${this.cardTypeState === 'yellow'}
+                      .checked=${this.editCardTypeState === 'yellow'}
                       @change=${(e: Event) => {
-                        this.cardTypeState = (e.target as MdRadio)
+                        this.editCardTypeState = (e.target as MdRadio)
                           .value as CardType;
-                        this._onCardTypeChange();
+                        this._onEditCardTypeChange();
                       }}
                     ></md-radio>
                     Amarilla</label
                   >
                   <label
                     ><md-radio
-                      name="cardType"
+                      name="editCardType"
                       value="red"
-                      .checked=${this.cardTypeState === 'red'}
+                      .checked=${this.editCardTypeState === 'red'}
                       @change=${(e: Event) => {
-                        this.cardTypeState = (e.target as MdRadio)
+                        this.editCardTypeState = (e.target as MdRadio)
                           .value as CardType;
-                        this._onCardTypeChange();
+                        this._onEditCardTypeChange();
                       }}
                     ></md-radio>
                     Roja</label
@@ -482,17 +634,18 @@ export class CardsCard extends LitElement {
                 </div>
 
                 <md-outlined-select
-                  id="cardFoulType"
+                  id="editCardFoulType"
                   label="Motivo (Opcional)"
-                  @change=${this._validateAddCard}
-                  ?disabled=${!cardTypeSelected}
+                  @change=${this._validateEditForm}
+                  ?disabled=${!editCardTypeSelected}
+                  class="full-width"
                 >
                   <md-select-option
                     value=""
                     disabled
                     selected
                   ></md-select-option>
-                  ${addFoulOptions.map(
+                  ${editFoulOptions.map(
                     option =>
                       html`<md-select-option value=${option.value}
                         >${option.label}</md-select-option
@@ -500,164 +653,29 @@ export class CardsCard extends LitElement {
                   )}
                 </md-outlined-select>
 
+                <md-filled-text-field
+                  id="sequenceInput"
+                  label="Secuencia"
+                  type="number"
+                  min="1"
+                  @change=${this._validateAddCard}
+                ></md-filled-text-field>
+              </div>
+              <div slot="actions">
                 <md-filled-button
-                  class="action-btn full-width"
-                  ?disabled=${this.disableAddCard}
-                  @click=${this._addCard}
+                  class="action-btn"
+                  @click=${this._closeEditDialog}
+                  >Cancelar</md-filled-button
                 >
-                  <md-icon slot="icon">warning</md-icon> Agregar Tarjeta
-                </md-filled-button>
-              </div>
-            </div>`
-          : null}
-      </div>
-
-      ${this.isAdmin
-        ? html`<md-dialog id="editCardDialog" type="modal">
-            <div slot="headline">Editar tarjeta</div>
-            <div slot="content" class="form-grid" style="margin-top: 8px;">
-              <div class="radio-group full-width">
-                <span
-                  style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
-                  >Equipo:</span
-                >
-                <label
-                  ><md-radio
-                    name="editCardTeam"
-                    value="local"
-                    .checked=${this.editCardTeamState === 'local'}
-                    @change=${(e: Event) => {
-                      this.editCardTeamState = (e.target as MdRadio)
-                        .value as TeamSide;
-                      this._onCardTeamChange();
-                    }}
-                  ></md-radio>
-                  Local</label
-                >
-                <label
-                  ><md-radio
-                    name="editCardTeam"
-                    value="visitor"
-                    .checked=${this.editCardTeamState === 'visitor'}
-                    @change=${(e: Event) => {
-                      this.editCardTeamState = (e.target as MdRadio)
-                        .value as TeamSide;
-                      this._onCardTeamChange();
-                    }}
-                  ></md-radio>
-                  Visitante</label
+                <md-filled-button
+                  @click=${this._saveEditedCard}
+                  ?disabled=${this.disableSaveEditedCard}
+                  >Guardar</md-filled-button
                 >
               </div>
-
-              <md-filled-text-field
-                label="Minuto"
-                type="number"
-                id="editCardMinute"
-                min="0"
-                max="120"
-                @input=${this._validateEditForm}
-                @change=${this._validateEditForm}
-                required
-              ></md-filled-text-field>
-
-              ${this.showEditAddedTime
-                ? html`
-                    <md-filled-text-field
-                      label="Tiempo Adicional"
-                      type="number"
-                      id="editAddedTime"
-                      min="0"
-                      max="30"
-                      @change=${this._validateEditForm}
-                    ></md-filled-text-field>
-                  `
-                : ''}
-
-              <md-outlined-select
-                id="editCardPlayer"
-                label="Jugador"
-                @change=${this._validateEditForm}
-                required
-              >
-                ${this.editPlayers.map(
-                  p =>
-                    html`<md-select-option value=${p.number}
-                      >${p.name}</md-select-option
-                    >`,
-                )}
-              </md-outlined-select>
-
-              <div class="radio-group full-width">
-                <span
-                  style="font-weight: 500; font-size: 0.9rem; margin-right: 8px;"
-                  >Tipo:</span
-                >
-                <label
-                  ><md-radio
-                    name="editCardType"
-                    value="yellow"
-                    .checked=${this.editCardTypeState === 'yellow'}
-                    @change=${(e: Event) => {
-                      this.editCardTypeState = (e.target as MdRadio)
-                        .value as CardType;
-                      this._onEditCardTypeChange();
-                    }}
-                  ></md-radio>
-                  Amarilla</label
-                >
-                <label
-                  ><md-radio
-                    name="editCardType"
-                    value="red"
-                    .checked=${this.editCardTypeState === 'red'}
-                    @change=${(e: Event) => {
-                      this.editCardTypeState = (e.target as MdRadio)
-                        .value as CardType;
-                      this._onEditCardTypeChange();
-                    }}
-                  ></md-radio>
-                  Roja</label
-                >
-              </div>
-
-              <md-outlined-select
-                id="editCardFoulType"
-                label="Motivo (Opcional)"
-                @change=${this._validateEditForm}
-                ?disabled=${!editCardTypeSelected}
-                class="full-width"
-              >
-                <md-select-option value="" disabled selected></md-select-option>
-                ${editFoulOptions.map(
-                  option =>
-                    html`<md-select-option value=${option.value}
-                      >${option.label}</md-select-option
-                    >`,
-                )}
-              </md-outlined-select>
-
-              <md-filled-text-field
-                id="sequenceInput"
-                label="Secuencia"
-                type="number"
-                min="1"
-                @change=${this._validateAddCard}
-              ></md-filled-text-field>
-            </div>
-            <div slot="actions">
-              <md-filled-button
-                class="action-btn"
-                @click=${this._closeEditDialog}
-                >Cancelar</md-filled-button
-              >
-              <md-filled-button
-                @click=${this._saveEditedCard}
-                ?disabled=${this.disableSaveEditedCard}
-                >Guardar</md-filled-button
-              >
-            </div>
-          </md-dialog>`
-        : null}
+            </md-dialog>`
+          : null
+      }
     `;
   }
 
@@ -681,46 +699,54 @@ export class CardsCard extends LitElement {
         <div class="card-info">
           <div class="player-row">
             <md-icon
-              style="font-size: 20px; color: ${isYellow
-                ? '#FBC02D'
-                : '#D32F2F'}; font-variation-settings: 'FILL' 1;"
+              style="font-size: 20px; color: ${
+                isYellow ? '#FBC02D' : '#D32F2F'
+              }; font-variation-settings: 'FILL' 1;"
             >
               style
             </md-icon>
             <div class="player-wrapper">
-              ${playerInfo
-                ? html`<player-info .player=${playerInfo}></player-info>`
-                : html`<span style="font-weight: 500;"
-                    >Jugador #${card.player}</span
-                  >`}
+              ${
+                playerInfo
+                  ? html`<player-info .player=${playerInfo}></player-info>`
+                  : html`<span style="font-weight: 500;"
+                      >Jugador #${card.player}</span
+                    >`
+              }
             </div>
           </div>
 
           <div class="card-meta">
-            ${card.foulType
-              ? html`<span class="badge"
-                  >${FOUL_TYPE_LABELS[card.foulType] || card.foulType}</span
-                >`
-              : ''}
+            ${
+              card.foulType
+                ? html`<span class="badge"
+                    >${FOUL_TYPE_LABELS[card.foulType] || card.foulType}</span
+                  >`
+                : ''
+            }
           </div>
         </div>
 
-        ${this.isAdmin
-          ? html`
-              <div class="card-actions">
-                <md-icon-button
-                  @click=${() => this._openEditCard(card, index)}
-                  title="Editar"
-                  ><md-icon class="edit-btn">edit</md-icon></md-icon-button
-                >
-                <md-icon-button
-                  @click=${() => this._deleteCard(index)}
-                  title="Eliminar"
-                  ><md-icon class="delete-btn">delete</md-icon></md-icon-button
-                >
-              </div>
-            `
-          : null}
+        ${
+          this.isAdmin
+            ? html`
+                <div class="card-actions">
+                  <md-icon-button
+                    @click=${() => this._openEditCard(card, index)}
+                    title="Editar"
+                    ><md-icon class="edit-btn">edit</md-icon></md-icon-button
+                  >
+                  <md-icon-button
+                    @click=${() => this._deleteCard(index)}
+                    title="Eliminar"
+                    ><md-icon class="delete-btn"
+                      >delete</md-icon
+                    ></md-icon-button
+                  >
+                </div>
+              `
+            : null
+        }
       </div>
     `;
   }
