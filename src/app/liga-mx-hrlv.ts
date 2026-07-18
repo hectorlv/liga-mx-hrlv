@@ -238,15 +238,97 @@ export class LigaMxHrlv extends LitElement {
 
       /* FOOTER */
       .app-footer {
-        text-align: center;
-        padding: 24px 16px;
-        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 24px;
+        padding: 18px 24px;
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+        background: var(--md-sys-color-surface);
+        font-size: 0.82rem;
         color: var(--md-sys-color-on-surface-variant, #757575);
+      }
+
+      .footer-credit {
         margin: 0;
       }
-      .app-footer span {
-        font-weight: bold;
+
+      .footer-disclaimer {
+        flex-basis: 100%;
+        order: 2;
+        margin: 0;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.75rem;
+      }
+
+      .footer-version {
+        font-weight: 800;
         color: var(--md-sys-color-primary);
+      }
+
+      .footer-divider {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--md-sys-color-outline-variant);
+      }
+
+      .footer-links {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .footer-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 999px;
+        color: var(--md-sys-color-on-surface);
+        font-weight: 700;
+        text-decoration: none;
+        transition:
+          background-color 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          transform 0.2s ease;
+      }
+
+      .footer-link md-icon {
+        font-size: 18px;
+      }
+
+      .footer-link:hover {
+        border-color: var(--md-sys-color-primary);
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+        transform: translateY(-1px);
+      }
+
+      .footer-link:focus-visible {
+        outline: 3px solid var(--md-sys-color-primary);
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 560px) {
+        .app-footer {
+          flex-direction: column;
+          gap: 10px;
+          padding: 20px 16px;
+        }
+
+        .footer-divider {
+          display: none;
+        }
       }
     `,
   ];
@@ -344,9 +426,39 @@ export class LigaMxHrlv extends LitElement {
         arrow_upward
       </md-icon>
 
-      <p class="app-footer">
-        Made with love by HRLV - <span>v${APP_VERSION}</span>
-      </p>
+      <footer class="app-footer">
+        <p class="footer-credit">
+          Made with love by HRLV ·
+          <span class="footer-version">v${APP_VERSION}</span> ·
+          ${new Date().getFullYear()}
+        </p>
+        <span class="footer-divider" aria-hidden="true"></span>
+        <nav class="footer-links" aria-label="Contacto y apoyo">
+          <a
+            class="footer-link"
+            href="https://www.instagram.com/hectorrlove"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Visitar Instagram de HRLV"
+          >
+            <md-icon aria-hidden="true">photo_camera</md-icon>
+            Instagram
+          </a>
+          <a
+            class="footer-link"
+            href="https://paypal.me/hectorrlv"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Apoyar a HRLV por PayPal"
+          >
+            <md-icon aria-hidden="true">volunteer_activism</md-icon>
+            PayPal
+          </a>
+        </nav>
+        <p class="footer-disclaimer">
+          © 2026 Héctor López · Sitio no oficial, con fines informativos.
+        </p>
+      </footer>
 
       <md-dialog id="dialogLiga" type="alert">
         <div slot="headline">${this.titleError}</div>
