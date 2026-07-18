@@ -449,7 +449,7 @@ export class GoalsCard extends LitElement {
                       ${this.activePlayers.map(
                         p =>
                           html`<md-select-option value=${p.number}
-                            >${p.name}</md-select-option
+                            >${p.number}- ${p.name}</md-select-option
                           >`,
                       )}
                     </md-outlined-select>
@@ -466,7 +466,7 @@ export class GoalsCard extends LitElement {
                       ${this.assistPlayers.map(
                         p =>
                           html`<md-select-option value=${p.number}
-                            >${p.name}</md-select-option
+                            >${p.number}- ${p.name}</md-select-option
                           >`,
                       )}
                     </md-outlined-select>
@@ -582,7 +582,7 @@ export class GoalsCard extends LitElement {
                     ${this.editActivePlayers.map(
                       p =>
                         html`<md-select-option value=${p.number}
-                          >${p.name}</md-select-option
+                          >${p.number}- ${p.name}</md-select-option
                         >`,
                     )}
                   </md-outlined-select>
@@ -597,7 +597,7 @@ export class GoalsCard extends LitElement {
                     ${this.editAssistPlayers.map(
                       p =>
                         html`<md-select-option value=${p.number}
-                          >${p.name}</md-select-option
+                          >${p.number}- ${p.name}</md-select-option
                         >`,
                     )}
                   </md-outlined-select>
