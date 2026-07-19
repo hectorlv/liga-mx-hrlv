@@ -492,7 +492,7 @@ export class CardsCard extends LitElement {
 
                   <md-outlined-select
                     id="cardFoulType"
-                    label="Motivo (Opcional)"
+                    label="Motivo"
                     @change=${this._validateAddCard}
                     ?disabled=${!cardTypeSelected}
                   >
@@ -635,7 +635,7 @@ export class CardsCard extends LitElement {
 
                 <md-outlined-select
                   id="editCardFoulType"
-                  label="Motivo (Opcional)"
+                  label="Motivo"
                   @change=${this._validateEditForm}
                   ?disabled=${!editCardTypeSelected}
                   class="full-width"
