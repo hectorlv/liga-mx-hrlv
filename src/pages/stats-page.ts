@@ -674,7 +674,7 @@ export class StatsPage extends LitElement {
             ? player.birthDate.split('/')[2]
             : player.birthDate.getFullYear(),
         );
-        const minYear = 2003; // Año límite para ser considerado U23 en 2026
+        const minYear = 2004; // Año límite para ser considerado U23 en A26
         // Solo considerar jugadores con nacionalidad mexicana
         if (player.nationality !== 'Mexicano') return false;
         return birthYear >= minYear;
