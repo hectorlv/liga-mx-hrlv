@@ -47,7 +47,7 @@
     "@rollup/plugin-image": "^3.0.3",
     "rollup-plugin-workbox": "^9.0.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.64.0",
+    "typescript-eslint": "^8.65.0",
     "serialize-javascript": "^7.0.7"
   },
   "eslintConfig": {
