@@ -114,7 +114,7 @@ export class PlayerInfo extends LitElement {
                 `
               : html` <md-icon title="${this.player.fullName}">person</md-icon>`
           }
-          ${isU23 ? html`<span class="u23-badge">U23</span>` : null}
+          ${isU23 ? html`<span class="u23-badge">MFM</span>` : null}
         </div>
         <div class="player-details">
           <h3 class="player-name">${this.player.name}</h3>
@@ -178,9 +178,9 @@ export class PlayerInfo extends LitElement {
       return false;
     }
 
-    // Regla U23 para 2026: nacidos en 2003 o después y nacionalidad mexicano
+    // Regla U23 para 2026: nacidos en 2004 o después y nacionalidad mexicano
     const currentYear = new Date().getFullYear();
-    const minBirthYear = currentYear - 23;
+    const minBirthYear = 2004; //currentYear - 23;
     const isMexican = this.player?.nationality?.toLowerCase() === 'mexicano';
 
     return birthYear >= minBirthYear && isMexican;
