@@ -36,9 +36,15 @@ import {
   fetchPlayers,
   fetchStadiums,
   fetchTeams,
+  fetchU23NationalTeamCallups,
   saveUpdates,
 } from '../services/firebaseService.js';
-import { Match, PlayerTeam, TableEntry } from '../types/index.js';
+import {
+  Match,
+  PlayerTeam,
+  TableEntry,
+  U23NationalTeamCallups,
+} from '../types/index.js';
 import { FIREBASE_CONFIG, POSTSEASON_FORMAT } from '../utils/constants.js';
 import {
   calculatePlayIn,
@@ -342,6 +348,7 @@ export class LigaMxHrlv extends LitElement {
   @state() teams: string[] = [];
   @state() stadiums: string[] = [];
   @state() players: PlayerTeam = new Map();
+  @state() u23NationalTeamCallups: U23NationalTeamCallups = new Map();
   @state() table: TableEntry[] = [];
   @state() selectedTab: string = 'Inicio';
   @state() titleError: string = '';
@@ -358,6 +365,7 @@ export class LigaMxHrlv extends LitElement {
   private _unsubscribeTeams?: Unsubscribe;
   private _unsubscribeStadiums?: Unsubscribe;
   private _unsubscribePlayers?: Unsubscribe;
+  private _unsubscribeU23NationalTeamCallups?: Unsubscribe;
   private _unsubscribeAuth?: Unsubscribe;
   private _unsubscribeAllowedWriter?: Unsubscribe;
   private readonly _boundRouteChange = () => this._syncRouteFromUrl();
@@ -620,6 +628,9 @@ export class LigaMxHrlv extends LitElement {
             .matchesList=${this.matchesList}
             .teams=${this.teams}
             .players=${this.players}
+            .u23NationalTeamCallups=${this.u23NationalTeamCallups}
+            .isAdmin=${this.isAdmin}
+            @edit-match=${this._editMatch}
           ></stats-page>
         `;
       default:
@@ -669,6 +680,11 @@ export class LigaMxHrlv extends LitElement {
     this._unsubscribePlayers = fetchPlayers((players: PlayerTeam) => {
       this.players = players;
     });
+    this._unsubscribeU23NationalTeamCallups = fetchU23NationalTeamCallups(
+      (callups: U23NationalTeamCallups) => {
+        this.u23NationalTeamCallups = callups;
+      },
+    );
   }
 
   override disconnectedCallback() {
@@ -680,6 +696,7 @@ export class LigaMxHrlv extends LitElement {
     this._unsubscribeTeams?.();
     this._unsubscribeStadiums?.();
     this._unsubscribePlayers?.();
+    this._unsubscribeU23NationalTeamCallups?.();
   }
 
   private async _editMatch(e: CustomEvent<Record<string, unknown>>) {

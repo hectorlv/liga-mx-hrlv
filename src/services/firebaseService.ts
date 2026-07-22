@@ -6,7 +6,12 @@ import {
   type Unsubscribe,
 } from 'firebase/database';
 import { formatDate } from '../utils/dateUtils';
-import { FirebaseUpdates, Match, PlayerTeam } from '../types';
+import {
+  FirebaseUpdates,
+  Match,
+  PlayerTeam,
+  U23NationalTeamCallups,
+} from '../types';
 
 type SimpleCallback<T> = (data: T) => void;
 
@@ -52,7 +57,9 @@ function subscribeToFirebasePath<T>(
     },
     error => {
       console.error('Firebase subscription error at path:', path, error);
-      callback([] as unknown as T);
+      callback(
+        isArray ? ([] as unknown as T) : (new Map() as unknown as T),
+      );
     },
   );
   return unsubscribe;
@@ -111,6 +118,16 @@ export function fetchPlayers(
   return subscribeToFirebasePath<PlayerTeam>(
     '/players',
     callbackWrapper,
+    false,
+  );
+}
+
+export function fetchU23NationalTeamCallups(
+  callback: SimpleCallback<U23NationalTeamCallups>,
+): Unsubscribe {
+  return subscribeToFirebasePath<U23NationalTeamCallups>(
+    '/u23NationalTeamCallups',
+    callback,
     false,
   );
 }

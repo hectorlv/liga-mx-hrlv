@@ -49,6 +49,13 @@ export interface Player {
 
 export type PlayerTeam = Map<string, Player[]>;
 
+/**
+ * Partidos de fase regular que un jugador no disputó por una convocatoria a
+ * selección nacional. Las llaves externas usan la misma llave de equipo que
+ * `/players` y las internas el número de jersey del jugador.
+ */
+export type U23NationalTeamCallups = Map<string, Record<string, number>>;
+
 export type CardType = 'yellow' | 'red';
 export type TeamSide = 'local' | 'visitor';
 export type TeamSideOptional = TeamSide | '';
