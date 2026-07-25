@@ -316,6 +316,7 @@ export class LineupsCard extends LitElement {
             : this.visitorPlayers
         }
         .isAdmin=${this.isAdmin}
+        .additionalUpdates=${this._pendingLineupUpdates()}
         @player-created=${this._onPlayerCreated}
         @player-registration-dialog-closed=${this._closePlayerRegistrationDialog}
       ></player-registration-dialog>
@@ -449,6 +450,17 @@ export class LineupsCard extends LitElement {
         .querySelector<PlayerRegistrationDialog>('player-registration-dialog')
         ?.open();
     });
+  }
+
+  private _pendingLineupUpdates(): FirebaseUpdates {
+    if (!this.match) return {};
+
+    return {
+      [`/matches/${this.match.idMatch}/lineupLocal`]:
+        this.match.lineupLocal || [],
+      [`/matches/${this.match.idMatch}/lineupVisitor`]:
+        this.match.lineupVisitor || [],
+    };
   }
 
   private _onPlayerCreated(event: CustomEvent<PlayerCreatedDetail>) {
