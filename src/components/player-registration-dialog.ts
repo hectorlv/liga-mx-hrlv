@@ -260,9 +260,7 @@ export class PlayerRegistrationDialog extends LitElement {
   open() {
     this._resetForm();
     void this.updateComplete.then(() => {
-      this.renderRoot
-        .querySelector<MdDialog>('#dialogAddPlayer')
-        ?.show();
+      this.renderRoot.querySelector<MdDialog>('#dialogAddPlayer')?.show();
     });
   }
 
