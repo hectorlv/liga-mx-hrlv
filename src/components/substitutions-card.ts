@@ -1,4 +1,6 @@
 import { MdDialog } from '@material/web/dialog/dialog.js';
+import '@material/web/button/filled-button.js';
+import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import { MdOutlinedSelect } from '@material/web/select/outlined-select';
@@ -7,6 +9,11 @@ import type { MdFilledTextField } from '@material/web/textfield/filled-text-fiel
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
+import '../components/player-registration-dialog.js';
+import type {
+  PlayerCreatedDetail,
+  PlayerRegistrationDialog,
+} from '../components/player-registration-dialog.js';
 import {
   FirebaseUpdates,
   Match,
@@ -207,8 +214,16 @@ export class SubstitutionsCard extends LitElement {
         margin-bottom: 16px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        justify-content: space-between;
+        gap: 12px;
         color: var(--md-sys-color-primary);
+        flex-wrap: wrap;
+      }
+
+      .add-sub-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
       }
 
       /* Flexbox para formularios que no se enciman */
@@ -262,7 +277,6 @@ export class SubstitutionsCard extends LitElement {
   @query('#editSubMinute') editSubMinuteInput!: MdFilledTextField;
   @query('#editAddedTime') editAddedTimeInput!: MdFilledTextField;
   @query('#sequence') sequenceInput!: MdFilledTextField;
-
   @state() editingSubIndex: number | null = null;
   @state() editingSubId: string | null = null;
   @state() editOutPlayers: Player[] = [];
@@ -348,7 +362,15 @@ export class SubstitutionsCard extends LitElement {
           this.isAdmin
             ? html`<div class="add-sub-section">
                 <div class="add-sub-header">
-                  <md-icon>add_circle</md-icon> Registrar Cambio
+                  <span class="add-sub-title">
+                    <md-icon>add_circle</md-icon> Registrar Cambio
+                  </span>
+                  <md-outlined-button
+                    @click=${this._openPlayerRegistrationDialog}
+                  >
+                    <md-icon slot="icon">person_add</md-icon>
+                    Registrar jugador
+                  </md-outlined-button>
                 </div>
 
                 <div class="form-grid">
@@ -546,6 +568,23 @@ export class SubstitutionsCard extends LitElement {
             </md-dialog>`
           : null
       }
+      ${
+        this.isAdmin
+          ? html`
+              <player-registration-dialog
+                .match=${this.match}
+                .side=${this.subTeam}
+                .players=${
+                  this.subTeam === 'local'
+                    ? this.localPlayers
+                    : this.visitorPlayers
+                }
+                .isAdmin=${this.isAdmin}
+                @player-created=${this._onPlayerCreated}
+              ></player-registration-dialog>
+            `
+          : null
+      }
     `;
   }
 
@@ -616,6 +655,26 @@ export class SubstitutionsCard extends LitElement {
         }
       </div>
     `;
+  }
+
+  private _openPlayerRegistrationDialog() {
+    if (!this.isAdmin) return;
+    void this.updateComplete.then(() => {
+      this.renderRoot
+        .querySelector<PlayerRegistrationDialog>('player-registration-dialog')
+        ?.open();
+    });
+  }
+
+  private _onPlayerCreated(event: CustomEvent<PlayerCreatedDetail>) {
+    const { side, player, players } = event.detail;
+    if (side === 'local') this.localPlayers = players;
+    else this.visitorPlayers = players;
+    this.updateComplete.then(() => {
+      if (this.subTeam !== side || !this.subInSelect) return;
+      this.subInSelect.value = String(player.number);
+      this._validateAddSub();
+    });
   }
 
   private _addSub() {

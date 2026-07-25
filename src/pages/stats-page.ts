@@ -8,6 +8,7 @@ import {
   TeamSide,
   U23NationalTeamCallups,
 } from '../types';
+import { GOAL_TYPE_LABELS } from '../constants';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
@@ -66,6 +67,16 @@ interface U23CallupPreview {
   actualMinutes: number;
   completedRegularMatches: number;
   missedMatches: number;
+}
+
+interface GoalDistributionStat {
+  label: string;
+  count: number;
+}
+
+interface NationalityStat {
+  label: string;
+  count: number;
 }
 
 const MINUTES_REQUIRED_FOR_CALLUP_CREDIT = 180;
@@ -316,6 +327,88 @@ export class StatsPage extends LitElement {
         flex: 1;
       }
 
+      .u23-mobile-list {
+        display: none;
+      }
+
+      .u23-mobile-card {
+        padding: 14px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 12px;
+        background: var(--md-sys-color-surface-container-low);
+      }
+
+      .u23-mobile-card + .u23-mobile-card {
+        margin-top: 12px;
+      }
+
+      .u23-mobile-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .u23-mobile-team {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+      }
+
+      .u23-mobile-team img {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+
+      .u23-mobile-rank {
+        display: inline-grid;
+        width: 24px;
+        height: 24px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .u23-mobile-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .u23-mobile-metric {
+        padding: 9px 10px;
+        border-radius: 8px;
+        background: var(--md-sys-color-surface);
+      }
+
+      .u23-mobile-metric-label {
+        display: block;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+      }
+
+      .u23-mobile-metric-value {
+        display: block;
+        margin-top: 2px;
+        color: var(--md-sys-color-on-surface);
+        font-size: 1.05rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+
       .callup-form {
         display: grid;
         gap: 16px;
@@ -439,7 +532,123 @@ export class StatsPage extends LitElement {
         font-weight: 750;
       }
 
+      .goal-analysis-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .goal-analysis-section + .goal-analysis-section {
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+        padding-top: 20px;
+      }
+
+      .goal-analysis-title {
+        margin: 0 0 14px;
+        color: var(--md-sys-color-on-surface);
+        font-size: 1rem;
+      }
+
+      .distribution-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .distribution-row {
+        display: grid;
+        grid-template-columns: minmax(96px, 132px) minmax(100px, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .distribution-label {
+        color: var(--md-sys-color-on-surface);
+        font-size: 0.87rem;
+        font-weight: 650;
+      }
+
+      .distribution-track {
+        height: 20px;
+        overflow: hidden;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 6px;
+        box-sizing: border-box;
+        background: var(--md-sys-color-surface-container-high);
+        background-image: repeating-linear-gradient(
+          90deg,
+          transparent 0,
+          transparent calc(25% - 1px),
+          rgba(0, 0, 0, 0.12) calc(25% - 1px),
+          rgba(0, 0, 0, 0.12) 25%
+        );
+      }
+
+      .distribution-fill {
+        height: 100%;
+        min-width: 0;
+        border-radius: 4px;
+        background: var(--md-sys-color-primary);
+        background: linear-gradient(
+          90deg,
+          var(--md-sys-color-primary) 0%,
+          #32b9ad 100%
+        );
+        box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.45);
+        transition: width 0.4s ease;
+      }
+
+      .goal-analysis-section:nth-child(2) .distribution-fill {
+        background: #c2410c;
+        background: linear-gradient(
+          90deg,
+          #c2410c 0%,
+          #f59e0b 100%
+        );
+      }
+
+      .distribution-value {
+        min-width: 58px;
+        color: var(--md-sys-color-on-surface);
+        font-size: 0.83rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .extra-time-note {
+        margin: 14px 0 0;
+        padding: 10px 12px;
+        border-left: 3px solid var(--md-sys-color-tertiary);
+        border-radius: 0 8px 8px 0;
+        background: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.84rem;
+      }
+
+      @media (min-width: 900px) {
+        .goal-analysis-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .goal-analysis-section + .goal-analysis-section {
+          border-top: 0;
+          border-left: 1px solid var(--md-sys-color-outline-variant);
+          padding-top: 0;
+          padding-left: 24px;
+        }
+      }
+
       @media (max-width: 520px) {
+        .distribution-row {
+          grid-template-columns: minmax(82px, 1fr) auto;
+          gap: 8px 10px;
+        }
+
+        .distribution-track {
+          grid-column: 1 / -1;
+          grid-row: 2;
+        }
+
         .u23-header {
           display: block;
         }
@@ -447,6 +656,14 @@ export class StatsPage extends LitElement {
         .u23-header md-outlined-button {
           width: 100%;
           margin-bottom: 16px;
+        }
+
+        .u23-desktop-table {
+          display: none;
+        }
+
+        .u23-mobile-list {
+          display: block;
         }
 
         .mfm-player-form {
@@ -492,9 +709,39 @@ export class StatsPage extends LitElement {
     this._revokeNewMfmPreviewUrl();
   }
 
+  private _renderDistributionRows(
+    items: GoalDistributionStat[],
+    total: number,
+  ) {
+    return items.map(item => {
+      const percentage = total > 0 ? (item.count / total) * 100 : 0;
+      return html`
+        <div class="distribution-row">
+          <span class="distribution-label">${item.label}</span>
+          <div class="distribution-track" aria-hidden="true">
+            <div class="distribution-fill" style="width: ${percentage}%;"></div>
+          </div>
+          <span class="distribution-value"
+            >${item.count} · ${percentage.toFixed(0)}%</span
+          >
+        </div>
+      `;
+    });
+  }
+
   override render() {
-    const { teamStats, topScorers, topAssists, fairPlay, u23CallupPreviews } =
-      this._buildStats();
+    const {
+      teamStats,
+      topScorers,
+      topAssists,
+      fairPlay,
+      u23CallupPreviews,
+      goalsByTimeRange,
+      goalsByType,
+      regularTimeGoals,
+      extraTimeGoals,
+      nationalities,
+    } = this._buildStats();
     const teamStatsByU23 = [...teamStats].sort(
       (a, b) => b.u23countedMinutes - a.u23countedMinutes,
     );
@@ -502,6 +749,22 @@ export class StatsPage extends LitElement {
       ...teamStatsByU23.map(t => t.u23countedMinutes),
       1,
     );
+    const u23Rows = teamStatsByU23.map((team, index) => {
+      const isFulfilled = team.u23countedMinutes >= REQUIRED_U23_MINUTES;
+      const minutesToFulfill = Math.max(
+        0,
+        REQUIRED_U23_MINUTES - team.u23countedMinutes,
+      );
+
+      return {
+        team,
+        rank: index + 1,
+        isFulfilled,
+        minutesToFulfill,
+        relativeProgress:
+          (team.u23countedMinutes / maxU23CountedMinutes) * 100,
+      };
+    });
 
     return html`
       <div class="dashboard-grid">
@@ -598,6 +861,91 @@ export class StatsPage extends LitElement {
         </div>
 
         <div class="card full-width">
+          <div class="card-header">
+            <h3><md-icon>query_stats</md-icon> Análisis de Goles</h3>
+            <div class="meta">
+              Solo goles de partido; las tandas de penales no se incluyen.
+            </div>
+          </div>
+          <div class="goal-analysis-grid">
+            <section class="goal-analysis-section">
+              <h4 class="goal-analysis-title">¿En qué minutos se anota?</h4>
+              <div class="distribution-list">
+                ${this._renderDistributionRows(
+                  goalsByTimeRange,
+                  regularTimeGoals,
+                )}
+              </div>
+              ${
+                regularTimeGoals === 0
+                  ? html`<p class="meta">Sin goles de tiempo regular.</p>`
+                  : null
+              }
+              ${
+                extraTimeGoals > 0
+                  ? html`
+                      <p class="extra-time-note">
+                        Tiempo extra: ${extraTimeGoals}
+                        gol${extraTimeGoals === 1 ? '' : 'es'}. No se integra a
+                        los rangos regulares.
+                      </p>
+                    `
+                  : null
+              }
+            </section>
+            <section class="goal-analysis-section">
+              <h4 class="goal-analysis-title">¿Cómo se anotan?</h4>
+              <div class="distribution-list">
+                ${this._renderDistributionRows(
+                  goalsByType,
+                  goalsByType.reduce((total, item) => total + item.count, 0),
+                )}
+              </div>
+              ${
+                goalsByType.every(item => item.count === 0)
+                  ? html`<p class="meta">Sin goles registrados.</p>`
+                  : null
+              }
+            </section>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><md-icon>public</md-icon> Nacionalidades</h3>
+            <div class="meta">Jugadores registrados en los planteles</div>
+          </div>
+          <div class="table-wrapper">
+            ${
+              nationalities.length === 0
+                ? html`<p class="meta">Sin jugadores registrados.</p>`
+                : html`
+                    <table class="modern-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Nacionalidad</th>
+                          <th class="num-col">Jugadores</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${nationalities.map(
+                          (nationality, index) => html`
+                            <tr class=${index === 0 ? 'rank-1' : ''}>
+                              <td>${index + 1}</td>
+                              <td>${nationality.label}</td>
+                              <td class="num-col">${nationality.count}</td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  `
+            }
+          </div>
+        </div>
+
+        <div class="card full-width">
           <div class="u23-header">
             <div class="card-header">
               <h3><md-icon>boy</md-icon> Regla de Menores (Sub-23)</h3>
@@ -621,42 +969,40 @@ export class StatsPage extends LitElement {
               teamStats.length === 0
                 ? html`<p class="meta">No hay datos.</p>`
                 : html`
-                    <table class="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Equipo</th>
-                          <th class="num-col">Menores Alineados</th>
-                          <th class="num-col">Reales</th>
-                          <th class="num-col">Selección</th>
-                          <th class="num-col">Acreditados</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${teamStatsByU23.map((t, i) => {
-                          const isFulfilled =
-                            t.u23countedMinutes >= REQUIRED_U23_MINUTES;
-                          const minutesToFulfill = Math.max(
-                            0,
-                            REQUIRED_U23_MINUTES - t.u23countedMinutes,
-                          );
-                          const relativeProgress =
-                            (t.u23countedMinutes / maxU23CountedMinutes) * 100;
-
-                          return html`
+                    <div class="u23-desktop-table">
+                      <table class="modern-table">
+                        <thead>
+                          <tr>
+                            <th>Pos</th>
+                            <th>Equipo</th>
+                            <th class="num-col">Menores Alineados</th>
+                            <th class="num-col">Reales</th>
+                            <th class="num-col">Selección</th>
+                            <th class="num-col">Acreditados</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${u23Rows.map(
+                            ({
+                              team,
+                              rank,
+                              isFulfilled,
+                              minutesToFulfill,
+                              relativeProgress,
+                            }) => html`
                             <tr class="team-summary-row">
                               <td class="team-rank-cell" rowspan="2">
-                                ${i + 1}
+                                ${rank}
                               </td>
                               <td>
                                 <div class="team-cell">
-                                  ${getTeamImage(t.team)} ${t.team}
+                                  ${getTeamImage(team.team)} ${team.team}
                                 </div>
                               </td>
-                              <td class="num-col">${t.u23PlayersCount}</td>
-                              <td class="num-col">${t.u23totalMinutes}'</td>
-                              <td class="num-col">${t.u23CallupMinutes}'</td>
-                              <td class="num-col">${t.u23countedMinutes}'</td>
+                              <td class="num-col">${team.u23PlayersCount}</td>
+                              <td class="num-col">${team.u23totalMinutes}'</td>
+                              <td class="num-col">${team.u23CallupMinutes}'</td>
+                              <td class="num-col">${team.u23countedMinutes}'</td>
                             </tr>
                             <tr class="progress-row">
                               <td class="progress-cell" colspan="5">
@@ -679,7 +1025,7 @@ export class StatsPage extends LitElement {
                                 </div>
                                 <div class="progress-meta">
                                   <span
-                                    >${t.u23countedMinutes}' acreditados</span
+                                    >${team.u23countedMinutes}' acreditados</span
                                   >
                                   <span
                                     style="color: ${
@@ -697,10 +1043,98 @@ export class StatsPage extends LitElement {
                                 </div>
                               </td>
                             </tr>
-                          `;
-                        })}
-                      </tbody>
-                    </table>
+                          `,
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="u23-mobile-list">
+                      ${u23Rows.map(
+                        ({
+                          team,
+                          rank,
+                          isFulfilled,
+                          minutesToFulfill,
+                          relativeProgress,
+                        }) => html`
+                          <article class="u23-mobile-card">
+                            <div class="u23-mobile-card-header">
+                              <div class="u23-mobile-team">
+                                <span class="u23-mobile-rank">${rank}</span>
+                                ${getTeamImage(team.team)}
+                                <span>${team.team}</span>
+                              </div>
+                              <span
+                                class="progress-status ${
+                                  isFulfilled ? 'fulfilled' : 'pending'
+                                }"
+                              >
+                                ${isFulfilled ? 'Cumplido' : 'Pendiente'}
+                              </span>
+                            </div>
+                            <div class="u23-mobile-metrics">
+                              <div class="u23-mobile-metric">
+                                <span class="u23-mobile-metric-label"
+                                  >Menores</span
+                                >
+                                <span class="u23-mobile-metric-value"
+                                  >${team.u23PlayersCount}</span
+                                >
+                              </div>
+                              <div class="u23-mobile-metric">
+                                <span class="u23-mobile-metric-label"
+                                  >Reales</span
+                                >
+                                <span class="u23-mobile-metric-value"
+                                  >${team.u23totalMinutes}'</span
+                                >
+                              </div>
+                              <div class="u23-mobile-metric">
+                                <span class="u23-mobile-metric-label"
+                                  >Selección</span
+                                >
+                                <span class="u23-mobile-metric-value"
+                                  >${team.u23CallupMinutes}'</span
+                                >
+                              </div>
+                              <div class="u23-mobile-metric">
+                                <span class="u23-mobile-metric-label"
+                                  >Acreditados</span
+                                >
+                                <span class="u23-mobile-metric-value"
+                                  >${team.u23countedMinutes}'</span
+                                >
+                              </div>
+                            </div>
+                            <div class="progress-track">
+                              <div
+                                class="progress-fill ${
+                                  isFulfilled ? 'fulfilled' : 'pending'
+                                }"
+                                style="width: ${relativeProgress}%;"
+                              ></div>
+                            </div>
+                            <div class="progress-meta">
+                              <span>${team.u23countedMinutes}' acreditados</span>
+                              <span
+                                style="color: ${
+                                  isFulfilled
+                                    ? 'var(--md-sys-color-primary)'
+                                    : 'var(--app-color-danger, #D32F2F)'
+                                }; font-weight: 700;"
+                              >
+                                ${
+                                  isFulfilled
+                                    ? '✓ Meta cubierta'
+                                    : `Faltan ${minutesToFulfill}'`
+                                }
+                              </span>
+                            </div>
+                          </article>
+                        `,
+                      )}
+                    </div>
                   `
             }
           </div>
@@ -1399,6 +1833,74 @@ export class StatsPage extends LitElement {
     const teamStats = new Map<string, TeamStats>();
     const u23PlayersTeam = new Map<string, Set<number>>();
     const u23PlayerMinutes = new Map<string, number>();
+    const goalsByTimeRange: GoalDistributionStat[] = [
+      { label: '0–15', count: 0 },
+      { label: '16–30', count: 0 },
+      { label: '31–45+', count: 0 },
+      { label: '46–60', count: 0 },
+      { label: '61–75', count: 0 },
+      { label: '76–90+', count: 0 },
+    ];
+    const goalsByType: GoalDistributionStat[] = [
+      { label: GOAL_TYPE_LABELS.penal, count: 0 },
+      { label: GOAL_TYPE_LABELS.area, count: 0 },
+      { label: GOAL_TYPE_LABELS.fueraArea, count: 0 },
+      { label: GOAL_TYPE_LABELS.tiroLibre, count: 0 },
+      { label: GOAL_TYPE_LABELS.cabeza, count: 0 },
+      { label: GOAL_TYPE_LABELS.otro, count: 0 },
+      { label: 'Autogol', count: 0 },
+      { label: 'Sin tipo registrado', count: 0 },
+    ];
+    const nationalityStats = new Map<string, NationalityStat>();
+    let regularTimeGoals = 0;
+    let extraTimeGoals = 0;
+
+    const addGoalAnalysis = (
+      goal: ReturnType<typeof getGoalEvents>[number],
+    ) => {
+      if (goal.period === 'PEN') return;
+
+      const typeLabel = goal.ownGoal
+        ? 'Autogol'
+        : goal.goalType
+          ? GOAL_TYPE_LABELS[goal.goalType]
+          : 'Sin tipo registrado';
+      const typeEntry = goalsByType.find(item => item.label === typeLabel);
+      if (typeEntry) typeEntry.count += 1;
+
+      if (goal.period === '1TE' || goal.period === '2TE' || goal.minute > 90) {
+        extraTimeGoals += 1;
+        return;
+      }
+
+      regularTimeGoals += 1;
+      const timeRangeIndex =
+        goal.minute <= 15
+          ? 0
+          : goal.minute <= 30
+            ? 1
+            : goal.minute <= 45
+              ? 2
+              : goal.minute <= 60
+                ? 3
+                : goal.minute <= 75
+                  ? 4
+                  : 5;
+      goalsByTimeRange[timeRangeIndex].count += 1;
+    };
+
+    this.players.forEach(playerList => {
+      playerList.forEach(player => {
+        const normalized = (player.nationality || '')
+          .trim()
+          .replace(/\s+/g, ' ');
+        const label = normalized || 'Sin nacionalidad capturada';
+        const key = label.toLocaleLowerCase();
+        const stat = nationalityStats.get(key);
+        if (stat) stat.count += 1;
+        else nationalityStats.set(key, { label, count: 1 });
+      });
+    });
 
     const ensureTeam = (teamName: string) => {
       if (!teamStats.has(teamName)) {
@@ -1554,6 +2056,8 @@ export class StatsPage extends LitElement {
       const visitorKey = this._teamKey(match.visitante);
       const localPlayers = this.players.get(localKey) || [];
       const visitorPlayers = this.players.get(visitorKey) || [];
+
+      getGoalEvents(match.events).forEach(addGoalAnalysis);
 
       // Goals and assists
       getGoalEvents(match.events)?.forEach(goal => {
@@ -1715,6 +2219,10 @@ export class StatsPage extends LitElement {
         return a.team.localeCompare(b.team);
       })
       .slice(0, 10);
+    const nationalities = Array.from(nationalityStats.values()).sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.label.localeCompare(b.label);
+    });
 
     return {
       playerStats: playerArray,
@@ -1723,6 +2231,11 @@ export class StatsPage extends LitElement {
       topAssists,
       fairPlay,
       u23CallupPreviews,
+      goalsByTimeRange,
+      goalsByType,
+      regularTimeGoals,
+      extraTimeGoals,
+      nationalities,
     };
   }
 

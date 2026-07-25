@@ -2,18 +2,17 @@ import { MdCheckbox } from '@material/web/checkbox/checkbox';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import '../components/player-info.js';
+import '../components/player-registration-dialog.js';
+import type {
+  PlayerCreatedDetail,
+  PlayerRegistrationDialog,
+} from '../components/player-registration-dialog.js';
 import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
-import {
-  readImageFromClipboard,
-  uploadPlayerImage,
-} from '../utils/playerImageUpload.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
-import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
-import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
 @customElement('lineups-card')
 export class LineupsCard extends LitElement {
@@ -151,82 +150,6 @@ export class LineupsCard extends LitElement {
         display: flex;
         justify-content: flex-end;
       }
-
-      /* Formularios dentro del Dialog */
-      .dialog-form {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
-        margin-top: 8px;
-      }
-      @media (min-width: 600px) {
-        .dialog-form {
-          grid-template-columns: 1fr 1fr;
-        }
-        .full-width {
-          grid-column: 1 / -1;
-        }
-      }
-
-      .image-input-section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .image-paste-zone {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 180px;
-        border: 2px dashed var(--md-sys-color-outline);
-        border-radius: 16px;
-        padding: 16px;
-        background: var(--md-sys-color-surface-container-low);
-        color: var(--md-sys-color-on-surface-variant);
-        text-align: center;
-        cursor: pointer;
-        outline: none;
-      }
-
-      .image-paste-zone:focus {
-        border-color: var(--md-sys-color-primary);
-        box-shadow: 0 0 0 3px rgba(0, 103, 192, 0.12);
-      }
-
-      .image-paste-zone.has-image {
-        padding: 8px;
-        border-style: solid;
-      }
-
-      .image-preview {
-        max-width: 100%;
-        max-height: 220px;
-        border-radius: 12px;
-        object-fit: contain;
-      }
-
-      .image-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-
-      .image-help,
-      .image-error {
-        margin: 0;
-        font-size: 0.85rem;
-      }
-
-      .image-help {
-        color: var(--md-sys-color-on-surface-variant);
-      }
-
-      .image-error {
-        color: var(--md-sys-color-error);
-      }
     `,
   ];
 
@@ -236,22 +159,9 @@ export class LineupsCard extends LitElement {
   @property({ type: Boolean }) isAdmin = false;
 
   @query('#dialogLineups') dialogLineups!: MdDialog;
-  @query('#dialogAddPlayer') dialogAddPlayer!: MdDialog;
-  @query('#newPlayerName') newPlayerNameField!: MdFilledTextField;
-  @query('#newPlayerPosition') newPlayerPositionField!: MdFilledSelect;
-  @query('#newPlayerNumber') newPlayerNumberField!: MdFilledTextField;
-  @query('#newPlayerBirthDate') newPlayerBirthDateField!: MdFilledTextField;
-  @query('#newPlayerFullName') newPlayerFullNameField!: MdFilledTextField;
-  @query('#newPlayerNationality') newPlayerNationalityField!: MdFilledTextField;
-
   @state() private addPlayerSide: TeamSide | null = null;
   @state() private lineupsCollapsed = false;
   @state() private lastMatchId: number | null = null;
-  @state() private pastedImageBlob: Blob | null = null;
-  @state() private pastedImagePreviewUrl = '';
-  @state() private isUploadingImage = false;
-  @state() private isReadingClipboardImage = false;
-  @state() private imageError = '';
 
   override render() {
     if (!this.match) return html``;
@@ -397,130 +307,18 @@ export class LineupsCard extends LitElement {
         </div>
       </md-dialog>
 
-      <md-dialog id="dialogAddPlayer" type="modal">
-        <div slot="headline">
-          ${
-            this.addPlayerSide === 'local'
-              ? 'Agregar jugador local'
-              : 'Agregar jugador visitante'
-          }
-        </div>
-        <div slot="content" class="dialog-form">
-          <md-filled-text-field
-            id="newPlayerName"
-            label="Nombre corto"
-            required
-          ></md-filled-text-field>
-          <md-filled-text-field
-            id="newPlayerNumber"
-            label="Número de jersey"
-            type="number"
-            required
-          ></md-filled-text-field>
-          <md-filled-select
-            id="newPlayerPosition"
-            label="Posición"
-            class="full-width"
-          >
-            <md-select-option value="Portero"
-              ><div slot="headline">Portero</div></md-select-option
-            >
-            <md-select-option value="Defensa"
-              ><div slot="headline">Defensa</div></md-select-option
-            >
-            <md-select-option value="Medio"
-              ><div slot="headline">Medio</div></md-select-option
-            >
-            <md-select-option value="Delantero"
-              ><div slot="headline">Delantero</div></md-select-option
-            >
-          </md-filled-select>
-          <md-filled-text-field
-            id="newPlayerFullName"
-            label="Nombre Completo"
-            class="full-width"
-          ></md-filled-text-field>
-          <md-filled-text-field
-            id="newPlayerNationality"
-            label="Nacionalidad"
-          ></md-filled-text-field>
-          <md-filled-text-field
-            id="newPlayerBirthDate"
-            label="Nacimiento"
-            type="date"
-          ></md-filled-text-field>
-          <div class="image-input-section full-width">
-            <div
-              class="image-paste-zone ${
-                this.pastedImagePreviewUrl ? 'has-image' : ''
-              }"
-              tabindex="0"
-              role="button"
-              @paste=${this._handleImagePaste}
-              title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
-            >
-              ${
-                this.pastedImagePreviewUrl
-                  ? html`<img
-                      class="image-preview"
-                      src="${this.pastedImagePreviewUrl}"
-                      alt="Vista previa de la foto del jugador"
-                    />`
-                  : html`<div>
-                      <md-icon>content_paste</md-icon>
-                      <p>Pega aquí la foto del jugador</p>
-                      <p class="image-help">
-                        En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
-                        Leer portapapeles.
-                      </p>
-                    </div>`
-              }
-            </div>
-            <div class="image-actions">
-              <p class="${this.imageError ? 'image-error' : 'image-help'}">
-                ${
-                  this.imageError ||
-                  'La imagen se convertirá a JPEG y se subirá al guardar.'
-                }
-              </p>
-              ${
-                this.pastedImagePreviewUrl
-                  ? html`
-                      <md-outlined-button @click=${this._clearPastedImage}>
-                        Quitar imagen
-                      </md-outlined-button>
-                    `
-                  : null
-              }
-              <md-outlined-button
-                @click=${this._readImageFromClipboard}
-                ?disabled=${
-                  this.isReadingClipboardImage || this.isUploadingImage
-                }
-              >
-                <md-icon slot="icon">content_paste_go</md-icon>
-                ${
-                  this.isReadingClipboardImage
-                    ? 'Leyendo...'
-                    : 'Leer portapapeles'
-                }
-              </md-outlined-button>
-            </div>
-          </div>
-        </div>
-        <div slot="actions">
-          <md-outlined-button
-            @click=${this._cancelAddPlayer}
-            ?disabled=${this.isUploadingImage}
-            >Cancelar</md-outlined-button
-          >
-          <md-filled-button
-            @click=${this._saveNewPlayer}
-            ?disabled=${this.isUploadingImage}
-            >Guardar</md-filled-button
-          >
-        </div>
-      </md-dialog>
+      <player-registration-dialog
+        .match=${this.match}
+        .side=${this.addPlayerSide}
+        .players=${
+          this.addPlayerSide === 'local'
+            ? this.localPlayers
+            : this.visitorPlayers
+        }
+        .isAdmin=${this.isAdmin}
+        @player-created=${this._onPlayerCreated}
+        @player-registration-dialog-closed=${this._closePlayerRegistrationDialog}
+      ></player-registration-dialog>
     `;
   }
 
@@ -646,191 +444,22 @@ export class LineupsCard extends LitElement {
   private _openAddPlayerDialog(side: TeamSide) {
     if (!this.isAdmin) return;
     this.addPlayerSide = side;
-    this._resetAddPlayerForm();
-    this.dialogAddPlayer?.show();
+    void this.updateComplete.then(() => {
+      this.renderRoot
+        .querySelector<PlayerRegistrationDialog>('player-registration-dialog')
+        ?.open();
+    });
   }
 
-  private _resetAddPlayerForm() {
-    if (this.newPlayerNameField) this.newPlayerNameField.value = '';
-    if (this.newPlayerPositionField) this.newPlayerPositionField.value = '';
-    if (this.newPlayerNumberField) {
-      this.newPlayerNumberField.value = '';
-      this.newPlayerNumberField.setCustomValidity('');
-    }
-    if (this.newPlayerFullNameField) this.newPlayerFullNameField.value = '';
-    if (this.newPlayerNationalityField)
-      this.newPlayerNationalityField.value = '';
-    if (this.newPlayerBirthDateField) this.newPlayerBirthDateField.value = '';
-    this._clearPastedImage();
-    this.imageError = '';
-    this.isUploadingImage = false;
-    this.isReadingClipboardImage = false;
-  }
-
-  private _cancelAddPlayer() {
-    this._clearPastedImage();
-    this.imageError = '';
-    this.isUploadingImage = false;
-    this.isReadingClipboardImage = false;
-    this.dialogAddPlayer?.close();
+  private _onPlayerCreated(event: CustomEvent<PlayerCreatedDetail>) {
+    const { side, players } = event.detail;
+    if (side === 'local') this.localPlayers = players;
+    else this.visitorPlayers = players;
     this.addPlayerSide = null;
   }
 
-  private _getTeamKey(side: TeamSide): string {
-    const teamName =
-      side === 'local' ? this.match?.local || '' : this.match?.visitante || '';
-    return teamName.replaceAll('.', '');
-  }
-
-  private async _saveNewPlayer() {
-    if (!this.isAdmin) return;
-    if (!this.match || !this.addPlayerSide) return;
-    const name = this.newPlayerNameField?.value?.trim();
-    const position = this.newPlayerPositionField?.value?.trim();
-    const number = Number(this.newPlayerNumberField?.value);
-    const birthDateInput = this.newPlayerBirthDateField?.value || '';
-    let birthDate = birthDateInput;
-    if (birthDateInput.includes('-')) {
-      const [year, month, day] = birthDateInput.split('-');
-      birthDate = `${day}/${month}/${year}`;
-    }
-    const fullName = this.newPlayerFullNameField?.value?.trim() || '';
-    const nationality = this.newPlayerNationalityField?.value?.trim() || '';
-
-    if (!name || !position || Number.isNaN(number)) {
-      this.newPlayerNumberField?.setCustomValidity(
-        Number.isNaN(number) ? 'Número inválido' : '',
-      );
-      this.newPlayerNumberField?.reportValidity();
-      return;
-    }
-    const currentPlayers =
-      this.addPlayerSide === 'local' ? this.localPlayers : this.visitorPlayers;
-    if (currentPlayers.some(p => p.number === number)) {
-      this.newPlayerNumberField?.setCustomValidity(
-        'Ese número ya está registrado en este equipo',
-      );
-      this.newPlayerNumberField?.reportValidity();
-      return;
-    }
-    this.newPlayerNumberField?.setCustomValidity('');
-
-    let imgSrc = '';
-    if (this.pastedImageBlob) {
-      this.isUploadingImage = true;
-      this.imageError = '';
-
-      try {
-        imgSrc = await uploadPlayerImage(
-          this.pastedImageBlob,
-          this._getTeamKey(this.addPlayerSide),
-          number,
-        );
-      } catch (error) {
-        console.error('Error uploading player image:', error);
-        this.imageError =
-          'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
-        this.isUploadingImage = false;
-        return;
-      }
-    }
-
-    const newPlayer: Player = {
-      name,
-      position,
-      number,
-      imgSrc,
-      birthDate,
-      fullName,
-      nationality,
-    };
-    const updatedList = [...currentPlayers, newPlayer].sort(
-      (a, b) => a.number - b.number,
-    );
-
-    if (this.addPlayerSide === 'local') this.localPlayers = updatedList;
-    else this.visitorPlayers = updatedList;
-
-    const updates: FirebaseUpdates = {};
-    updates[`/players/${this._getTeamKey(this.addPlayerSide)}`] = updatedList;
-
-    // Guardamos el estado actual de los checkboxes para no perder el progreso
-    updates[`/matches/${this.match.idMatch}/lineupLocal`] =
-      this.match.lineupLocal || [];
-    updates[`/matches/${this.match.idMatch}/lineupVisitor`] =
-      this.match.lineupVisitor || [];
-
-    this.dispatchEvent(dispatchEventMatchUpdated(updates));
-
-    this.isUploadingImage = false;
-    this.dialogAddPlayer?.close();
+  private _closePlayerRegistrationDialog() {
     this.addPlayerSide = null;
-    this._clearPastedImage();
-  }
-
-  private _handleImagePaste(event: ClipboardEvent) {
-    const imageFile = event.clipboardData?.items
-      ? Array.from(event.clipboardData.items).find(item =>
-          item.type.startsWith('image/'),
-        )
-      : null;
-
-    if (!imageFile) {
-      this.imageError = 'El portapapeles no contiene una imagen.';
-      return;
-    }
-
-    const blob = imageFile.getAsFile();
-    if (!blob) {
-      this.imageError = 'No fue posible leer la imagen pegada.';
-      return;
-    }
-
-    event.preventDefault();
-    this.imageError = '';
-    this._setPastedImage(blob);
-  }
-
-  private async _readImageFromClipboard() {
-    this.isReadingClipboardImage = true;
-    this.imageError = '';
-
-    try {
-      const blob = await readImageFromClipboard();
-      this._setPastedImage(blob);
-    } catch (error) {
-      this.imageError =
-        error instanceof Error
-          ? error.message
-          : 'No fue posible leer la imagen del portapapeles.';
-    } finally {
-      this.isReadingClipboardImage = false;
-    }
-  }
-
-  private _setPastedImage(blob: Blob) {
-    this._revokePreviewUrl();
-    this.pastedImageBlob = blob;
-    this.pastedImagePreviewUrl = URL.createObjectURL(blob);
-  }
-
-  private _clearPastedImage = () => {
-    this._revokePreviewUrl();
-    this.pastedImageBlob = null;
-  };
-
-  private _revokePreviewUrl() {
-    if (!this.pastedImagePreviewUrl) {
-      return;
-    }
-
-    URL.revokeObjectURL(this.pastedImagePreviewUrl);
-    this.pastedImagePreviewUrl = '';
-  }
-
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    this._revokePreviewUrl();
   }
 
   private updateLineups() {
