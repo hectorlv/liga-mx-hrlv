@@ -10,3 +10,8 @@ allowBuilds:
   protobufjs: false
   rs-module-lexer: true
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - eslint@10.8.0
+  - playwright-core@1.62.0
+  - playwright@1.62.0

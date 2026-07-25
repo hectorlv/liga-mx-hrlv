@@ -1287,12 +1287,18 @@ export class StatsPage extends LitElement {
   private _openCallupDialog() {
     const previews = this._buildStats().u23CallupPreviews;
     const firstPreview = Array.from(previews.values())[0];
-    if (!firstPreview) return;
 
-    this.callupTeam = firstPreview.teamKey;
-    this.callupPlayerNumber = String(firstPreview.player.number);
-    this.callupMissedMatches = firstPreview.missedMatches;
-    void this.updateComplete.then(() => this.dialogU23Callup?.show());
+    if (firstPreview) {
+      this.callupTeam = firstPreview.teamKey;
+      this.callupPlayerNumber = String(firstPreview.player.number);
+      this.callupMissedMatches = firstPreview.missedMatches;
+    } else {
+      this.callupTeam = '';
+      this.callupPlayerNumber = '';
+      this.callupMissedMatches = 0;
+    }
+
+    this.updateComplete.then(() => this.dialogU23Callup?.show());
   }
 
   private _closeCallupDialog() {
