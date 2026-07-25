@@ -13,7 +13,7 @@
     "start:build:open": "pnpm run build && web-dev-server --root-dir dist --app-index index.html --open",
     "start:build": "pnpm run build && web-dev-server --root-dir dist --app-index index.html",
     "start": "web-dev-server --root-dir dist --app-index index.html",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc6 --noEmit",
     "analyze": "custom-elements-manifest analyze --globs \"src/**/*.{ts,js}\" --exclude \"**/dist/**\" --exclude \"**/node_modules/**\" --outdir dist"
   },
   "dependencies": {
