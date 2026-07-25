@@ -51,7 +51,7 @@ import {
   calculateQuarterFinal,
 } from '../utils/playoffCalculator.js';
 import { calculateTable } from '../utils/tableCalculator.js';
-import { APP_VERSION } from '../utils/version.js';
+import { APP_BUILD_DATE, APP_VERSION_LABEL } from '../utils/version.js';
 import '../utils/material.js';
 
 interface NavigationTab {
@@ -440,7 +440,9 @@ export class LigaMxHrlv extends LitElement {
       <footer class="app-footer">
         <p class="footer-credit">
           Made with love by HRLV ·
-          <span class="footer-version">v${APP_VERSION}</span> ·
+          <span class="footer-version" title=${APP_BUILD_DATE}
+            >${APP_VERSION_LABEL}</span
+          > ·
           ${new Date().getFullYear()}
         </p>
         <span class="footer-divider" aria-hidden="true"></span>
