@@ -8,6 +8,7 @@ import { getGoalEvents } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
   getLiveMatchPeriodLabel,
+  hasMatchEnded,
   hasMatchStarted,
   isMatchLive,
   lineupsReadyBeforeKickoff,
@@ -739,8 +740,9 @@ export class HomePage extends LitElement {
     if (liveMatch) return liveMatch;
 
     const today = new Date();
-    const todayMatch = sortedMatches.find(match =>
-      this._isSameDay(match.fecha, today),
+    const todayMatch = sortedMatches.find(
+      match =>
+        this._isSameDay(match.fecha, today) && !hasMatchEnded(match),
     );
     if (todayMatch) return todayMatch;
 
