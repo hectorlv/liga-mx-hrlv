@@ -599,11 +599,7 @@ export class StatsPage extends LitElement {
 
       .goal-analysis-section:nth-child(2) .distribution-fill {
         background: #c2410c;
-        background: linear-gradient(
-          90deg,
-          #c2410c 0%,
-          #f59e0b 100%
-        );
+        background: linear-gradient(90deg, #c2410c 0%, #f59e0b 100%);
       }
 
       .distribution-value {
@@ -761,8 +757,7 @@ export class StatsPage extends LitElement {
         rank: index + 1,
         isFulfilled,
         minutesToFulfill,
-        relativeProgress:
-          (team.u23countedMinutes / maxU23CountedMinutes) * 100,
+        relativeProgress: (team.u23countedMinutes / maxU23CountedMinutes) * 100,
       };
     });
 
@@ -990,60 +985,67 @@ export class StatsPage extends LitElement {
                               minutesToFulfill,
                               relativeProgress,
                             }) => html`
-                            <tr class="team-summary-row">
-                              <td class="team-rank-cell" rowspan="2">
-                                ${rank}
-                              </td>
-                              <td>
-                                <div class="team-cell">
-                                  ${getTeamImage(team.team)} ${team.team}
-                                </div>
-                              </td>
-                              <td class="num-col">${team.u23PlayersCount}</td>
-                              <td class="num-col">${team.u23totalMinutes}'</td>
-                              <td class="num-col">${team.u23CallupMinutes}'</td>
-                              <td class="num-col">${team.u23countedMinutes}'</td>
-                            </tr>
-                            <tr class="progress-row">
-                              <td class="progress-cell" colspan="5">
-                                <div class="progress-head">
-                                  <span
-                                    class="progress-status ${
+                              <tr class="team-summary-row">
+                                <td class="team-rank-cell" rowspan="2">
+                                  ${rank}
+                                </td>
+                                <td>
+                                  <div class="team-cell">
+                                    ${getTeamImage(team.team)} ${team.team}
+                                  </div>
+                                </td>
+                                <td class="num-col">${team.u23PlayersCount}</td>
+                                <td class="num-col">
+                                  ${team.u23totalMinutes}'
+                                </td>
+                                <td class="num-col">
+                                  ${team.u23CallupMinutes}'
+                                </td>
+                                <td class="num-col">
+                                  ${team.u23countedMinutes}'
+                                </td>
+                              </tr>
+                              <tr class="progress-row">
+                                <td class="progress-cell" colspan="5">
+                                  <div class="progress-head">
+                                    <span
+                                      class="progress-status ${
                                       isFulfilled ? 'fulfilled' : 'pending'
                                     }"
-                                  >
-                                    ${isFulfilled ? 'Cumplido' : 'Pendiente'}
-                                  </span>
-                                </div>
-                                <div class="progress-track">
-                                  <div
-                                    class="progress-fill ${
+                                    >
+                                      ${isFulfilled ? 'Cumplido' : 'Pendiente'}
+                                    </span>
+                                  </div>
+                                  <div class="progress-track">
+                                    <div
+                                      class="progress-fill ${
                                       isFulfilled ? 'fulfilled' : 'pending'
                                     }"
-                                    style="width: ${relativeProgress}%;"
-                                  ></div>
-                                </div>
-                                <div class="progress-meta">
-                                  <span
-                                    >${team.u23countedMinutes}' acreditados</span
-                                  >
-                                  <span
-                                    style="color: ${
+                                      style="width: ${relativeProgress}%;"
+                                    ></div>
+                                  </div>
+                                  <div class="progress-meta">
+                                    <span
+                                      >${team.u23countedMinutes}'
+                                      acreditados</span
+                                    >
+                                    <span
+                                      style="color: ${
                                       isFulfilled
                                         ? 'var(--md-sys-color-primary)'
                                         : 'var(--app-color-danger, #D32F2F)'
                                     }; font-weight: 700;"
-                                  >
-                                    ${
+                                    >
+                                      ${
                                       isFulfilled
                                         ? '✓ Meta cubierta'
                                         : `Faltan ${minutesToFulfill}'`
                                     }
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                          `,
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            `,
                           )}
                         </tbody>
                       </table>
@@ -1116,7 +1118,9 @@ export class StatsPage extends LitElement {
                               ></div>
                             </div>
                             <div class="progress-meta">
-                              <span>${team.u23countedMinutes}' acreditados</span>
+                              <span
+                                >${team.u23countedMinutes}' acreditados</span
+                              >
                               <span
                                 style="color: ${
                                   isFulfilled
