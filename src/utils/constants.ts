@@ -102,6 +102,9 @@ const POSTSEASON_FORMAT = {
 
 const REGULAR_SEASON_LAST_JORNADA = 17;
 
+// Regla de Menores vigente a partir de este torneo.
+const U23_MIN_BIRTH_YEAR = 2004;
+
 const LOGOS = [
   { equipo: 'América', img: 'america' },
   { equipo: 'Atlante', img: 'atlante' },
@@ -138,4 +141,5 @@ export {
   LOGOS,
   POSTSEASON_FORMAT,
   REGULAR_SEASON_LAST_JORNADA,
+  U23_MIN_BIRTH_YEAR,
 };

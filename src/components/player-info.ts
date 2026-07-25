@@ -2,6 +2,7 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Player } from '../types';
 import { getDownloadURL, getStorage, ref } from 'firebase/storage';
+import { U23_MIN_BIRTH_YEAR } from '../utils/constants.js';
 
 @customElement('player-info')
 export class PlayerInfo extends LitElement {
@@ -178,12 +179,10 @@ export class PlayerInfo extends LitElement {
       return false;
     }
 
-    // Regla U23 para 2026: nacidos en 2004 o después y nacionalidad mexicano
-    const currentYear = new Date().getFullYear();
-    const minBirthYear = 2004; //currentYear - 23;
+    // Regla de Menores vigente: nacidos en 2004 o después y nacionalidad mexicana.
     const isMexican = this.player?.nationality?.toLowerCase() === 'mexicano';
 
-    return birthYear >= minBirthYear && isMexican;
+    return birthYear >= U23_MIN_BIRTH_YEAR && isMexican;
   }
 
   private getBirthYear(birthDate?: string | Date): number | null {

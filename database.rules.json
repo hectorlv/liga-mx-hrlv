@@ -18,6 +18,10 @@
       ".read": true,
       ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
     },
+    "u23NationalTeamCallups": {
+      ".read": true,
+      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+    },
     "allowedWriters": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",

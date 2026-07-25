@@ -471,9 +471,7 @@ export class MatchesPage extends LitElement {
    * @param changed
    */
   override updated(changed: PropertyValues) {
-    const previousFilters = changed.get('filters') as
-      | MatchFilters
-      | undefined;
+    const previousFilters = changed.get('filters') as MatchFilters | undefined;
     if (
       changed.has('filters') &&
       !this._hasSameFilters(previousFilters, this.filters) &&
