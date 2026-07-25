@@ -7,8 +7,10 @@ import { generateSW } from 'rollup-plugin-workbox';
 import path from 'node:path';
 import image from '@rollup/plugin-image';
 import json from '@rollup/plugin-json';
+import { createAppVersionDefines } from './buildMetadata.mjs';
 
 const esbuild = _esbuild.default || _esbuild;
+const appVersionDefines = createAppVersionDefines();
 export default {
   input: 'index.html',
   output: {
@@ -37,6 +39,7 @@ export default {
       target: 'es2020',
       tsconfig: 'tsconfig.json',
       include: /\.[jt]s?$/,
+      define: appVersionDefines,
     }),
     /** Bundle assets references via import.meta.url */
     importMetaAssets(),
