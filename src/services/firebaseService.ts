@@ -57,9 +57,7 @@ function subscribeToFirebasePath<T>(
     },
     error => {
       console.error('Firebase subscription error at path:', path, error);
-      callback(
-        isArray ? ([] as unknown as T) : (new Map() as unknown as T),
-      );
+      callback(isArray ? ([] as unknown as T) : (new Map() as unknown as T));
     },
   );
   return unsubscribe;

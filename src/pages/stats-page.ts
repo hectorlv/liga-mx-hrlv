@@ -1,10 +1,5 @@
 import { css, html, LitElement } from 'lit';
-import {
-  customElement,
-  property,
-  query,
-  state,
-} from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import {
   Match,
   Player,
@@ -464,8 +459,8 @@ export class StatsPage extends LitElement {
   @property({ type: Array }) matchesList: Match[] = [];
   @property({ type: Array }) teams: string[] = [];
   @property({ type: Object }) players: PlayerTeam = new Map();
-  @property({ attribute: false }) u23NationalTeamCallups: U23NationalTeamCallups =
-    new Map();
+  @property({ attribute: false })
+  u23NationalTeamCallups: U23NationalTeamCallups = new Map();
   @property({ type: Boolean }) isAdmin = false;
 
   @state() private callupTeam = '';
@@ -498,13 +493,8 @@ export class StatsPage extends LitElement {
   }
 
   override render() {
-    const {
-      teamStats,
-      topScorers,
-      topAssists,
-      fairPlay,
-      u23CallupPreviews,
-    } = this._buildStats();
+    const { teamStats, topScorers, topAssists, fairPlay, u23CallupPreviews } =
+      this._buildStats();
     const teamStatsByU23 = [...teamStats].sort(
       (a, b) => b.u23countedMinutes - a.u23countedMinutes,
     );
@@ -666,9 +656,7 @@ export class StatsPage extends LitElement {
                               <td class="num-col">${t.u23PlayersCount}</td>
                               <td class="num-col">${t.u23totalMinutes}'</td>
                               <td class="num-col">${t.u23CallupMinutes}'</td>
-                              <td class="num-col">
-                                ${t.u23countedMinutes}'
-                              </td>
+                              <td class="num-col">${t.u23countedMinutes}'</td>
                             </tr>
                             <tr class="progress-row">
                               <td class="progress-cell" colspan="5">
@@ -824,9 +812,7 @@ export class StatsPage extends LitElement {
     `;
   }
 
-  private _renderCallupDialog(
-    previews: Map<string, U23CallupPreview>,
-  ) {
+  private _renderCallupDialog(previews: Map<string, U23CallupPreview>) {
     if (!this.isAdmin) return null;
 
     const teamPlayers = this._getCallupPlayersForTeam(previews);
@@ -855,10 +841,7 @@ export class StatsPage extends LitElement {
             <md-icon slot="icon">person_add</md-icon>
             Registrar jugador MFM
           </md-outlined-button>
-          <md-filled-select
-            label="Equipo"
-            @change=${this._onCallupTeamChange}
-          >
+          <md-filled-select label="Equipo" @change=${this._onCallupTeamChange}>
             ${this.teams.map(
               team => html`
                 <md-select-option
@@ -913,7 +896,9 @@ export class StatsPage extends LitElement {
                     </div>
                     <div class="callup-preview-item">
                       <span class="callup-preview-label">Base</span>
-                      <span class="callup-preview-value">${baseMatches} PJ</span>
+                      <span class="callup-preview-value"
+                        >${baseMatches} PJ</span
+                      >
                     </div>
                     <div class="callup-preview-item">
                       <span class="callup-preview-label">Crédito</span>
@@ -960,8 +945,8 @@ export class StatsPage extends LitElement {
         <div slot="headline">Registrar jugador MFM</div>
         <div slot="content" class="mfm-player-form">
           <p class="callup-note full-width">
-            El jugador queda disponible en la plantilla del primer equipo,
-            pero no se agrega a ninguna alineación ni suma minutos hasta que
+            El jugador queda disponible en la plantilla del primer equipo, pero
+            no se agrega a ninguna alineación ni suma minutos hasta que
             participe en un partido.
           </p>
           <md-filled-select
@@ -1053,9 +1038,7 @@ export class StatsPage extends LitElement {
             </div>
             <div class="image-actions">
               <p
-                class="${
-                  this.newMfmImageError ? 'image-error' : 'image-help'
-                }"
+                class="${this.newMfmImageError ? 'image-error' : 'image-help'}"
               >
                 ${
                   this.newMfmImageError ||
@@ -1099,7 +1082,8 @@ export class StatsPage extends LitElement {
           }
         </div>
         <div slot="actions">
-          <md-outlined-button @click=${this._closeNewMfmPlayerDialog}
+          <md-outlined-button
+            @click=${this._closeNewMfmPlayerDialog}
             ?disabled=${this.newMfmIsUploadingImage}
             >Cancelar</md-outlined-button
           >
@@ -1159,7 +1143,10 @@ export class StatsPage extends LitElement {
     const birthDateInput = this.newMfmBirthDateField?.value || '';
     const birthYear = Number(birthDateInput.split('-')[0]);
 
-    if (!this.newMfmTeam || !this.teams.some(team => this._teamKey(team) === this.newMfmTeam)) {
+    if (
+      !this.newMfmTeam ||
+      !this.teams.some(team => this._teamKey(team) === this.newMfmTeam)
+    ) {
       this.newMfmError = 'Selecciona un equipo válido.';
       return;
     }
@@ -1172,7 +1159,8 @@ export class StatsPage extends LitElement {
       return;
     }
     if (nationality.toLowerCase() !== 'mexicano') {
-      this.newMfmError = 'Solo se pueden registrar jugadores de nacionalidad mexicana.';
+      this.newMfmError =
+        'Solo se pueden registrar jugadores de nacionalidad mexicana.';
       return;
     }
     if (!birthDateInput || birthYear < U23_MIN_BIRTH_YEAR) {
@@ -1315,7 +1303,9 @@ export class StatsPage extends LitElement {
     this.callupTeam = (event.target as MdFilledSelect).value;
     const previews = this._buildStats().u23CallupPreviews;
     const firstPlayer = this._getCallupPlayersForTeam(previews)[0];
-    this.callupPlayerNumber = firstPlayer ? String(firstPlayer.player.number) : '';
+    this.callupPlayerNumber = firstPlayer
+      ? String(firstPlayer.player.number)
+      : '';
     this.callupMissedMatches = firstPlayer?.missedMatches ?? 0;
   }
 
@@ -1385,8 +1375,8 @@ export class StatsPage extends LitElement {
       actualMinutes < MINUTES_REQUIRED_FOR_CALLUP_CREDIT ||
       baseMatches <= 0 ||
       !Number.isInteger(missedMatches) ||
-      missedMatches < 0
-      || missedMatches > 16
+      missedMatches < 0 ||
+      missedMatches > 16
     ) {
       return null;
     }
