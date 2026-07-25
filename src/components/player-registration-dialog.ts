@@ -6,7 +6,7 @@ import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { css, html, LitElement } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { Match, Player, TeamSide } from '../types';
+import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import {
   readImageFromClipboard,
@@ -104,6 +104,7 @@ export class PlayerRegistrationDialog extends LitElement {
   @property({ type: String }) side: TeamSide | null = null;
   @property({ type: Array }) players: Player[] = [];
   @property({ type: Boolean }) isAdmin = false;
+  @property({ attribute: false }) additionalUpdates: FirebaseUpdates = {};
   @query('#dialogAddPlayer') private dialog!: MdDialog;
   @query('#newPlayerName') private newPlayerNameField!: MdFilledTextField;
   @query('#newPlayerPosition')
@@ -364,7 +365,10 @@ export class PlayerRegistrationDialog extends LitElement {
       (a, b) => a.number - b.number,
     );
     this.dispatchEvent(
-      dispatchEventMatchUpdated({ [`/players/${this._teamKey()}`]: players }),
+      dispatchEventMatchUpdated({
+        ...this.additionalUpdates,
+        [`/players/${this._teamKey()}`]: players,
+      }),
     );
     this.dispatchEvent(
       new CustomEvent<PlayerCreatedDetail>('player-created', {
