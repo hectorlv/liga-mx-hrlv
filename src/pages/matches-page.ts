@@ -615,6 +615,15 @@ export class MatchesPage extends LitElement {
       match,
       this.matchesList,
     );
+    const liveStatusChip = isLive
+      ? html`<span class="status-chip live">En vivo</span>`
+      : '';
+    const periodStatusChip = periodLabel
+      ? html`<span class="status-chip live">${periodLabel}</span>`
+      : '';
+    const lineupsStatusChip = hasLineupsReady
+      ? html`<span class="status-chip lineups">Alineaciones listas</span>`
+      : '';
 
     return html`
       <a
@@ -651,25 +660,7 @@ export class MatchesPage extends LitElement {
             isLive || periodLabel || hasLineupsReady
               ? html`
                   <div class="status-chips" aria-label="Estado del partido">
-                    ${
-                      isLive
-                        ? html`<span class="status-chip live">En vivo</span>`
-                        : ''
-                    }
-                    ${
-                      periodLabel
-                        ? html`<span class="status-chip live"
-                            >${periodLabel}</span
-                          >`
-                        : ''
-                    }
-                    ${
-                      hasLineupsReady
-                        ? html`<span class="status-chip lineups"
-                            >Alineaciones listas</span
-                          >`
-                        : ''
-                    }
+                    ${liveStatusChip} ${periodStatusChip} ${lineupsStatusChip}
                   </div>
                 `
               : ''

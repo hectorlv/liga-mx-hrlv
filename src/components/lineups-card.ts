@@ -445,7 +445,7 @@ export class LineupsCard extends LitElement {
   private _openAddPlayerDialog(side: TeamSide) {
     if (!this.isAdmin) return;
     this.addPlayerSide = side;
-    void this.updateComplete.then(() => {
+    this.updateComplete.then(() => {
       this.renderRoot
         .querySelector<PlayerRegistrationDialog>('player-registration-dialog')
         ?.open();

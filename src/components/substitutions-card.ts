@@ -311,6 +311,28 @@ export class SubstitutionsCard extends LitElement {
     const visitorSubs = substitutionsWithIndex.filter(
       ({ sub }) => sub.team === 'visitor',
     );
+    const addedTimeField = this.showAddedTime
+      ? html`<md-filled-text-field
+          label="Minutos adicionales"
+          type="number"
+          id="addedTime"
+          min="0"
+          max="30"
+          @change=${this._validateAddSub}
+        ></md-filled-text-field>`
+      : '';
+    const editAddedTimeField = this.showEditAddedTime
+      ? html`<md-filled-text-field
+          label="Minutos adicionales"
+          type="number"
+          id="editAddedTime"
+          min="0"
+          max="30"
+          @change=${this._validateEditForm}
+        ></md-filled-text-field>`
+      : '';
+    const playerOptions =
+      this.subTeam === 'local' ? this.localPlayers : this.visitorPlayers;
 
     return html`
       <div class="card">
@@ -411,18 +433,7 @@ export class SubstitutionsCard extends LitElement {
                     @change=${this._validateAddSub}
                   ></md-filled-text-field>
 
-                  ${
-                    this.showAddedTime
-                      ? html`<md-filled-text-field
-                          label="Minutos adicionales"
-                          type="number"
-                          id="addedTime"
-                          min="0"
-                          max="30"
-                          @change=${this._validateAddSub}
-                        ></md-filled-text-field>`
-                      : ''
-                  }
+                  ${addedTimeField}
 
                   <md-outlined-select
                     id="subIn"
@@ -515,18 +526,7 @@ export class SubstitutionsCard extends LitElement {
                   @change=${this._validateEditForm}
                 ></md-filled-text-field>
 
-                ${
-                  this.showEditAddedTime
-                    ? html`<md-filled-text-field
-                        label="Minutos adicionales"
-                        type="number"
-                        id="editAddedTime"
-                        min="0"
-                        max="30"
-                        @change=${this._validateEditForm}
-                      ></md-filled-text-field>`
-                    : ''
-                }
+                ${editAddedTimeField}
 
                 <md-outlined-select
                   id="editSubIn"
@@ -574,11 +574,7 @@ export class SubstitutionsCard extends LitElement {
               <player-registration-dialog
                 .match=${this.match}
                 .side=${this.subTeam}
-                .players=${
-                  this.subTeam === 'local'
-                    ? this.localPlayers
-                    : this.visitorPlayers
-                }
+                .players=${playerOptions}
                 .isAdmin=${this.isAdmin}
                 @player-created=${this._onPlayerCreated}
               ></player-registration-dialog>
@@ -659,7 +655,7 @@ export class SubstitutionsCard extends LitElement {
 
   private _openPlayerRegistrationDialog() {
     if (!this.isAdmin) return;
-    void this.updateComplete.then(() => {
+    this.updateComplete.then(() => {
       this.renderRoot
         .querySelector<PlayerRegistrationDialog>('player-registration-dialog')
         ?.open();

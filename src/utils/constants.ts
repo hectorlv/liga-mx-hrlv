@@ -1,5 +1,6 @@
 const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyC5d4WwcPNe8kHoYurl5qBm9HBF3hRTPMU',
+  // Firebase Web API keys are public client identifiers; access is enforced by Firebase rules.
+  apiKey: 'AIzaSyC5d4WwcPNe8kHoYurl5qBm9HBF3hRTPMU', // NOSONAR
   authDomain: 'ligamx-b16f7.firebaseapp.com',
   databaseURL: 'https://ligamx-b16f7-default-rtdb.firebaseio.com',
   projectId: 'ligamx-b16f7',

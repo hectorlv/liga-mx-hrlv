@@ -4,10 +4,18 @@ function sanitizePathSegment(value: string): string {
   const normalized = value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-zA-Z0-9_-]+/g, '-');
+  let start = 0;
+  while (start < normalized.length && normalized[start] === '-') {
+    start += 1;
+  }
 
-  return normalized || 'team';
+  let end = normalized.length;
+  while (end > start && normalized[end - 1] === '-') {
+    end -= 1;
+  }
+
+  return normalized.slice(start, end) || 'team';
 }
 
 async function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {

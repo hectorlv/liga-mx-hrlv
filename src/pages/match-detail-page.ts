@@ -542,12 +542,44 @@ export class MatchDetailPage extends LitElement {
     const hasPenaltyScore = this._hasPenaltyScore();
     const tableComparison = this._getRegularSeasonTableComparison();
     const isPlayed = hasMatchStarted(this.match);
+    const aggregateStatusMessage = isFinalAggregateTied
+      ? html`<div class="match-resolution-note">
+          Global empatado: continúa con tiempos extra y, si sigue empatado,
+          penales.
+        </div>`
+      : '';
 
     const tableComparisonTemplate = tableComparison
       ? this._renderTableComparison(
           tableComparison.local,
           tableComparison.visitor,
         )
+      : '';
+    const localPenaltyValue =
+      this.match.penaltyLocal == null ? '' : String(this.match.penaltyLocal);
+    const visitorPenaltyValue =
+      this.match.penaltyVisitante == null
+        ? ''
+        : String(this.match.penaltyVisitante);
+    const penaltyFieldsTemplate = isFinalSecondLeg
+      ? html`
+          <md-filled-text-field
+            label="Penales local"
+            id="penaltyLocalInput"
+            type="number"
+            min="0"
+            max="20"
+            .value=${localPenaltyValue}
+          ></md-filled-text-field>
+          <md-filled-text-field
+            label="Penales visitante"
+            id="penaltyVisitanteInput"
+            type="number"
+            min="0"
+            max="20"
+            .value=${visitorPenaltyValue}
+          ></md-filled-text-field>
+        `
       : '';
 
     return html`
@@ -569,28 +601,7 @@ export class MatchDetailPage extends LitElement {
 
           <div class="action-buttons">
             ${this.isAdmin ? this.renderPhaseButton() : null}
-            ${
-              this.isAdmin && this.isEditing
-                ? html`
-                    <md-icon-button @click=${this.editMatchInfo} title="Guardar"
-                      ><md-icon>save</md-icon></md-icon-button
-                    >
-                    <md-icon-button
-                      @click=${() => (this.isEditing = false)}
-                      title="Cancelar"
-                      ><md-icon>cancel</md-icon></md-icon-button
-                    >
-                  `
-                : this.isAdmin
-                  ? html`
-                      <md-icon-button
-                        @click=${() => (this.isEditing = true)}
-                        title="Editar información"
-                        ><md-icon>edit</md-icon></md-icon-button
-                      >
-                    `
-                  : null
-            }
+            ${this._renderEditActions()}
           </div>
         </div>
 
@@ -631,12 +642,7 @@ export class MatchDetailPage extends LitElement {
                     Penales ${this.match.penaltyLocal} -
                     ${this.match.penaltyVisitante}
                   </div>`
-                : isFinalAggregateTied
-                  ? html`<div class="match-resolution-note">
-                      Global empatado: continúa con tiempos extra y, si sigue
-                      empatado, penales.
-                    </div>`
-                  : ''
+                : aggregateStatusMessage
             }
           </div>
 
@@ -683,36 +689,7 @@ export class MatchDetailPage extends LitElement {
                         </md-select-option>`,
                     )}
                   </md-filled-select>
-                  ${
-                    isFinalSecondLeg
-                      ? html`
-                          <md-filled-text-field
-                            label="Penales local"
-                            id="penaltyLocalInput"
-                            type="number"
-                            min="0"
-                            max="20"
-                            .value=${
-                              this.match.penaltyLocal == null
-                                ? ''
-                                : String(this.match.penaltyLocal)
-                            }
-                          ></md-filled-text-field>
-                          <md-filled-text-field
-                            label="Penales visitante"
-                            id="penaltyVisitanteInput"
-                            type="number"
-                            min="0"
-                            max="20"
-                            .value=${
-                              this.match.penaltyVisitante == null
-                                ? ''
-                                : String(this.match.penaltyVisitante)
-                            }
-                          ></md-filled-text-field>
-                        `
-                      : ''
-                  }
+                  ${penaltyFieldsTemplate}
                 </div>
               `
             : html`
@@ -938,6 +915,31 @@ export class MatchDetailPage extends LitElement {
     return Math.floor(value);
   }
 
+  private _renderEditActions() {
+    if (!this.isAdmin) return null;
+
+    if (this.isEditing) {
+      return html`
+        <md-icon-button @click=${this.editMatchInfo} title="Guardar"
+          ><md-icon>save</md-icon></md-icon-button
+        >
+        <md-icon-button
+          @click=${() => (this.isEditing = false)}
+          title="Cancelar"
+          ><md-icon>cancel</md-icon></md-icon-button
+        >
+      `;
+    }
+
+    return html`
+      <md-icon-button
+        @click=${() => (this.isEditing = true)}
+        title="Editar información"
+        ><md-icon>edit</md-icon></md-icon-button
+      >
+    `;
+  }
+
   private _getStadiumSelectValue(estadioSelect: MdFilledSelect): string {
     if (estadioSelect.value) return estadioSelect.value;
     const selectedOption = estadioSelect.selectedOptions?.[0];
@@ -946,116 +948,137 @@ export class MatchDetailPage extends LitElement {
   }
 
   private renderPhaseButton() {
-    if (!this.isAdmin) return null;
-    if (!this.match) return null;
+    if (!this._canManagePhase()) return null;
+
     const halftimeEvent = this._getExistingPhaseEvent('halftime');
     const secondHalfEvent = this._getExistingPhaseEvent('secondHalf');
     const fulltimeEvent = this._getExistingPhaseEvent('fulltime');
     const halftimeAddedTimeValue = String(halftimeEvent?.addedTime || '');
     const fulltimeAddedTimeValue = String(fulltimeEvent?.addedTime || '');
+    const phaseEvents = getPhaseEvents(this.match!.events);
+    const hasNoPhaseEvents = phaseEvents.length === 0;
+    const hasStartedMatch = phaseEvents.some(event => event.phase === 'start');
+    const hasSecondHalf = phaseEvents.some(
+      event => event.phase === 'secondHalf',
+    );
 
-    if (
-      getPhaseEvents(this.match.events).length === 0 ||
-      !getPhaseEvents(this.match.events)
-    ) {
-      return html`
-        <md-icon-button
-          id="startMatchButton"
-          @click=${this.startMatch}
-          title="Iniciar partido"
-          aria-label="Iniciar partido"
-        >
-          <md-icon>play_circle</md-icon>
-        </md-icon-button>
-      `;
-    } else if (
-      getPhaseEvents(this.match.events).some(
-        event => event.phase === 'start',
-      ) &&
-      !halftimeEvent
-    ) {
-      return html`
-        <md-filled-text-field
-          id="halftimeMinuteInput"
-          label="Minutos agregados"
-          type="number"
-          min="0"
-          max="30"
-          .value=${halftimeAddedTimeValue}
-        ></md-filled-text-field>
-        <md-icon-button
-          id="halftimeButton"
-          @click=${() => this._savePhaseEvent('halftime')}
-          title=${
-            halftimeEvent ? 'Actualizar medio tiempo' : 'Guardar medio tiempo'
-          }
-          aria-label=${
-            halftimeEvent ? 'Actualizar medio tiempo' : 'Guardar medio tiempo'
-          }
-        >
-          <md-icon>pause_circle</md-icon>
-        </md-icon-button>
-      `;
-    } else if (halftimeEvent && !secondHalfEvent) {
-      return html`
-        <md-filled-text-field
-          id="halftimeMinuteInput"
-          label="Minutos agregados"
-          type="number"
-          min="0"
-          max="30"
-          .value=${halftimeAddedTimeValue}
-        ></md-filled-text-field>
-        <md-icon-button
-          id="halftimeButton"
-          @click=${() => this._savePhaseEvent('halftime')}
-          title="Actualizar medio tiempo"
-          aria-label="Actualizar medio tiempo"
-        >
-          <md-icon>pause_circle</md-icon>
-        </md-icon-button>
-        <md-icon-button
-          id="secondHalfButton"
-          @click=${() => this._savePhaseEvent('secondHalf')}
-          title="Iniciar segunda mitad"
-          aria-label="Iniciar segunda mitad"
-        >
-          <md-icon>resume</md-icon>
-        </md-icon-button>
-      `;
-    } else if (
-      getPhaseEvents(this.match.events).some(
-        event => event.phase === 'secondHalf',
-      )
-    ) {
-      return html`
-        <md-filled-text-field
-          id="fulltimeMinuteInput"
-          label="Minutos agregados"
-          type="number"
-          min="0"
-          max="30"
-          .value=${fulltimeAddedTimeValue}
-        ></md-filled-text-field>
-        <md-icon-button
-          id="fulltimeButton"
-          @click=${() => this._savePhaseEvent('fulltime')}
-          title=${
-            fulltimeEvent
-              ? 'Actualizar tiempo completo'
-              : 'Guardar tiempo completo'
-          }
-          aria-label=${
-            fulltimeEvent
-              ? 'Actualizar tiempo completo'
-              : 'Guardar tiempo completo'
-          }
-        >
-          <md-icon>stop_circle</md-icon>
-        </md-icon-button>
-      `;
+    if (hasNoPhaseEvents) {
+      return this._renderStartMatchButton();
     }
+
+    if (hasStartedMatch && !halftimeEvent) {
+      return this._renderHalftimeControls(
+        halftimeAddedTimeValue,
+        halftimeEvent,
+      );
+    }
+
+    if (halftimeEvent && !secondHalfEvent) {
+      return this._renderSecondHalfControls(halftimeAddedTimeValue);
+    }
+
+    if (hasSecondHalf) {
+      return this._renderFulltimeControls(
+        fulltimeAddedTimeValue,
+        fulltimeEvent,
+      );
+    }
+
     return null;
+  }
+
+  private _canManagePhase(): boolean {
+    return this.isAdmin && Boolean(this.match);
+  }
+
+  private _renderStartMatchButton() {
+    return html`
+      <md-icon-button
+        id="startMatchButton"
+        @click=${this.startMatch}
+        title="Iniciar partido"
+        aria-label="Iniciar partido"
+      >
+        <md-icon>play_circle</md-icon>
+      </md-icon-button>
+    `;
+  }
+
+  private _renderHalftimeControls(
+    halftimeAddedTimeValue: string,
+    halftimeEvent: PhaseMatchEvent | undefined,
+  ) {
+    return html`
+      <md-filled-text-field
+        id="halftimeMinuteInput"
+        label="Minutos agregados"
+        type="number"
+        min="0"
+        max="30"
+        .value=${halftimeAddedTimeValue}
+      ></md-filled-text-field>
+      <md-icon-button
+        id="halftimeButton"
+        @click=${() => this._savePhaseEvent('halftime')}
+        title=${halftimeEvent ? 'Actualizar medio tiempo' : 'Guardar medio tiempo'}
+        aria-label=${halftimeEvent ? 'Actualizar medio tiempo' : 'Guardar medio tiempo'}
+      >
+        <md-icon>pause_circle</md-icon>
+      </md-icon-button>
+    `;
+  }
+
+  private _renderSecondHalfControls(halftimeAddedTimeValue: string) {
+    return html`
+      <md-filled-text-field
+        id="halftimeMinuteInput"
+        label="Minutos agregados"
+        type="number"
+        min="0"
+        max="30"
+        .value=${halftimeAddedTimeValue}
+      ></md-filled-text-field>
+      <md-icon-button
+        id="halftimeButton"
+        @click=${() => this._savePhaseEvent('halftime')}
+        title="Actualizar medio tiempo"
+        aria-label="Actualizar medio tiempo"
+      >
+        <md-icon>pause_circle</md-icon>
+      </md-icon-button>
+      <md-icon-button
+        id="secondHalfButton"
+        @click=${() => this._savePhaseEvent('secondHalf')}
+        title="Iniciar segunda mitad"
+        aria-label="Iniciar segunda mitad"
+      >
+        <md-icon>resume</md-icon>
+      </md-icon-button>
+    `;
+  }
+
+  private _renderFulltimeControls(
+    fulltimeAddedTimeValue: string,
+    fulltimeEvent: PhaseMatchEvent | undefined,
+  ) {
+    return html`
+      <md-filled-text-field
+        id="fulltimeMinuteInput"
+        label="Minutos agregados"
+        type="number"
+        min="0"
+        max="30"
+        .value=${fulltimeAddedTimeValue}
+      ></md-filled-text-field>
+      <md-icon-button
+        id="fulltimeButton"
+        @click=${() => this._savePhaseEvent('fulltime')}
+        title=${fulltimeEvent ? 'Actualizar tiempo completo' : 'Guardar tiempo completo'}
+        aria-label=${fulltimeEvent ? 'Actualizar tiempo completo' : 'Guardar tiempo completo'}
+      >
+        <md-icon>stop_circle</md-icon>
+      </md-icon-button>
+    `;
   }
 
   private startMatch() {
