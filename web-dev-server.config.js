@@ -1,5 +1,5 @@
 /** Use Hot Module replacement by adding --hmr to the start command */
-const hmr = process.argv.includes('--hmr');
+const hmr = globalThis.process?.argv?.includes('--hmr');
 
 export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
   open: '/',

@@ -321,6 +321,32 @@ export class CardsCard extends LitElement {
     const visitorCards = cardsWithIndex.filter(
       ({ card }) => card.team === 'visitor',
     );
+    const addedTimeField = this.showAddedTime
+      ? html`
+          <md-filled-text-field
+            label="Tiempo Adicional"
+            type="number"
+            id="addedTime"
+            min="0"
+            max="30"
+            @change=${this._validateAddCard}
+          ></md-filled-text-field>
+        `
+      : '';
+    const availablePlayers =
+      cardSide === 'local' ? this.localPlayers : this.visitorPlayers;
+    const editAddedTimeField = this.showEditAddedTime
+      ? html`
+          <md-filled-text-field
+            label="Tiempo Adicional"
+            type="number"
+            id="editAddedTime"
+            min="0"
+            max="30"
+            @change=${this._validateEditForm}
+          ></md-filled-text-field>
+        `
+      : '';
 
     return html`
       <div class="card">
@@ -420,20 +446,7 @@ export class CardsCard extends LitElement {
                     required
                   ></md-filled-text-field>
 
-                  ${
-                    this.showAddedTime
-                      ? html`
-                          <md-filled-text-field
-                            label="Tiempo Adicional"
-                            type="number"
-                            id="addedTime"
-                            min="0"
-                            max="30"
-                            @change=${this._validateAddCard}
-                          ></md-filled-text-field>
-                        `
-                      : ''
-                  }
+                  ${addedTimeField}
 
                   <md-outlined-select
                     id="cardPlayer"
@@ -446,10 +459,7 @@ export class CardsCard extends LitElement {
                       disabled
                       selected
                     ></md-select-option>
-                    ${(cardSide === 'local'
-                      ? this.localPlayers
-                      : this.visitorPlayers
-                    ).map(
+                    ${availablePlayers.map(
                       p =>
                         html`<md-select-option value=${p.number}
                           >${p.number}- ${p.name}</md-select-option
@@ -571,20 +581,7 @@ export class CardsCard extends LitElement {
                   required
                 ></md-filled-text-field>
 
-                ${
-                  this.showEditAddedTime
-                    ? html`
-                        <md-filled-text-field
-                          label="Tiempo Adicional"
-                          type="number"
-                          id="editAddedTime"
-                          min="0"
-                          max="30"
-                          @change=${this._validateEditForm}
-                        ></md-filled-text-field>
-                      `
-                    : ''
-                }
+                ${editAddedTimeField}
 
                 <md-outlined-select
                   id="editCardPlayer"

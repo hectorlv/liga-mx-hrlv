@@ -477,19 +477,17 @@ export class BracketPage extends LitElement {
       series.config,
       this.matchesList,
     );
+    const pendingSeriesStatus = result?.requiresExtraTimeOrPenalties
+      ? 'TE / Penales'
+      : 'Pendiente';
+    const seriesStatus = result?.winner ? 'Definida' : pendingSeriesStatus;
 
     return html`
       <article class="series-card ${result?.winner ? 'winner-known' : ''}">
         <div class="series-heading">
           <span class="series-name">${series.name}</span>
           <span class="series-pill ${result?.winner ? 'done' : ''}">
-            ${
-              result?.winner
-                ? 'Definida'
-                : result?.requiresExtraTimeOrPenalties
-                  ? 'TE / Penales'
-                  : 'Pendiente'
-            }
+            ${seriesStatus}
           </span>
         </div>
         <div class="legs">
@@ -580,14 +578,15 @@ export class BracketPage extends LitElement {
           <md-icon>emoji_events</md-icon>
           ${result.winner}
         </span>`
-      : result.requiresExtraTimeOrPenalties
-        ? html`<span class="winner pending">Pendiente por TE / penales</span>`
-        : '';
+      : '';
+    const pendingExtraTimeText = result.requiresExtraTimeOrPenalties
+      ? html`<span class="winner pending">Pendiente por TE / penales</span>`
+      : '';
 
     return html`
       <div class="aggregate">
         <span>Global ${localScore} - ${visitorScore}</span>
-        ${penaltyText} ${winnerText}
+        ${penaltyText} ${winnerText} ${pendingExtraTimeText}
       </div>
     `;
   }

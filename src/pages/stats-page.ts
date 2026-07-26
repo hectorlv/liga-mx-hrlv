@@ -43,6 +43,9 @@ interface PlayerStats {
   assists: number;
   yellows: number;
   reds: number;
+  indirectReds: number;
+  directReds: number;
+  fairPlayPoints: number;
   minutes: number;
 }
 
@@ -79,6 +82,59 @@ interface NationalityStat {
   count: number;
 }
 
+type FormResult = 'win' | 'draw' | 'loss';
+
+interface TeamFormMatch {
+  result: FormResult;
+  opponent: string;
+  goalsFor: number;
+  goalsAgainst: number;
+  timestamp: number;
+  matchId: number;
+}
+
+interface TeamRecentForm {
+  team: string;
+  matches: TeamFormMatch[];
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
+interface VenueStats {
+  matches: number;
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
+interface TeamCompletedStats {
+  team: string;
+  matches: number;
+  cleanSheets: number;
+  goalsAgainst: number;
+  home: VenueStats;
+  away: VenueStats;
+}
+
+interface U23StatsRow {
+  team: TeamStats;
+  rank: number;
+  relativeProgress: number;
+  statusClass: string;
+  statusLabel: string;
+  statusColor: string;
+  statusMessage: string;
+}
+
+interface TournamentSummary {
+  completedMatches: number;
+  totalGoals: number;
+  totalCards: number;
+}
+
+type StatsCategory = 'players' | 'teams' | 'tournament';
+
 const MINUTES_REQUIRED_FOR_CALLUP_CREDIT = 180;
 
 function isU23MexicanPlayer(player: Player): boolean {
@@ -108,6 +164,58 @@ export class StatsPage extends LitElement {
         grid-template-columns: 1fr;
         gap: 24px;
         align-items: start;
+      }
+
+      .stats-category-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 24px;
+        padding: 6px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 14px;
+        background: var(--md-sys-color-surface-container-low);
+      }
+
+      .stats-category-tab {
+        display: inline-flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 0;
+        border-radius: 9px;
+        padding: 11px 14px;
+        background: transparent;
+        color: var(--md-sys-color-on-surface-variant);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 750;
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .stats-category-tab:hover {
+        background: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+      }
+
+      .stats-category-tab:focus-visible {
+        outline: 3px solid var(--md-sys-color-primary);
+        outline-offset: 2px;
+      }
+
+      .stats-category-tab.active {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+      }
+
+      .stats-category-tab md-icon {
+        font-size: 19px;
       }
 
       @media (min-width: 900px) {
@@ -329,6 +437,236 @@ export class StatsPage extends LitElement {
 
       .u23-mobile-list {
         display: none;
+      }
+
+      .recent-form-mobile-list {
+        display: none;
+      }
+
+      .venue-mobile-list {
+        display: none;
+      }
+
+      .tournament-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .tournament-summary-item {
+        min-width: 0;
+        padding: 14px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 12px;
+        background: var(--md-sys-color-surface-container-low);
+      }
+
+      .tournament-summary-label {
+        display: block;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.35px;
+        text-transform: uppercase;
+      }
+
+      .tournament-summary-value {
+        display: block;
+        margin-top: 5px;
+        color: var(--md-sys-color-on-surface);
+        font-size: 1.45rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .venue-mobile-card {
+        padding: 14px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 12px;
+        background: var(--md-sys-color-surface-container-low);
+      }
+
+      .venue-mobile-card + .venue-mobile-card {
+        margin-top: 12px;
+      }
+
+      .venue-mobile-header {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        font-weight: 700;
+      }
+
+      .venue-mobile-header img {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+
+      .venue-mobile-header span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .venue-mobile-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .venue-mobile-metric {
+        padding: 10px;
+        border-radius: 9px;
+        background: var(--md-sys-color-surface);
+      }
+
+      .venue-mobile-metric-label,
+      .venue-mobile-metric-value {
+        display: block;
+      }
+
+      .venue-mobile-metric-label {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+      }
+
+      .venue-mobile-metric-value {
+        margin-top: 3px;
+        color: var(--md-sys-color-on-surface);
+        font-size: 0.95rem;
+        font-weight: 750;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .form-indicators {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .form-result {
+        display: inline-grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .form-result.win {
+        background: color-mix(
+          in srgb,
+          var(--md-sys-color-primary) 18%,
+          transparent
+        );
+        border-color: color-mix(
+          in srgb,
+          var(--md-sys-color-primary) 45%,
+          transparent
+        );
+        color: var(--md-sys-color-primary);
+      }
+
+      .form-result.draw {
+        background: var(--md-sys-color-surface-container-high);
+        border-color: var(--md-sys-color-outline-variant);
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      .form-result.loss {
+        background: color-mix(
+          in srgb,
+          var(--app-color-danger, #d32f2f) 15%,
+          transparent
+        );
+        border-color: color-mix(
+          in srgb,
+          var(--app-color-danger, #d32f2f) 40%,
+          transparent
+        );
+        color: var(--app-color-danger, #d32f2f);
+      }
+
+      .form-empty {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.82rem;
+        font-style: italic;
+      }
+
+      .recent-form-mobile-card {
+        padding: 14px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 12px;
+        background: var(--md-sys-color-surface-container-low);
+      }
+
+      .recent-form-mobile-card + .recent-form-mobile-card {
+        margin-top: 12px;
+      }
+
+      .recent-form-mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .recent-form-mobile-team {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+      }
+
+      .recent-form-mobile-team span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .recent-form-mobile-team img {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+
+      .recent-form-points {
+        flex: 0 0 auto;
+        color: var(--md-sys-color-primary);
+        font-size: 0.9rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .recent-form-mobile-results {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .recent-form-mobile-label {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.35px;
+        text-transform: uppercase;
       }
 
       .u23-mobile-card {
@@ -635,6 +973,11 @@ export class StatsPage extends LitElement {
       }
 
       @media (max-width: 520px) {
+        .stats-category-tab {
+          padding: 10px 6px;
+          font-size: 0.82rem;
+        }
+
         .distribution-row {
           grid-template-columns: minmax(82px, 1fr) auto;
           gap: 8px 10px;
@@ -662,8 +1005,34 @@ export class StatsPage extends LitElement {
           display: block;
         }
 
+        .recent-form-desktop-table {
+          display: none;
+        }
+
+        .recent-form-mobile-list {
+          display: block;
+        }
+
+        .venue-desktop-table {
+          display: none;
+        }
+
+        .venue-mobile-list {
+          display: block;
+        }
+
+        .tournament-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .mfm-player-form {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 390px) {
+        .stats-category-tab md-icon {
+          display: none;
         }
       }
     `,
@@ -686,19 +1055,23 @@ export class StatsPage extends LitElement {
   @state() private newMfmIsReadingClipboardImage = false;
   @state() private newMfmIsUploadingImage = false;
   @state() private newMfmImageError = '';
+  @state() private activeCategory: StatsCategory = 'players';
 
-  @query('#dialogU23Callup') private dialogU23Callup!: MdDialog;
-  @query('#dialogNewMfmPlayer') private dialogNewMfmPlayer!: MdDialog;
+  @query('#dialogU23Callup') private readonly dialogU23Callup!: MdDialog;
+  @query('#dialogNewMfmPlayer') private readonly dialogNewMfmPlayer!: MdDialog;
   @query('#callupMissedMatches')
-  private callupMissedMatchesField!: MdFilledTextField;
-  @query('#newMfmName') private newMfmNameField!: MdFilledTextField;
-  @query('#newMfmFullName') private newMfmFullNameField!: MdFilledTextField;
-  @query('#newMfmNumber') private newMfmNumberField!: MdFilledTextField;
-  @query('#newMfmPosition') private newMfmPositionField!: MdFilledSelect;
+  private readonly callupMissedMatchesField!: MdFilledTextField;
+  @query('#newMfmName') private readonly newMfmNameField!: MdFilledTextField;
+  @query('#newMfmFullName')
+  private readonly newMfmFullNameField!: MdFilledTextField;
+  @query('#newMfmNumber')
+  private readonly newMfmNumberField!: MdFilledTextField;
+  @query('#newMfmPosition')
+  private readonly newMfmPositionField!: MdFilledSelect;
   @query('#newMfmNationality')
-  private newMfmNationalityField!: MdFilledTextField;
+  private readonly newMfmNationalityField!: MdFilledTextField;
   @query('#newMfmBirthDate')
-  private newMfmBirthDateField!: MdFilledTextField;
+  private readonly newMfmBirthDateField!: MdFilledTextField;
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -725,27 +1098,268 @@ export class StatsPage extends LitElement {
     });
   }
 
-  override render() {
-    const {
-      teamStats,
-      topScorers,
-      topAssists,
-      fairPlay,
-      u23CallupPreviews,
-      goalsByTimeRange,
-      goalsByType,
-      regularTimeGoals,
-      extraTimeGoals,
-      nationalities,
-    } = this._buildStats();
-    const teamStatsByU23 = [...teamStats].sort(
+  private _getRankClass(index: number) {
+    return index === 0 ? 'rank-1' : '';
+  }
+
+  private _renderTopPlayerContent(
+    players: PlayerStats[],
+    emptyMessage: string,
+    valueLabel: string,
+    getValue: (player: PlayerStats) => number | string,
+  ) {
+    if (players.length === 0) {
+      return html`<p class="meta">${emptyMessage}</p>`;
+    }
+
+    return html`
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th class="num-col">${valueLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${players.map(
+            (player, index) => html`
+              <tr class=${this._getRankClass(index)}>
+                <td>${index + 1}</td>
+                <td style="font-weight: bold;">${player.name}</td>
+                <td>
+                  <div class="team-cell">
+                    ${getTeamImage(player.team)} ${player.team}
+                  </div>
+                </td>
+                <td
+                  class="num-col"
+                  style="font-weight:bold; color: var(--md-sys-color-primary)"
+                >
+                  ${getValue(player)}
+                </td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private _renderTopContributorsContent(players: PlayerStats[]) {
+    if (players.length === 0) {
+      return html`<p class="meta">Sin aportaciones registradas.</p>`;
+    }
+
+    return html`
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th class="num-col">G</th>
+            <th class="num-col">Ast</th>
+            <th class="num-col">G+A</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${players.map(
+            (player, index) => html`
+              <tr class=${this._getRankClass(index)}>
+                <td>${index + 1}</td>
+                <td style="font-weight: bold;">${player.name}</td>
+                <td>
+                  <div class="team-cell">
+                    ${getTeamImage(player.team)} ${player.team}
+                  </div>
+                </td>
+                <td class="num-col">${player.goals}</td>
+                <td class="num-col">${player.assists}</td>
+                <td
+                  class="num-col"
+                  style="font-weight:bold; color: var(--md-sys-color-primary)"
+                >
+                  ${player.goals + player.assists}
+                </td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private _renderDisciplineContent(players: PlayerStats[]) {
+    if (players.length === 0) {
+      return html`<p class="meta">Sin tarjetas registradas.</p>`;
+    }
+
+    return html`
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th class="num-col">Pts</th>
+            <th class="num-col" style="color:#B8860B">A</th>
+            <th class="num-col" style="color:#D32F2F">RI</th>
+            <th class="num-col" style="color:#D32F2F">RD</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${players.map(
+            (player, index) => html`
+              <tr class=${this._getRankClass(index)}>
+                <td>${index + 1}</td>
+                <td style="font-weight: bold;">${player.name}</td>
+                <td>
+                  <div class="team-cell">
+                    ${getTeamImage(player.team)} ${player.team}
+                  </div>
+                </td>
+                <td class="num-col" style="font-weight:bold;">
+                  ${player.fairPlayPoints}
+                </td>
+                <td class="num-col">${player.yellows}</td>
+                <td class="num-col">${player.indirectReds}</td>
+                <td class="num-col">${player.directReds}</td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private _renderNationalitiesContent(nationalities: NationalityStat[]) {
+    if (nationalities.length === 0) {
+      return html`<p class="meta">Sin jugadores registrados.</p>`;
+    }
+
+    return html`
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Nacionalidad</th>
+            <th class="num-col">Jugadores</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${nationalities.map(
+            (nationality, index) => html`
+              <tr class=${this._getRankClass(index)}>
+                <td>${index + 1}</td>
+                <td>${nationality.label}</td>
+                <td class="num-col">${nationality.count}</td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private _renderFairPlayContent(teams: TeamStats[]) {
+    if (teams.length === 0) {
+      return html`<p class="meta">Sin tarjetas.</p>`;
+    }
+
+    return html`
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Equipo</th>
+            <th class="num-col">Pts</th>
+            <th class="num-col" style="color:#B8860B">A</th>
+            <th class="num-col" style="color:#D32F2F">RI</th>
+            <th class="num-col" style="color:#D32F2F">RD</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${teams.map(
+            (team, index) => html`
+              <tr class=${this._getRankClass(index)}>
+                <td>${index + 1}</td>
+                <td>
+                  <div class="team-cell">
+                    ${getTeamImage(team.team)} ${team.team}
+                  </div>
+                </td>
+                <td class="num-col" style="font-weight:bold;">
+                  ${team.fairPlayPoints}
+                </td>
+                <td class="num-col">${team.yellows}</td>
+                <td class="num-col">${team.indirectReds}</td>
+                <td class="num-col">${team.directReds}</td>
+              </tr>
+            `,
+          )}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private _renderTeamOffenseDefenseContent(teams: TeamStats[]) {
+    if (teams.length === 0) {
+      return html`<p class="meta">No hay datos.</p>`;
+    }
+
+    return html`
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Equipo</th>
+            <th class="num-col">GF</th>
+            <th class="num-col">GC</th>
+            <th class="num-col">Dif</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${teams.slice(0, 10).map((team, index) => {
+            const goalDifference = team.goalsFor - team.goalsAgainst;
+            const differenceColor =
+              goalDifference > 0 ? 'var(--md-sys-color-primary)' : 'inherit';
+            const differenceSign = goalDifference > 0 ? '+' : '';
+            return html`
+              <tr>
+                <td>${index + 1}</td>
+                <td>
+                  <div class="team-cell">
+                    ${getTeamImage(team.team)} ${team.team}
+                  </div>
+                </td>
+                <td class="num-col">${team.goalsFor}</td>
+                <td class="num-col">${team.goalsAgainst}</td>
+                <td
+                  class="num-col"
+                  style="font-weight:bold; color:${differenceColor}"
+                >
+                  ${differenceSign}${goalDifference}
+                </td>
+              </tr>
+            `;
+          })}
+        </tbody>
+      </table>
+    `;
+  }
+
+  private _buildU23StatsRows(teamStats: TeamStats[]): U23StatsRow[] {
+    const sortedTeams = [...teamStats].sort(
       (a, b) => b.u23countedMinutes - a.u23countedMinutes,
     );
-    const maxU23CountedMinutes = Math.max(
-      ...teamStatsByU23.map(t => t.u23countedMinutes),
+    const maxCountedMinutes = Math.max(
+      ...sortedTeams.map(team => team.u23countedMinutes),
       1,
     );
-    const u23Rows = teamStatsByU23.map((team, index) => {
+
+    return sortedTeams.map((team, index) => {
       const isFulfilled = team.u23countedMinutes >= REQUIRED_U23_MINUTES;
       const minutesToFulfill = Math.max(
         0,
@@ -755,495 +1369,451 @@ export class StatsPage extends LitElement {
       return {
         team,
         rank: index + 1,
-        isFulfilled,
-        minutesToFulfill,
-        relativeProgress: (team.u23countedMinutes / maxU23CountedMinutes) * 100,
+        relativeProgress: (team.u23countedMinutes / maxCountedMinutes) * 100,
+        statusClass: isFulfilled ? 'fulfilled' : 'pending',
+        statusLabel: isFulfilled ? 'Cumplido' : 'Pendiente',
+        statusColor: isFulfilled
+          ? 'var(--md-sys-color-primary)'
+          : 'var(--app-color-danger, #D32F2F)',
+        statusMessage: isFulfilled
+          ? '✓ Meta cubierta'
+          : `Faltan ${minutesToFulfill}'`,
       };
     });
+  }
+
+  private _renderU23DesktopRows(rows: U23StatsRow[]) {
+    return rows.map(
+      ({
+        team,
+        rank,
+        relativeProgress,
+        statusClass,
+        statusLabel,
+        statusColor,
+        statusMessage,
+      }) => html`
+        <tr class="team-summary-row">
+          <td class="team-rank-cell" rowspan="2">${rank}</td>
+          <td>
+            <div class="team-cell">${getTeamImage(team.team)} ${team.team}</div>
+          </td>
+          <td class="num-col">${team.u23PlayersCount}</td>
+          <td class="num-col">${team.u23totalMinutes}'</td>
+          <td class="num-col">${team.u23CallupMinutes}'</td>
+          <td class="num-col">${team.u23countedMinutes}'</td>
+        </tr>
+        <tr class="progress-row">
+          <td class="progress-cell" colspan="5">
+            <div class="progress-head">
+              <span class="progress-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill ${statusClass}"
+                style="width: ${relativeProgress}%;"
+              ></div>
+            </div>
+            <div class="progress-meta">
+              <span>${team.u23countedMinutes}' acreditados</span>
+              <span style="color: ${statusColor}; font-weight: 700;">
+                ${statusMessage}
+              </span>
+            </div>
+          </td>
+        </tr>
+      `,
+    );
+  }
+
+  private _renderU23MobileCards(rows: U23StatsRow[]) {
+    return rows.map(
+      ({
+        team,
+        rank,
+        relativeProgress,
+        statusClass,
+        statusLabel,
+        statusColor,
+        statusMessage,
+      }) => html`
+        <article class="u23-mobile-card">
+          <div class="u23-mobile-card-header">
+            <div class="u23-mobile-team">
+              <span class="u23-mobile-rank">${rank}</span>
+              ${getTeamImage(team.team)}
+              <span>${team.team}</span>
+            </div>
+            <span class="progress-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="u23-mobile-metrics">
+            <div class="u23-mobile-metric">
+              <span class="u23-mobile-metric-label">Menores</span>
+              <span class="u23-mobile-metric-value"
+                >${team.u23PlayersCount}</span
+              >
+            </div>
+            <div class="u23-mobile-metric">
+              <span class="u23-mobile-metric-label">Reales</span>
+              <span class="u23-mobile-metric-value"
+                >${team.u23totalMinutes}'</span
+              >
+            </div>
+            <div class="u23-mobile-metric">
+              <span class="u23-mobile-metric-label">Selección</span>
+              <span class="u23-mobile-metric-value"
+                >${team.u23CallupMinutes}'</span
+              >
+            </div>
+            <div class="u23-mobile-metric">
+              <span class="u23-mobile-metric-label">Acreditados</span>
+              <span class="u23-mobile-metric-value"
+                >${team.u23countedMinutes}'</span
+              >
+            </div>
+          </div>
+          <div class="progress-track">
+            <div
+              class="progress-fill ${statusClass}"
+              style="width: ${relativeProgress}%;"
+            ></div>
+          </div>
+          <div class="progress-meta">
+            <span>${team.u23countedMinutes}' acreditados</span>
+            <span style="color: ${statusColor}; font-weight: 700;">
+              ${statusMessage}
+            </span>
+          </div>
+        </article>
+      `,
+    );
+  }
+
+  private _renderU23TableContent(teamStats: TeamStats[]) {
+    if (teamStats.length === 0) {
+      return html`<p class="meta">No hay datos.</p>`;
+    }
+
+    const rows = this._buildU23StatsRows(teamStats);
+    return html`
+      <div class="u23-desktop-table">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Equipo</th>
+              <th class="num-col">Menores Alineados</th>
+              <th class="num-col">Reales</th>
+              <th class="num-col">Selección</th>
+              <th class="num-col">Acreditados</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this._renderU23DesktopRows(rows)}
+          </tbody>
+        </table>
+      </div>
+      <div class="u23-mobile-list">${this._renderU23MobileCards(rows)}</div>
+    `;
+  }
+
+  private _renderRegularTimeGoalsMessage(goals: number) {
+    if (goals !== 0) return null;
+    return html`<p class="meta">Sin goles de tiempo regular.</p>`;
+  }
+
+  private _renderExtraTimeGoalsMessage(goals: number) {
+    if (goals <= 0) return null;
+    const label = goals === 1 ? '' : 'es';
+    return html`
+      <p class="extra-time-note">
+        Tiempo extra: ${goals} gol${label}. No se integra a los rangos
+        regulares.
+      </p>
+    `;
+  }
+
+  private _renderNoGoalTypesMessage(goals: GoalDistributionStat[]) {
+    if (goals.some(item => item.count !== 0)) return null;
+    return html`<p class="meta">Sin goles registrados.</p>`;
+  }
+
+  private _renderCallupButton() {
+    if (!this.isAdmin) return null;
+    return html`
+      <md-outlined-button @click=${this._openCallupDialog}>
+        <md-icon slot="icon">groups</md-icon>
+        Convocatorias
+      </md-outlined-button>
+    `;
+  }
+
+  private _getCategoryClass(category: StatsCategory) {
+    return this.activeCategory === category ? 'active' : '';
+  }
+
+  private _renderCategoryContent<T>(category: StatsCategory, content: T) {
+    if (this.activeCategory !== category) return null;
+    return content;
+  }
+
+  override render() {
+    const {
+      teamStats,
+      topScorers,
+      topAssists,
+      topMinutes,
+      topContributors,
+      topDiscipline,
+      recentForms,
+      topCleanSheets,
+      venueStats,
+      tournamentSummary,
+      fairPlay,
+      u23CallupPreviews,
+      goalsByTimeRange,
+      goalsByType,
+      regularTimeGoals,
+      extraTimeGoals,
+      nationalities,
+    } = this._buildStats();
+    const u23TableContent = this._renderU23TableContent(teamStats);
+    const topScorersContent = this._renderTopPlayerContent(
+      topScorers,
+      'Sin goles registrados.',
+      'G',
+      player => player.goals,
+    );
+    const topAssistsContent = this._renderTopPlayerContent(
+      topAssists,
+      'Sin asistencias registradas.',
+      'Ast',
+      player => player.assists,
+    );
+    const topMinutesContent = this._renderTopPlayerContent(
+      topMinutes,
+      'Sin minutos registrados.',
+      'Min',
+      player => `${player.minutes}'`,
+    );
+    const topContributorsContent =
+      this._renderTopContributorsContent(topContributors);
+    const topDisciplineContent = this._renderDisciplineContent(topDiscipline);
+    const regularTimeGoalsMessage =
+      this._renderRegularTimeGoalsMessage(regularTimeGoals);
+    const extraTimeGoalsMessage =
+      this._renderExtraTimeGoalsMessage(extraTimeGoals);
+    const noGoalTypesMessage = this._renderNoGoalTypesMessage(goalsByType);
+    const nationalitiesContent =
+      this._renderNationalitiesContent(nationalities);
+    const callupButtonContent = this._renderCallupButton();
+    const fairPlayContent = this._renderFairPlayContent(fairPlay);
+    const teamOffenseDefenseContent =
+      this._renderTeamOffenseDefenseContent(teamStats);
 
     return html`
+      <nav class="stats-category-tabs" aria-label="Categorías de estadísticas">
+        <button
+          class="stats-category-tab ${this._getCategoryClass('players')}"
+          type="button"
+          ?aria-pressed=${this.activeCategory === 'players'}
+          @click=${() => (this.activeCategory = 'players')}
+        >
+          <md-icon>groups</md-icon>
+          Jugadores
+        </button>
+        <button
+          class="stats-category-tab ${this._getCategoryClass('teams')}"
+          type="button"
+          ?aria-pressed=${this.activeCategory === 'teams'}
+          @click=${() => (this.activeCategory = 'teams')}
+        >
+          <md-icon>shield</md-icon>
+          Equipos
+        </button>
+        <button
+          class="stats-category-tab ${this._getCategoryClass('tournament')}"
+          type="button"
+          ?aria-pressed=${this.activeCategory === 'tournament'}
+          @click=${() => (this.activeCategory = 'tournament')}
+        >
+          <md-icon>emoji_events</md-icon>
+          Torneo
+        </button>
+      </nav>
       <div class="dashboard-grid">
-        <div class="card">
-          <div class="card-header">
-            <h3><md-icon>sports_soccer</md-icon> Top Goleadores</h3>
-            <div class="meta">Los 10 mejores romperedes</div>
-          </div>
-          <div class="table-wrapper">
-            ${
-              topScorers.length === 0
-                ? html`<p class="meta">Sin goles registrados.</p>`
-                : html`
-                    <table class="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Jugador</th>
-                          <th>Equipo</th>
-                          <th class="num-col">G</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${topScorers.map(
-                          (p, i) => html`
-                            <tr class="${i === 0 ? 'rank-1' : ''}">
-                              <td>${i + 1}</td>
-                              <td style="font-weight: bold;">${p.name}</td>
-                              <td>
-                                <div class="team-cell">
-                                  ${getTeamImage(p.team)} ${p.team}
-                                </div>
-                              </td>
-                              <td
-                                class="num-col"
-                                style="font-weight:bold; color: var(--md-sys-color-primary)"
-                              >
-                                ${p.goals}
-                              </td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  `
-            }
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h3><md-icon>assist_walker</md-icon> Top Asistencias</h3>
-            <div class="meta">Los 10 mejores pasadores</div>
-          </div>
-          <div class="table-wrapper">
-            ${
-              topAssists.length === 0
-                ? html`<p class="meta">Sin asistencias registradas.</p>`
-                : html`
-                    <table class="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Jugador</th>
-                          <th>Equipo</th>
-                          <th class="num-col">Ast</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${topAssists.map(
-                          (p, i) => html`
-                            <tr class="${i === 0 ? 'rank-1' : ''}">
-                              <td>${i + 1}</td>
-                              <td style="font-weight: bold;">${p.name}</td>
-                              <td>
-                                <div class="team-cell">
-                                  ${getTeamImage(p.team)} ${p.team}
-                                </div>
-                              </td>
-                              <td
-                                class="num-col"
-                                style="font-weight:bold; color: var(--md-sys-color-primary)"
-                              >
-                                ${p.assists}
-                              </td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  `
-            }
-          </div>
-        </div>
-
-        <div class="card full-width">
-          <div class="card-header">
-            <h3><md-icon>query_stats</md-icon> Análisis de Goles</h3>
-            <div class="meta">
-              Solo goles de partido; las tandas de penales no se incluyen.
+        ${this._renderCategoryContent(
+          'players',
+          html`
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>sports_soccer</md-icon> Top Goleadores</h3>
+                <div class="meta">Los 10 mejores romperedes</div>
+              </div>
+              <div class="table-wrapper">${topScorersContent}</div>
             </div>
-          </div>
-          <div class="goal-analysis-grid">
-            <section class="goal-analysis-section">
-              <h4 class="goal-analysis-title">¿En qué minutos se anota?</h4>
-              <div class="distribution-list">
-                ${this._renderDistributionRows(
-                  goalsByTimeRange,
-                  regularTimeGoals,
-                )}
-              </div>
-              ${
-                regularTimeGoals === 0
-                  ? html`<p class="meta">Sin goles de tiempo regular.</p>`
-                  : null
-              }
-              ${
-                extraTimeGoals > 0
-                  ? html`
-                      <p class="extra-time-note">
-                        Tiempo extra: ${extraTimeGoals}
-                        gol${extraTimeGoals === 1 ? '' : 'es'}. No se integra a
-                        los rangos regulares.
-                      </p>
-                    `
-                  : null
-              }
-            </section>
-            <section class="goal-analysis-section">
-              <h4 class="goal-analysis-title">¿Cómo se anotan?</h4>
-              <div class="distribution-list">
-                ${this._renderDistributionRows(
-                  goalsByType,
-                  goalsByType.reduce((total, item) => total + item.count, 0),
-                )}
-              </div>
-              ${
-                goalsByType.every(item => item.count === 0)
-                  ? html`<p class="meta">Sin goles registrados.</p>`
-                  : null
-              }
-            </section>
-          </div>
-        </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h3><md-icon>public</md-icon> Nacionalidades</h3>
-            <div class="meta">Jugadores registrados en los planteles</div>
-          </div>
-          <div class="table-wrapper">
-            ${
-              nationalities.length === 0
-                ? html`<p class="meta">Sin jugadores registrados.</p>`
-                : html`
-                    <table class="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Nacionalidad</th>
-                          <th class="num-col">Jugadores</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${nationalities.map(
-                          (nationality, index) => html`
-                            <tr class=${index === 0 ? 'rank-1' : ''}>
-                              <td>${index + 1}</td>
-                              <td>${nationality.label}</td>
-                              <td class="num-col">${nationality.count}</td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  `
-            }
-          </div>
-        </div>
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>assist_walker</md-icon> Top Asistencias</h3>
+                <div class="meta">Los 10 mejores pasadores</div>
+              </div>
+              <div class="table-wrapper">${topAssistsContent}</div>
+            </div>
 
-        <div class="card full-width">
-          <div class="u23-header">
-            <div class="card-header">
-              <h3><md-icon>boy</md-icon> Regla de Menores (Sub-23)</h3>
-              <div class="meta">
-                Minutos reales y acreditados para cumplir la norma
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>timer</md-icon> Más Minutos Jugados</h3>
+                <div class="meta">Los 10 jugadores con más minutos</div>
+              </div>
+              <div class="table-wrapper">${topMinutesContent}</div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>add_chart</md-icon> Aportación Ofensiva</h3>
+                <div class="meta">
+                  Goles y asistencias de los 10 más productivos
+                </div>
+              </div>
+              <div class="table-wrapper">${topContributorsContent}</div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>gavel</md-icon> Disciplina Individual</h3>
+                <div class="meta">Más puntos de disciplina primero</div>
+              </div>
+              <div class="table-wrapper">${topDisciplineContent}</div>
+            </div>
+          `,
+        )}
+        ${this._renderCategoryContent(
+          'tournament',
+          html`
+            <div class="card full-width">
+              <div class="card-header">
+                <h3><md-icon>dashboard</md-icon> Resumen del Torneo</h3>
+                <div class="meta">Solo partidos finalizados con marcador</div>
+              </div>
+              <div class="tournament-summary-grid">
+                <div class="tournament-summary-item">
+                  <span class="tournament-summary-label">Partidos</span>
+                  <span class="tournament-summary-value"
+                    >${tournamentSummary.completedMatches}</span
+                  >
+                </div>
+                <div class="tournament-summary-item">
+                  <span class="tournament-summary-label">Goles</span>
+                  <span class="tournament-summary-value"
+                    >${tournamentSummary.totalGoals}</span
+                  >
+                </div>
+                <div class="tournament-summary-item">
+                  <span class="tournament-summary-label"
+                    >Goles por partido</span
+                  >
+                  <span class="tournament-summary-value"
+                    >${this._formatTournamentAverage(
+                          tournamentSummary.totalGoals,
+                          tournamentSummary.completedMatches,
+                        )}</span
+                  >
+                </div>
+                <div class="tournament-summary-item">
+                  <span class="tournament-summary-label"
+                    >Tarjetas por partido</span
+                  >
+                  <span class="tournament-summary-value"
+                    >${this._formatTournamentAverage(
+                          tournamentSummary.totalCards,
+                          tournamentSummary.completedMatches,
+                        )}</span
+                  >
+                </div>
               </div>
             </div>
-            ${
-              this.isAdmin
-                ? html`
-                    <md-outlined-button @click=${this._openCallupDialog}>
-                      <md-icon slot="icon">groups</md-icon>
-                      Convocatorias
-                    </md-outlined-button>
-                  `
-                : null
-            }
-          </div>
-          <div class="table-wrapper">
-            ${
-              teamStats.length === 0
-                ? html`<p class="meta">No hay datos.</p>`
-                : html`
-                    <div class="u23-desktop-table">
-                      <table class="modern-table">
-                        <thead>
-                          <tr>
-                            <th>Pos</th>
-                            <th>Equipo</th>
-                            <th class="num-col">Menores Alineados</th>
-                            <th class="num-col">Reales</th>
-                            <th class="num-col">Selección</th>
-                            <th class="num-col">Acreditados</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${u23Rows.map(
-                            ({
-                              team,
-                              rank,
-                              isFulfilled,
-                              minutesToFulfill,
-                              relativeProgress,
-                            }) => html`
-                              <tr class="team-summary-row">
-                                <td class="team-rank-cell" rowspan="2">
-                                  ${rank}
-                                </td>
-                                <td>
-                                  <div class="team-cell">
-                                    ${getTeamImage(team.team)} ${team.team}
-                                  </div>
-                                </td>
-                                <td class="num-col">${team.u23PlayersCount}</td>
-                                <td class="num-col">
-                                  ${team.u23totalMinutes}'
-                                </td>
-                                <td class="num-col">
-                                  ${team.u23CallupMinutes}'
-                                </td>
-                                <td class="num-col">
-                                  ${team.u23countedMinutes}'
-                                </td>
-                              </tr>
-                              <tr class="progress-row">
-                                <td class="progress-cell" colspan="5">
-                                  <div class="progress-head">
-                                    <span
-                                      class="progress-status ${
-                                      isFulfilled ? 'fulfilled' : 'pending'
-                                    }"
-                                    >
-                                      ${isFulfilled ? 'Cumplido' : 'Pendiente'}
-                                    </span>
-                                  </div>
-                                  <div class="progress-track">
-                                    <div
-                                      class="progress-fill ${
-                                      isFulfilled ? 'fulfilled' : 'pending'
-                                    }"
-                                      style="width: ${relativeProgress}%;"
-                                    ></div>
-                                  </div>
-                                  <div class="progress-meta">
-                                    <span
-                                      >${team.u23countedMinutes}'
-                                      acreditados</span
-                                    >
-                                    <span
-                                      style="color: ${
-                                      isFulfilled
-                                        ? 'var(--md-sys-color-primary)'
-                                        : 'var(--app-color-danger, #D32F2F)'
-                                    }; font-weight: 700;"
-                                    >
-                                      ${
-                                      isFulfilled
-                                        ? '✓ Meta cubierta'
-                                        : `Faltan ${minutesToFulfill}'`
-                                    }
-                                    </span>
-                                  </div>
-                                </td>
-                              </tr>
-                            `,
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
 
-                    <div class="u23-mobile-list">
-                      ${u23Rows.map(
-                        ({
-                          team,
-                          rank,
-                          isFulfilled,
-                          minutesToFulfill,
-                          relativeProgress,
-                        }) => html`
-                          <article class="u23-mobile-card">
-                            <div class="u23-mobile-card-header">
-                              <div class="u23-mobile-team">
-                                <span class="u23-mobile-rank">${rank}</span>
-                                ${getTeamImage(team.team)}
-                                <span>${team.team}</span>
-                              </div>
-                              <span
-                                class="progress-status ${
-                                  isFulfilled ? 'fulfilled' : 'pending'
-                                }"
-                              >
-                                ${isFulfilled ? 'Cumplido' : 'Pendiente'}
-                              </span>
-                            </div>
-                            <div class="u23-mobile-metrics">
-                              <div class="u23-mobile-metric">
-                                <span class="u23-mobile-metric-label"
-                                  >Menores</span
-                                >
-                                <span class="u23-mobile-metric-value"
-                                  >${team.u23PlayersCount}</span
-                                >
-                              </div>
-                              <div class="u23-mobile-metric">
-                                <span class="u23-mobile-metric-label"
-                                  >Reales</span
-                                >
-                                <span class="u23-mobile-metric-value"
-                                  >${team.u23totalMinutes}'</span
-                                >
-                              </div>
-                              <div class="u23-mobile-metric">
-                                <span class="u23-mobile-metric-label"
-                                  >Selección</span
-                                >
-                                <span class="u23-mobile-metric-value"
-                                  >${team.u23CallupMinutes}'</span
-                                >
-                              </div>
-                              <div class="u23-mobile-metric">
-                                <span class="u23-mobile-metric-label"
-                                  >Acreditados</span
-                                >
-                                <span class="u23-mobile-metric-value"
-                                  >${team.u23countedMinutes}'</span
-                                >
-                              </div>
-                            </div>
-                            <div class="progress-track">
-                              <div
-                                class="progress-fill ${
-                                  isFulfilled ? 'fulfilled' : 'pending'
-                                }"
-                                style="width: ${relativeProgress}%;"
-                              ></div>
-                            </div>
-                            <div class="progress-meta">
-                              <span
-                                >${team.u23countedMinutes}' acreditados</span
-                              >
-                              <span
-                                style="color: ${
-                                  isFulfilled
-                                    ? 'var(--md-sys-color-primary)'
-                                    : 'var(--app-color-danger, #D32F2F)'
-                                }; font-weight: 700;"
-                              >
-                                ${
-                                  isFulfilled
-                                    ? '✓ Meta cubierta'
-                                    : `Faltan ${minutesToFulfill}'`
-                                }
-                              </span>
-                            </div>
-                          </article>
-                        `,
-                      )}
-                    </div>
-                  `
-            }
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h3><md-icon>style</md-icon> Ranking Fair Play</h3>
-            <div class="meta">Menos puntos es mejor (A=1, RI=3, RD=4)</div>
-          </div>
-          <div class="table-wrapper">
-            ${
-              fairPlay.length === 0
-                ? html`<p class="meta">Sin tarjetas.</p>`
-                : html`
-                    <table class="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Equipo</th>
-                          <th class="num-col">Pts</th>
-                          <th class="num-col" style="color:#B8860B">A</th>
-                          <th class="num-col" style="color:#D32F2F">RI</th>
-                          <th class="num-col" style="color:#D32F2F">RD</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${fairPlay.map(
-                          (t, i) => html`
-                            <tr class="${i === 0 ? 'rank-1' : ''}">
-                              <td>${i + 1}</td>
-                              <td>
-                                <div class="team-cell">
-                                  ${getTeamImage(t.team)} ${t.team}
-                                </div>
-                              </td>
-                              <td class="num-col" style="font-weight:bold;">
-                                ${t.fairPlayPoints}
-                              </td>
-                              <td class="num-col">${t.yellows}</td>
-                              <td class="num-col">${t.indirectReds}</td>
-                              <td class="num-col">${t.directReds}</td>
-                            </tr>
-                          `,
+            <div class="card full-width">
+              <div class="card-header">
+                <h3><md-icon>query_stats</md-icon> Análisis de Goles</h3>
+                <div class="meta">
+                  Solo goles de partido; las tandas de penales no se incluyen.
+                </div>
+              </div>
+              <div class="goal-analysis-grid">
+                <section class="goal-analysis-section">
+                  <h4 class="goal-analysis-title">¿En qué minutos se anota?</h4>
+                  <div class="distribution-list">
+                    ${this._renderDistributionRows(
+                          goalsByTimeRange,
+                          regularTimeGoals,
                         )}
-                      </tbody>
-                    </table>
-                  `
-            }
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h3><md-icon>bar_chart</md-icon> Ofensiva y Defensiva</h3>
-            <div class="meta">Goles a favor y en contra</div>
-          </div>
-          <div class="table-wrapper">
-            ${
-              teamStats.length === 0
-                ? html`<p class="meta">No hay datos.</p>`
-                : html`
-                    <table class="modern-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Equipo</th>
-                          <th class="num-col">GF</th>
-                          <th class="num-col">GC</th>
-                          <th class="num-col">Dif</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${teamStats.slice(0, 10).map(
-                          (t, i) => html`
-                            <tr>
-                              <td>${i + 1}</td>
-                              <td>
-                                <div class="team-cell">
-                                  ${getTeamImage(t.team)} ${t.team}
-                                </div>
-                              </td>
-                              <td class="num-col">${t.goalsFor}</td>
-                              <td class="num-col">${t.goalsAgainst}</td>
-                              <td
-                                class="num-col"
-                                style="font-weight:bold; color:${
-                                  t.goalsFor - t.goalsAgainst > 0
-                                    ? 'var(--md-sys-color-primary)'
-                                    : 'inherit'
-                                }"
-                              >
-                                ${
-                                  t.goalsFor - t.goalsAgainst > 0 ? '+' : ''
-                                }${t.goalsFor - t.goalsAgainst}
-                              </td>
-                            </tr>
-                          `,
+                  </div>
+                  ${regularTimeGoalsMessage} ${extraTimeGoalsMessage}
+                </section>
+                <section class="goal-analysis-section">
+                  <h4 class="goal-analysis-title">¿Cómo se anotan?</h4>
+                  <div class="distribution-list">
+                    ${this._renderDistributionRows(
+                          goalsByType,
+                          goalsByType.reduce(
+                            (total, item) => total + item.count,
+                            0,
+                          ),
                         )}
-                      </tbody>
-                    </table>
-                  `
-            }
-          </div>
-        </div>
+                  </div>
+                  ${noGoalTypesMessage}
+                </section>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>public</md-icon> Nacionalidades</h3>
+                <div class="meta">Jugadores registrados en los planteles</div>
+              </div>
+              <div class="table-wrapper">${nationalitiesContent}</div>
+            </div>
+          `,
+        )}
+        ${this._renderCategoryContent(
+          'teams',
+          html`
+            <div class="card full-width">
+              <div class="u23-header">
+                <div class="card-header">
+                  <h3><md-icon>boy</md-icon> Regla de Menores (Sub-23)</h3>
+                  <div class="meta">
+                    Minutos reales y acreditados para cumplir la norma
+                  </div>
+                </div>
+                ${callupButtonContent}
+              </div>
+              <div class="table-wrapper">${u23TableContent}</div>
+            </div>
+
+            ${this._renderRecentFormsCard(recentForms)}
+            ${this._renderCleanSheetsCard(topCleanSheets)}
+            ${this._renderVenueComparisonCard(venueStats)}
+
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>style</md-icon> Ranking Fair Play</h3>
+                <div class="meta">Menos puntos es mejor (A=1, RI=3, RD=4)</div>
+              </div>
+              <div class="table-wrapper">${fairPlayContent}</div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3><md-icon>bar_chart</md-icon> Ofensiva y Defensiva</h3>
+                <div class="meta">Goles a favor y en contra</div>
+              </div>
+              <div class="table-wrapper">${teamOffenseDefenseContent}</div>
+            </div>
+          `,
+        )}
       </div>
       ${this._renderCallupDialog(u23CallupPreviews)}
       ${this._renderNewMfmPlayerDialog()}
@@ -1255,16 +1825,31 @@ export class StatsPage extends LitElement {
 
     const teamPlayers = this._getCallupPlayersForTeam(previews);
     const selectedPreview = this._getSelectedCallupPreview(previews);
+    const selectedPreviewActualMinutes = selectedPreview?.actualMinutes ?? 0;
+    const selectedPreviewCompletedRegularMatches =
+      selectedPreview?.completedRegularMatches ?? 0;
     const credit = selectedPreview
       ? this._calculateCallupCredit(
-          selectedPreview.actualMinutes,
-          selectedPreview.completedRegularMatches,
+          selectedPreviewActualMinutes,
+          selectedPreviewCompletedRegularMatches,
           this.callupMissedMatches,
         )
       : null;
     const baseMatches = selectedPreview
-      ? selectedPreview.completedRegularMatches - this.callupMissedMatches
+      ? selectedPreviewCompletedRegularMatches - this.callupMissedMatches
       : 0;
+    const creditDisplayValue = credit === null ? 'Pendiente' : `${credit}'`;
+    const callupMinimumMinutesMessage =
+      selectedPreview &&
+      selectedPreviewActualMinutes < MINUTES_REQUIRED_FOR_CALLUP_CREDIT
+        ? `Aún requiere ${MINUTES_REQUIRED_FOR_CALLUP_CREDIT - selectedPreviewActualMinutes}' reales para activar el crédito.`
+        : null;
+    const callupAverageMessage =
+      baseMatches <= 0
+        ? 'Debe existir al menos un partido regular base para calcular el promedio.'
+        : `Promedio: ${Math.round(selectedPreviewActualMinutes / baseMatches)}' × ${this.callupMissedMatches} partidos.`;
+    const callupSummaryMessage =
+      callupMinimumMinutesMessage ?? callupAverageMessage;
 
     return html`
       <md-dialog id="dialogU23Callup" type="modal">
@@ -1329,7 +1914,7 @@ export class StatsPage extends LitElement {
                     <div class="callup-preview-item">
                       <span class="callup-preview-label">Reales</span>
                       <span class="callup-preview-value"
-                        >${selectedPreview.actualMinutes}'</span
+                        >${selectedPreviewActualMinutes}'</span
                       >
                     </div>
                     <div class="callup-preview-item">
@@ -1341,20 +1926,11 @@ export class StatsPage extends LitElement {
                     <div class="callup-preview-item">
                       <span class="callup-preview-label">Crédito</span>
                       <span class="callup-preview-value"
-                        >${credit === null ? 'Pendiente' : `${credit}'`}</span
+                        >${creditDisplayValue}</span
                       >
                     </div>
                   </div>
-                  <p class="meta">
-                    ${
-                      selectedPreview.actualMinutes <
-                      MINUTES_REQUIRED_FOR_CALLUP_CREDIT
-                        ? `Aún requiere ${MINUTES_REQUIRED_FOR_CALLUP_CREDIT - selectedPreview.actualMinutes}' reales para activar el crédito.`
-                        : baseMatches <= 0
-                          ? 'Debe existir al menos un partido regular base para calcular el promedio.'
-                          : `Promedio: ${Math.round(selectedPreview.actualMinutes / baseMatches)}' × ${this.callupMissedMatches} partidos.`
-                    }
-                  </p>
+                  <p class="meta">${callupSummaryMessage}</p>
                 `
               : html`<p class="meta">
                   Este equipo no tiene jugadores MFM registrados.
@@ -1543,14 +2119,14 @@ export class StatsPage extends LitElement {
     this.newMfmIsUploadingImage = false;
     this._resetNewMfmPlayerForm();
     this.dialogU23Callup?.close();
-    void this.updateComplete.then(() => this.dialogNewMfmPlayer?.show());
+    this.updateComplete.then(() => this.dialogNewMfmPlayer?.show());
   }
 
   private _closeNewMfmPlayerDialog() {
     if (this.newMfmIsUploadingImage) return;
     this.dialogNewMfmPlayer?.close();
     this._clearNewMfmPastedImage();
-    void this.updateComplete.then(() => this.dialogU23Callup?.show());
+    this.updateComplete.then(() => this.dialogU23Callup?.show());
   }
 
   private _resetNewMfmPlayerForm() {
@@ -1661,7 +2237,7 @@ export class StatsPage extends LitElement {
     this.newMfmIsUploadingImage = false;
     this.dialogNewMfmPlayer?.close();
     this._clearNewMfmPastedImage();
-    void this.updateComplete.then(() => this.dialogU23Callup?.show());
+    this.updateComplete.then(() => this.dialogU23Callup?.show());
   }
 
   private _handleNewMfmImagePaste(event: ClipboardEvent) {
@@ -1710,7 +2286,7 @@ export class StatsPage extends LitElement {
     this.newMfmPastedImagePreviewUrl = URL.createObjectURL(blob);
   }
 
-  private _clearNewMfmPastedImage = () => {
+  private readonly _clearNewMfmPastedImage = () => {
     this._revokeNewMfmPreviewUrl();
     this.newMfmPastedImageBlob = null;
   };
@@ -1832,9 +2408,270 @@ export class StatsPage extends LitElement {
     return `${teamKey}-${playerNumber}`;
   }
 
+  private _renderRecentFormsCard(recentForms: TeamRecentForm[]) {
+    return html`
+      <div class="card full-width">
+        <div class="card-header">
+          <h3><md-icon>trending_up</md-icon> Racha Reciente</h3>
+          <div class="meta">
+            Últimos cinco partidos finalizados de cada equipo
+          </div>
+        </div>
+        ${
+          recentForms.length === 0
+            ? html`<p class="meta">No hay equipos registrados.</p>`
+            : html`
+                <div class="table-wrapper recent-form-desktop-table">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Equipo</th>
+                        <th>Últimos partidos</th>
+                        <th class="num-col">Pts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${recentForms.map(
+                        (form, index) => html`
+                          <tr class="${index === 0 ? 'rank-1' : ''}">
+                            <td>${index + 1}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(form.team)} ${form.team}
+                              </div>
+                            </td>
+                            <td>${this._renderFormIndicators(form.matches)}</td>
+                            <td
+                              class="num-col"
+                              style="font-weight:bold; color: var(--md-sys-color-primary)"
+                            >
+                              ${form.points}
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="recent-form-mobile-list">
+                  ${recentForms.map(
+                    (form, index) => html`
+                      <article class="recent-form-mobile-card">
+                        <div class="recent-form-mobile-header">
+                          <div class="recent-form-mobile-team">
+                            <span class="u23-mobile-rank">${index + 1}</span>
+                            ${getTeamImage(form.team)}
+                            <span>${form.team}</span>
+                          </div>
+                          <span class="recent-form-points"
+                            >${form.points} pts</span
+                          >
+                        </div>
+                        <div class="recent-form-mobile-results">
+                          <span class="recent-form-mobile-label"
+                            >Últimos partidos</span
+                          >
+                          ${this._renderFormIndicators(form.matches)}
+                        </div>
+                      </article>
+                    `,
+                  )}
+                </div>
+              `
+        }
+      </div>
+    `;
+  }
+
+  private _renderCleanSheetsCard(teams: TeamCompletedStats[]) {
+    return html`
+      <div class="card">
+        <div class="card-header">
+          <h3><md-icon>shield</md-icon> Porterías en Cero</h3>
+          <div class="meta">
+            Los 10 equipos con más partidos sin recibir gol
+          </div>
+        </div>
+        <div class="table-wrapper">
+          ${
+            teams.length === 0
+              ? html`<p class="meta">Sin partidos finalizados.</p>`
+              : html`
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Equipo</th>
+                        <th class="num-col">PC</th>
+                        <th class="num-col">PJ</th>
+                        <th class="num-col">GC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${teams.map(
+                        (team, index) => html`
+                          <tr class="${index === 0 ? 'rank-1' : ''}">
+                            <td>${index + 1}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(team.team)} ${team.team}
+                              </div>
+                            </td>
+                            <td
+                              class="num-col"
+                              style="font-weight:bold; color: var(--md-sys-color-primary)"
+                            >
+                              ${team.cleanSheets}
+                            </td>
+                            <td class="num-col">${team.matches}</td>
+                            <td class="num-col">${team.goalsAgainst}</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                `
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderVenueComparisonCard(teams: TeamCompletedStats[]) {
+    return html`
+      <div class="card full-width">
+        <div class="card-header">
+          <h3><md-icon>compare_arrows</md-icon> Rendimiento Local y Visita</h3>
+          <div class="meta">Puntos y goles de partidos finalizados</div>
+        </div>
+        ${
+          teams.length === 0
+            ? html`<p class="meta">Sin equipos registrados.</p>`
+            : html`
+                <div class="table-wrapper venue-desktop-table">
+                  <table class="modern-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Equipo</th>
+                        <th class="num-col">L Pts</th>
+                        <th class="num-col">L GF</th>
+                        <th class="num-col">L GC</th>
+                        <th class="num-col">V Pts</th>
+                        <th class="num-col">V GF</th>
+                        <th class="num-col">V GC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${teams.map(
+                        (team, index) => html`
+                          <tr class="${index === 0 ? 'rank-1' : ''}">
+                            <td>${index + 1}</td>
+                            <td>
+                              <div class="team-cell">
+                                ${getTeamImage(team.team)} ${team.team}
+                              </div>
+                            </td>
+                            <td class="num-col">${team.home.points}</td>
+                            <td class="num-col">${team.home.goalsFor}</td>
+                            <td class="num-col">${team.home.goalsAgainst}</td>
+                            <td class="num-col">${team.away.points}</td>
+                            <td class="num-col">${team.away.goalsFor}</td>
+                            <td class="num-col">${team.away.goalsAgainst}</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="venue-mobile-list">
+                  ${teams.map(
+                    (team, index) => html`
+                      <article class="venue-mobile-card">
+                        <div class="venue-mobile-header">
+                          <span class="u23-mobile-rank">${index + 1}</span>
+                          ${getTeamImage(team.team)}
+                          <span>${team.team}</span>
+                        </div>
+                        <div class="venue-mobile-metrics">
+                          <div class="venue-mobile-metric">
+                            <span class="venue-mobile-metric-label">Local</span>
+                            <span class="venue-mobile-metric-value"
+                              >${team.home.points} pts ·
+                              ${team.home.goalsFor}-${
+                                team.home.goalsAgainst
+                              }</span
+                            >
+                          </div>
+                          <div class="venue-mobile-metric">
+                            <span class="venue-mobile-metric-label"
+                              >Visita</span
+                            >
+                            <span class="venue-mobile-metric-value"
+                              >${team.away.points} pts ·
+                              ${team.away.goalsFor}-${
+                                team.away.goalsAgainst
+                              }</span
+                            >
+                          </div>
+                        </div>
+                      </article>
+                    `,
+                  )}
+                </div>
+              `
+        }
+      </div>
+    `;
+  }
+
+  private _formatTournamentAverage(total: number, matches: number) {
+    return matches > 0 ? (total / matches).toFixed(2) : '0.00';
+  }
+
+  private _renderFormIndicators(matches: TeamFormMatch[]) {
+    if (matches.length === 0) {
+      return html`<span class="form-empty">Sin partidos</span>`;
+    }
+
+    const labels: Record<FormResult, string> = {
+      win: 'Victoria',
+      draw: 'Empate',
+      loss: 'Derrota',
+    };
+    const symbols: Record<FormResult, string> = {
+      win: 'V',
+      draw: 'E',
+      loss: 'D',
+    };
+
+    return html`
+      <div class="form-indicators" aria-label="Racha reciente">
+        ${matches.map(
+          match => html`
+            <span
+              class="form-result ${match.result}"
+              title="${labels[match.result]}: ${match.goalsFor}-${
+                match.goalsAgainst
+              } vs ${match.opponent}"
+              aria-label="${labels[match.result]} ${match.goalsFor}-${
+                match.goalsAgainst
+              } contra ${match.opponent}"
+            >
+              ${symbols[match.result]}
+            </span>
+          `,
+        )}
+      </div>
+    `;
+  }
+
   private _buildStats() {
     const playerStats = new Map<string, PlayerStats>();
     const teamStats = new Map<string, TeamStats>();
+    const formMatchesByTeam = new Map<string, TeamFormMatch[]>();
+    const completedTeamStats = new Map<string, TeamCompletedStats>();
     const u23PlayersTeam = new Map<string, Set<number>>();
     const u23PlayerMinutes = new Map<string, number>();
     const goalsByTimeRange: GoalDistributionStat[] = [
@@ -1856,6 +2693,11 @@ export class StatsPage extends LitElement {
       { label: 'Sin tipo registrado', count: 0 },
     ];
     const nationalityStats = new Map<string, NationalityStat>();
+    const tournamentSummary: TournamentSummary = {
+      completedMatches: 0,
+      totalGoals: 0,
+      totalCards: 0,
+    };
     let regularTimeGoals = 0;
     let extraTimeGoals = 0;
 
@@ -1864,11 +2706,10 @@ export class StatsPage extends LitElement {
     ) => {
       if (goal.period === 'PEN') return;
 
-      const typeLabel = goal.ownGoal
-        ? 'Autogol'
-        : goal.goalType
-          ? GOAL_TYPE_LABELS[goal.goalType]
-          : 'Sin tipo registrado';
+      const goalTypeLabel = goal.goalType
+        ? GOAL_TYPE_LABELS[goal.goalType]
+        : 'Sin tipo registrado';
+      const typeLabel = goal.ownGoal ? 'Autogol' : goalTypeLabel;
       const typeEntry = goalsByType.find(item => item.label === typeLabel);
       if (typeEntry) typeEntry.count += 1;
 
@@ -1878,18 +2719,18 @@ export class StatsPage extends LitElement {
       }
 
       regularTimeGoals += 1;
-      const timeRangeIndex =
-        goal.minute <= 15
-          ? 0
-          : goal.minute <= 30
-            ? 1
-            : goal.minute <= 45
-              ? 2
-              : goal.minute <= 60
-                ? 3
-                : goal.minute <= 75
-                  ? 4
-                  : 5;
+      let timeRangeIndex = 5;
+      if (goal.minute <= 15) {
+        timeRangeIndex = 0;
+      } else if (goal.minute <= 30) {
+        timeRangeIndex = 1;
+      } else if (goal.minute <= 45) {
+        timeRangeIndex = 2;
+      } else if (goal.minute <= 60) {
+        timeRangeIndex = 3;
+      } else if (goal.minute <= 75) {
+        timeRangeIndex = 4;
+      }
       goalsByTimeRange[timeRangeIndex].count += 1;
     };
 
@@ -1925,6 +2766,34 @@ export class StatsPage extends LitElement {
       return teamStats.get(teamName)!;
     };
 
+    const ensureFormMatches = (teamName: string) => {
+      if (!formMatchesByTeam.has(teamName)) {
+        formMatchesByTeam.set(teamName, []);
+      }
+      return formMatchesByTeam.get(teamName)!;
+    };
+
+    const emptyVenueStats = (): VenueStats => ({
+      matches: 0,
+      points: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+    });
+
+    const ensureCompletedTeamStats = (teamName: string) => {
+      if (!completedTeamStats.has(teamName)) {
+        completedTeamStats.set(teamName, {
+          team: teamName,
+          matches: 0,
+          cleanSheets: 0,
+          goalsAgainst: 0,
+          home: emptyVenueStats(),
+          away: emptyVenueStats(),
+        });
+      }
+      return completedTeamStats.get(teamName)!;
+    };
+
     const u23PlayersSet = (teamName: string) => {
       if (!u23PlayersTeam.has(teamName)) {
         u23PlayersTeam.set(teamName, new Set<number>());
@@ -1933,6 +2802,61 @@ export class StatsPage extends LitElement {
     };
 
     this.teams.forEach(ensureTeam);
+    this.teams.forEach(ensureFormMatches);
+    this.teams.forEach(ensureCompletedTeamStats);
+
+    const matchTimestamp = (match: Match) => {
+      if (match.fecha instanceof Date) return match.fecha.getTime();
+      const timestamp = new Date(match.fecha).getTime();
+      return Number.isFinite(timestamp) ? timestamp : 0;
+    };
+
+    const addFormMatch = (
+      team: string,
+      opponent: string,
+      goalsFor: number,
+      goalsAgainst: number,
+      match: Match,
+    ) => {
+      let result: FormResult = 'loss';
+      if (goalsFor > goalsAgainst) {
+        result = 'win';
+      } else if (goalsFor === goalsAgainst) {
+        result = 'draw';
+      }
+      ensureFormMatches(team).push({
+        result,
+        opponent,
+        goalsFor,
+        goalsAgainst,
+        timestamp: matchTimestamp(match),
+        matchId: match.idMatch,
+      });
+    };
+
+    const addCompletedTeamMatch = (
+      team: string,
+      goalsFor: number,
+      goalsAgainst: number,
+      venue: 'home' | 'away',
+    ) => {
+      const teamStat = ensureCompletedTeamStats(team);
+      const venueStat = teamStat[venue];
+      teamStat.matches += 1;
+      teamStat.goalsAgainst += goalsAgainst;
+      if (goalsAgainst === 0) teamStat.cleanSheets += 1;
+
+      venueStat.matches += 1;
+      venueStat.goalsFor += goalsFor;
+      venueStat.goalsAgainst += goalsAgainst;
+      let venuePoints = 0;
+      if (goalsFor > goalsAgainst) {
+        venuePoints = 3;
+      } else if (goalsFor === goalsAgainst) {
+        venuePoints = 1;
+      }
+      venueStat.points += venuePoints;
+    };
 
     const ensurePlayer = (
       teamName: string,
@@ -1951,6 +2875,9 @@ export class StatsPage extends LitElement {
           assists: 0,
           yellows: 0,
           reds: 0,
+          indirectReds: 0,
+          directReds: 0,
+          fairPlayPoints: 0,
           minutes: 0,
         });
       }
@@ -2061,6 +2988,40 @@ export class StatsPage extends LitElement {
       const localPlayers = this.players.get(localKey) || [];
       const visitorPlayers = this.players.get(visitorKey) || [];
 
+      const localGoals = match.golLocal;
+      const visitorGoals = match.golVisitante;
+      if (
+        hasMatchEnded(match) &&
+        Number.isFinite(localGoals) &&
+        Number.isFinite(visitorGoals)
+      ) {
+        tournamentSummary.completedMatches += 1;
+        tournamentSummary.totalGoals += localGoals + visitorGoals;
+        tournamentSummary.totalCards += getCardEvents(match.events).length;
+
+        addFormMatch(
+          match.local,
+          match.visitante,
+          localGoals,
+          visitorGoals,
+          match,
+        );
+        addFormMatch(
+          match.visitante,
+          match.local,
+          visitorGoals,
+          localGoals,
+          match,
+        );
+        addCompletedTeamMatch(match.local, localGoals, visitorGoals, 'home');
+        addCompletedTeamMatch(
+          match.visitante,
+          visitorGoals,
+          localGoals,
+          'away',
+        );
+      }
+
       getGoalEvents(match.events).forEach(addGoalAnalysis);
 
       // Goals and assists
@@ -2095,16 +3056,21 @@ export class StatsPage extends LitElement {
         const stat = ensurePlayer(teamName, card.player, teamPlayers);
         if (card.cardType === 'yellow') {
           stat.yellows += 1;
+          stat.fairPlayPoints += 1;
           const teamStat = ensureTeam(teamName);
           teamStat.yellows += 1;
           teamStat.fairPlayPoints += 1;
         } else if (card.foulType === 'dobleAmarilla') {
           stat.reds += 1;
+          stat.indirectReds += 1;
+          stat.fairPlayPoints += 3;
           const teamStat = ensureTeam(teamName);
           teamStat.indirectReds += 1;
           teamStat.fairPlayPoints += 3;
         } else {
           stat.reds += 1;
+          stat.directReds += 1;
+          stat.fairPlayPoints += 4;
           const teamStat = ensureTeam(teamName);
           teamStat.directReds += 1;
           teamStat.fairPlayPoints += 4;
@@ -2215,6 +3181,112 @@ export class StatsPage extends LitElement {
         return b.goals - a.goals;
       })
       .slice(0, 10);
+    const topMinutes = playerArray
+      .filter(p => p.minutes > 0)
+      .sort((a, b) => {
+        if (b.minutes !== a.minutes) return b.minutes - a.minutes;
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 10);
+    const topContributors = playerArray
+      .filter(p => p.goals + p.assists > 0)
+      .sort((a, b) => {
+        const contributionA = a.goals + a.assists;
+        const contributionB = b.goals + b.assists;
+        if (contributionB !== contributionA) {
+          return contributionB - contributionA;
+        }
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        if (b.assists !== a.assists) return b.assists - a.assists;
+        if (b.minutes !== a.minutes) return b.minutes - a.minutes;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 10);
+    const topDiscipline = playerArray
+      .filter(p => p.fairPlayPoints > 0)
+      .sort((a, b) => {
+        if (b.fairPlayPoints !== a.fairPlayPoints) {
+          return b.fairPlayPoints - a.fairPlayPoints;
+        }
+        if (b.directReds !== a.directReds) {
+          return b.directReds - a.directReds;
+        }
+        if (b.indirectReds !== a.indirectReds) {
+          return b.indirectReds - a.indirectReds;
+        }
+        if (b.yellows !== a.yellows) return b.yellows - a.yellows;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 10);
+    const completedTeams = Array.from(completedTeamStats.values());
+    const topCleanSheets = [...completedTeams]
+      .sort((a, b) => {
+        if (b.cleanSheets !== a.cleanSheets) {
+          return b.cleanSheets - a.cleanSheets;
+        }
+        if (a.goalsAgainst !== b.goalsAgainst) {
+          return a.goalsAgainst - b.goalsAgainst;
+        }
+        if (b.matches !== a.matches) return b.matches - a.matches;
+        return a.team.localeCompare(b.team);
+      })
+      .slice(0, 10);
+    const venueStats = [...completedTeams].sort((a, b) => {
+      const pointsA = a.home.points + a.away.points;
+      const pointsB = b.home.points + b.away.points;
+      if (pointsB !== pointsA) return pointsB - pointsA;
+      const goalDifferenceA =
+        a.home.goalsFor +
+        a.away.goalsFor -
+        a.home.goalsAgainst -
+        a.away.goalsAgainst;
+      const goalDifferenceB =
+        b.home.goalsFor +
+        b.away.goalsFor -
+        b.home.goalsAgainst -
+        b.away.goalsAgainst;
+      if (goalDifferenceB !== goalDifferenceA) {
+        return goalDifferenceB - goalDifferenceA;
+      }
+      const goalsForA = a.home.goalsFor + a.away.goalsFor;
+      const goalsForB = b.home.goalsFor + b.away.goalsFor;
+      if (goalsForB !== goalsForA) return goalsForB - goalsForA;
+      return a.team.localeCompare(b.team);
+    });
+    const recentForms = Array.from(formMatchesByTeam.entries())
+      .map(([team, matches]) => {
+        const recentMatches = [...matches]
+          .sort((a, b) => a.timestamp - b.timestamp || a.matchId - b.matchId)
+          .slice(-5);
+        return recentMatches.reduce<TeamRecentForm>(
+          (form, match) => {
+            form.matches.push(match);
+            let formPoints = 0;
+            if (match.result === 'win') {
+              formPoints = 3;
+            } else if (match.result === 'draw') {
+              formPoints = 1;
+            }
+            form.points += formPoints;
+            form.goalsFor += match.goalsFor;
+            form.goalsAgainst += match.goalsAgainst;
+            return form;
+          },
+          { team, matches: [], points: 0, goalsFor: 0, goalsAgainst: 0 },
+        );
+      })
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        const goalDifferenceA = a.goalsFor - a.goalsAgainst;
+        const goalDifferenceB = b.goalsFor - b.goalsAgainst;
+        if (goalDifferenceB !== goalDifferenceA) {
+          return goalDifferenceB - goalDifferenceA;
+        }
+        if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+        return a.team.localeCompare(b.team);
+      });
     const fairPlay = [...teamArray]
       .sort((a, b) => {
         if (a.fairPlayPoints !== b.fairPlayPoints) {
@@ -2233,6 +3305,13 @@ export class StatsPage extends LitElement {
       teamStats: teamArray,
       topScorers,
       topAssists,
+      topMinutes,
+      topContributors,
+      topDiscipline,
+      recentForms,
+      topCleanSheets,
+      venueStats,
+      tournamentSummary,
       fairPlay,
       u23CallupPreviews,
       goalsByTimeRange,

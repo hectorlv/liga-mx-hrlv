@@ -377,6 +377,7 @@ export class LigaMxHrlv extends LitElement {
   }
 
   override render() {
+    const adminStatus = this.isAdmin ? 'Admin' : 'Sin permisos';
     return html`
       <header>
         <div class="header-content">
@@ -399,9 +400,7 @@ export class LigaMxHrlv extends LitElement {
             ${
               this.user
                 ? html`
-                    <span class="admin-status">
-                      ${this.isAdmin ? 'Admin' : 'Sin permisos'}
-                    </span>
+                    <span class="admin-status"> ${adminStatus} </span>
                     <md-text-button
                       aria-label="Cerrar sesión"
                       title="Cerrar sesión"
@@ -442,8 +441,8 @@ export class LigaMxHrlv extends LitElement {
           Made with love by HRLV ·
           <span class="footer-version" title=${APP_BUILD_DATE}
             >${APP_VERSION_LABEL}</span
-          > ·
-          ${new Date().getFullYear()}
+          >
+          · ${new Date().getFullYear()}
         </p>
         <span class="footer-divider" aria-hidden="true"></span>
         <nav class="footer-links" aria-label="Contacto y apoyo">

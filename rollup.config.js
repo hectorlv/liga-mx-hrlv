@@ -7,7 +7,10 @@ import { generateSW } from 'rollup-plugin-workbox';
 import path from 'node:path';
 import image from '@rollup/plugin-image';
 import json from '@rollup/plugin-json';
+import { createRequire } from 'node:module';
 import { createAppVersionDefines } from './buildMetadata.mjs';
+
+const require = createRequire(import.meta.url);
 
 const esbuild = _esbuild.default || _esbuild;
 const appVersionDefines = createAppVersionDefines();

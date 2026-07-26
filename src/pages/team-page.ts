@@ -470,6 +470,14 @@ export class TeamPage extends LitElement {
   @state() private editImageError = '';
 
   override render() {
+    const clearEditImageButton = this.editPastedImagePreviewUrl
+      ? html`
+          <md-outlined-button @click=${this._clearEditPastedImage}>
+            Quitar imagen nueva
+          </md-outlined-button>
+        `
+      : null;
+
     return html`
       <main>
         <div class="header-container">
@@ -686,53 +694,22 @@ export class TeamPage extends LitElement {
                   ></md-filled-text-field>
                   <div class="image-input-section full-width">
                     <div
-                      class="image-paste-zone ${
-                        this._getEditImagePreview() ? 'has-image' : ''
-                      }"
+                      class="image-paste-zone ${this._getImagePasteZoneClass()}"
                       tabindex="0"
                       role="button"
                       @paste=${this._handleEditImagePaste}
                       title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
                     >
-                      ${
-                        this._getEditImagePreview()
-                          ? html`<img
-                              class="image-preview"
-                              src="${this._getEditImagePreview()}"
-                              alt="Vista previa de la foto del jugador"
-                            />`
-                          : html`<div>
-                              <md-icon>content_paste</md-icon>
-                              <p>Pega aquí la foto del jugador</p>
-                              <p class="image-help">
-                                En escritorio usa Ctrl+V o Cmd+V. En móvil usa
-                                el botón Leer portapapeles.
-                              </p>
-                            </div>`
-                      }
+                      ${this._renderEditImagePreviewContent()}
                     </div>
                     <div class="image-actions">
-                      <p
-                        class="${
-                          this.editImageError ? 'image-error' : 'image-help'
-                        }"
-                      >
+                      <p class="${this._getImageMessageClass()}">
                         ${
                           this.editImageError ||
                           'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'
                         }
                       </p>
-                      ${
-                        this.editPastedImagePreviewUrl
-                          ? html`
-                              <md-outlined-button
-                                @click=${this._clearEditPastedImage}
-                              >
-                                Quitar imagen nueva
-                              </md-outlined-button>
-                            `
-                          : null
-                      }
+                      ${clearEditImageButton}
                       <md-outlined-button
                         @click=${this._readEditImageFromClipboard}
                         ?disabled=${
@@ -741,11 +718,7 @@ export class TeamPage extends LitElement {
                         }
                       >
                         <md-icon slot="icon">content_paste_go</md-icon>
-                        ${
-                          this.editIsReadingClipboardImage
-                            ? 'Leyendo...'
-                            : 'Leer portapapeles'
-                        }
+                        ${this._getClipboardButtonLabel()}
                       </md-outlined-button>
                     </div>
                   </div>
@@ -992,6 +965,39 @@ export class TeamPage extends LitElement {
     }
 
     return this._getResolvedPlayerImage(this.editingPlayer?.image);
+  }
+
+  private _getImagePasteZoneClass() {
+    return this._getEditImagePreview() ? 'has-image' : '';
+  }
+
+  private _getImageMessageClass() {
+    return this.editImageError ? 'image-error' : 'image-help';
+  }
+
+  private _getClipboardButtonLabel() {
+    return this.editIsReadingClipboardImage
+      ? 'Leyendo...'
+      : 'Leer portapapeles';
+  }
+
+  private _renderEditImagePreviewContent() {
+    if (this._getEditImagePreview()) {
+      return html`<img
+        class="image-preview"
+        src="${this._getEditImagePreview()}"
+        alt="Vista previa de la foto del jugador"
+      />`;
+    }
+
+    return html`<div>
+      <md-icon>content_paste</md-icon>
+      <p>Pega aquí la foto del jugador</p>
+      <p class="image-help">
+        En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón Leer
+        portapapeles.
+      </p>
+    </div>`;
   }
 
   private _handleEditImagePaste(event: ClipboardEvent) {

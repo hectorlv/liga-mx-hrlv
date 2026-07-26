@@ -741,8 +741,7 @@ export class HomePage extends LitElement {
 
     const today = new Date();
     const todayMatch = sortedMatches.find(
-      match =>
-        this._isSameDay(match.fecha, today) && !hasMatchEnded(match),
+      match => this._isSameDay(match.fecha, today) && !hasMatchEnded(match),
     );
     if (todayMatch) return todayMatch;
 

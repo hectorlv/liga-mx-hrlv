@@ -319,6 +319,26 @@ export class GoalsCard extends LitElement {
     const visitorGoals = goalsWithIndex.filter(
       ({ goal }) => goal.team === 'visitor',
     );
+    const addedTimeField = this.showAddedTime
+      ? html`<md-filled-text-field
+          label="Tiempo agregado"
+          type="number"
+          id="addedTime"
+          min="0"
+          max="30"
+          @change=${this._validateForm}
+        ></md-filled-text-field>`
+      : '';
+    const editAddedTimeField = this.showEditAddedTime
+      ? html`<md-filled-text-field
+          label="Tiempo agregado"
+          type="number"
+          id="editAddedTime"
+          min="0"
+          max="30"
+          @change=${this._validateEditForm}
+        ></md-filled-text-field>`
+      : '';
 
     return html`
       <div class="card">
@@ -422,18 +442,7 @@ export class GoalsCard extends LitElement {
                       required
                     ></md-filled-text-field>
 
-                    ${
-                      this.showAddedTime
-                        ? html`<md-filled-text-field
-                            label="Tiempo agregado"
-                            type="number"
-                            id="addedTime"
-                            min="0"
-                            max="30"
-                            @change=${this._validateForm}
-                          ></md-filled-text-field>`
-                        : ''
-                    }
+                    ${addedTimeField}
 
                     <md-outlined-select
                       id="newGoalPlayer"
@@ -560,18 +569,7 @@ export class GoalsCard extends LitElement {
                     required
                   ></md-filled-text-field>
 
-                  ${
-                    this.showEditAddedTime
-                      ? html`<md-filled-text-field
-                          label="Tiempo agregado"
-                          type="number"
-                          id="editAddedTime"
-                          min="0"
-                          max="30"
-                          @change=${this._validateEditForm}
-                        ></md-filled-text-field>`
-                      : ''
-                  }
+                  ${editAddedTimeField}
 
                   <md-outlined-select
                     id="editGoalPlayer"

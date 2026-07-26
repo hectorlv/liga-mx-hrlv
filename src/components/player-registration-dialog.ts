@@ -105,17 +105,19 @@ export class PlayerRegistrationDialog extends LitElement {
   @property({ type: Array }) players: Player[] = [];
   @property({ type: Boolean }) isAdmin = false;
   @property({ attribute: false }) additionalUpdates: FirebaseUpdates = {};
-  @query('#dialogAddPlayer') private dialog!: MdDialog;
-  @query('#newPlayerName') private newPlayerNameField!: MdFilledTextField;
+  @query('#dialogAddPlayer') private readonly dialog!: MdDialog;
+  @query('#newPlayerName')
+  private readonly newPlayerNameField!: MdFilledTextField;
   @query('#newPlayerPosition')
-  private newPlayerPositionField!: MdFilledSelect;
-  @query('#newPlayerNumber') private newPlayerNumberField!: MdFilledTextField;
+  private readonly newPlayerPositionField!: MdFilledSelect;
+  @query('#newPlayerNumber')
+  private readonly newPlayerNumberField!: MdFilledTextField;
   @query('#newPlayerBirthDate')
-  private newPlayerBirthDateField!: MdFilledTextField;
+  private readonly newPlayerBirthDateField!: MdFilledTextField;
   @query('#newPlayerFullName')
-  private newPlayerFullNameField!: MdFilledTextField;
+  private readonly newPlayerFullNameField!: MdFilledTextField;
   @query('#newPlayerNationality')
-  private newPlayerNationalityField!: MdFilledTextField;
+  private readonly newPlayerNationalityField!: MdFilledTextField;
 
   @state() private pastedImageBlob: Blob | null = null;
   @state() private pastedImagePreviewUrl = '';
@@ -260,7 +262,7 @@ export class PlayerRegistrationDialog extends LitElement {
   /** Opens a fresh registration form once the host has supplied its team. */
   open() {
     this._resetForm();
-    void this.updateComplete.then(() => {
+    this.updateComplete.then(() => {
       this.renderRoot.querySelector<MdDialog>('#dialogAddPlayer')?.show();
     });
   }
@@ -421,7 +423,7 @@ export class PlayerRegistrationDialog extends LitElement {
     this.pastedImagePreviewUrl = URL.createObjectURL(blob);
   }
 
-  private _clearPastedImage = () => {
+  private readonly _clearPastedImage = () => {
     this._revokePreviewUrl();
     this.pastedImageBlob = null;
   };
