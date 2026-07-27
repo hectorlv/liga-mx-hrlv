@@ -216,7 +216,7 @@ export class LineupsCard extends LitElement {
                       </md-icon-button>
                     </div>
 
-                    ${this.localPlayers.map(player => {
+                    ${this.localPlayers.filter(player => !player.historical).map(player => {
                       const isTitular = lineupLocal?.some(
                         p => p.number === player.number && p.titular,
                       );
@@ -254,7 +254,7 @@ export class LineupsCard extends LitElement {
                       </md-icon-button>
                     </div>
 
-                    ${this.visitorPlayers.map(player => {
+                    ${this.visitorPlayers.filter(player => !player.historical).map(player => {
                       const isTitular = lineupVisitor?.some(
                         p => p.number === player.number && p.titular,
                       );

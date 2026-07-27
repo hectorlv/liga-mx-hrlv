@@ -489,13 +489,9 @@ export class MatchDetailPage extends LitElement {
   private _updatePlayerLists() {
     if (!this.match || !this.teams.length) return;
     this.localPlayers =
-      this.players
-        .get(this.match.local.replaceAll('.', ''))
-        ?.filter(player => !player.historical) || [];
+      this.players.get(this.match.local.replaceAll('.', '')) || [];
     this.visitorPlayers =
-      this.players
-        .get(this.match.visitante.replaceAll('.', ''))
-        ?.filter(player => !player.historical) || [];
+      this.players.get(this.match.visitante.replaceAll('.', '')) || [];
   }
 
   protected override updated(_changedProperties: PropertyValues): void {

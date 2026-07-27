@@ -334,7 +334,9 @@ export class CardsCard extends LitElement {
         `
       : '';
     const availablePlayers =
-      cardSide === 'local' ? this.localPlayers : this.visitorPlayers;
+      cardSide === 'local'
+        ? this.localPlayers.filter(player => !player.historical)
+        : this.visitorPlayers.filter(player => !player.historical);
     const editAddedTimeField = this.showEditAddedTime
       ? html`
           <md-filled-text-field
