@@ -40,6 +40,8 @@ export interface TableEntry {
 export interface Player {
   birthDate: string | Date;
   fullName: string;
+  /** Conserva los datos y estadísticas previos a un traslado. */
+  historical?: boolean;
   imgSrc: string;
   name: string;
   nationality: string;

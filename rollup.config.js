@@ -5,6 +5,7 @@ import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 import _esbuild from 'rollup-plugin-esbuild';
 import { generateSW } from 'rollup-plugin-workbox';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import image from '@rollup/plugin-image';
 import json from '@rollup/plugin-json';
 import { createRequire } from 'node:module';
@@ -14,6 +15,10 @@ const require = createRequire(import.meta.url);
 
 const esbuild = _esbuild.default || _esbuild;
 const appVersionDefines = createAppVersionDefines();
+const socialPreview = new URL(
+  './src/assets/images/social-preview.png',
+  import.meta.url,
+);
 export default {
   input: 'index.html',
   output: {
@@ -26,6 +31,16 @@ export default {
   preserveEntrySignatures: false,
 
   plugins: [
+    {
+      name: 'copy-social-preview',
+      buildStart() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'social-preview.png',
+          source: readFileSync(socialPreview),
+        });
+      },
+    },
     /** Enable using HTML as rollup entrypoint */
     html({
       minify: true,

@@ -728,12 +728,14 @@ export class GoalsCard extends LitElement {
       side === 'local'
         ? this.match?.lineupLocal || []
         : this.match?.lineupVisitor || [];
-    return teamPlayers.filter(player =>
-      lineup.some(
-        p =>
-          p.number === player.number &&
-          ((p.titular && !p.salioDeCambio) || p.entroDeCambio),
-      ),
+    return teamPlayers.filter(
+      player =>
+        !player.historical &&
+        lineup.some(
+          p =>
+            p.number === player.number &&
+            ((p.titular && !p.salioDeCambio) || p.entroDeCambio),
+        ),
     );
   }
 

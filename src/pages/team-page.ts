@@ -1,6 +1,11 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { getDownloadURL, getStorage, ref } from 'firebase/storage';
+import {
+  get,
+  getDatabase,
+  ref as databaseRef,
+} from 'firebase/database';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
@@ -22,11 +27,13 @@ import {
   readImageFromClipboard,
   uploadPlayerImage,
 } from '../utils/playerImageUpload.js';
+import { LOGOS } from '../utils/constants.js';
 import { hasMatchEnded } from '../utils/matchStatus.js';
 
 // Imports de Material para el formulario de edición
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
+import '@material/web/button/text-button.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
@@ -47,6 +54,7 @@ interface PlayerStats {
   nationality: string;
   age: string;
   ownGoals: number;
+  historical?: boolean;
   image?: string;
   rawBirthDate?: string | Date; // Guardamos el dato crudo para el formulario
 }
@@ -293,6 +301,12 @@ export class TeamPage extends LitElement {
         color: var(--md-sys-color-error);
       }
 
+      .form-error {
+        margin: 0;
+        color: var(--md-sys-color-error);
+        font-size: 0.85rem;
+      }
+
       .desktop-headers {
         display: none;
       }
@@ -456,7 +470,10 @@ export class TeamPage extends LitElement {
   @state() private imageSrcCache: Record<string, string> = {};
 
   @query('#dialogEditPlayer') dialogEditPlayer!: MdDialog;
+  @query('#dialogDeletePlayer') dialogDeletePlayer!: MdDialog;
   @query('#editName') editNameField!: MdFilledTextField;
+  @query('#editTeam') editTeamField!: MdFilledSelect;
+  @query('#editNumber') editNumberField!: MdFilledTextField;
   @query('#editFullName') editFullNameField!: MdFilledTextField;
   @query('#editPosition') editPositionField!: MdFilledSelect;
   @query('#editNationality') editNationalityField!: MdFilledTextField;
@@ -468,6 +485,9 @@ export class TeamPage extends LitElement {
   @state() private editIsUploadingImage = false;
   @state() private editIsReadingClipboardImage = false;
   @state() private editImageError = '';
+  @state() private editFormError = '';
+  @state() private editDestinationTeam = '';
+  @state() private playerPendingDeletion: PlayerStats | null = null;
 
   override render() {
     const clearEditImageButton = this.editPastedImagePreviewUrl
@@ -550,10 +570,12 @@ export class TeamPage extends LitElement {
 
                   <div class="cell cell-num">${player.number}</div>
                   <div class="cell cell-name">${player.fullName}</div>
-                  <div class="cell cell-pos">${player.position}</div>
+                  <div class="cell cell-pos">
+                    ${player.position}${player.historical ? ' · Histórico' : ''}
+                  </div>
 
                   ${
-                    this.isAdmin
+                    this.isAdmin && !player.historical
                       ? html`
                           <md-icon-button
                             class="mobile-edit-btn"
@@ -609,7 +631,7 @@ export class TeamPage extends LitElement {
                   </div>
 
                   ${
-                    this.isAdmin
+                    this.isAdmin && !player.historical
                       ? html`
                           <div class="cell cell-action" style="display: none;">
                             <md-icon-button
@@ -635,12 +657,41 @@ export class TeamPage extends LitElement {
                 <div slot="headline">Editar Jugador</div>
                 <div slot="content" class="dialog-form">
                   <md-filled-text-field
+                    id="editNumber"
                     label="Número de jersey"
                     type="number"
                     value="${this.editingPlayer?.number || ''}"
-                    disabled
-                    title="El número no se puede cambiar para no romper las estadísticas"
+                    ?disabled=${this.editDestinationTeam === this.team.equipo}
+                    title="Solo se puede cambiar el dorsal al mover al jugador a otro equipo"
                   ></md-filled-text-field>
+                  <md-filled-select
+                    id="editTeam"
+                    label="Mover a otro equipo"
+                    class="full-width"
+                    @change=${this._handleEditTeamChange}
+                  >
+                    <md-select-option
+                      value="${this.team.equipo}"
+                      ?selected=${this.editDestinationTeam === this.team.equipo}
+                    >
+                      <div slot="headline">Mantener en ${this.team.equipo}</div>
+                    </md-select-option>
+                    ${LOGOS.filter(team => team.equipo !== this.team.equipo)
+                      .map(
+                        team => html`
+                          <md-select-option value=${team.equipo}>
+                            <div slot="headline">${team.equipo}</div>
+                          </md-select-option>
+                        `,
+                      )}
+                  </md-filled-select>
+                  ${
+                    this.editFormError
+                      ? html`<p class="form-error full-width">
+                          ${this.editFormError}
+                        </p>`
+                      : null
+                  }
                   <md-filled-text-field
                     id="editName"
                     label="Nombre corto"
@@ -724,6 +775,12 @@ export class TeamPage extends LitElement {
                   </div>
                 </div>
                 <div slot="actions">
+                  <md-text-button
+                    @click=${this._openDeletePlayerDialog}
+                    ?disabled=${this.editIsUploadingImage}
+                    style="color: var(--md-sys-color-error)"
+                    >Eliminar jugador</md-text-button
+                  >
                   <md-outlined-button
                     @click=${this._closeEditPlayer}
                     ?disabled=${this.editIsUploadingImage}
@@ -733,6 +790,24 @@ export class TeamPage extends LitElement {
                     @click=${this._saveEditedPlayer}
                     ?disabled=${this.editIsUploadingImage}
                     >Guardar</md-filled-button
+                  >
+                </div>
+              </md-dialog>
+              <md-dialog id="dialogDeletePlayer" type="modal">
+                <div slot="headline">Eliminar jugador</div>
+                <div slot="content">
+                  ¿Quieres eliminar definitivamente a
+                  <strong>${this.playerPendingDeletion?.fullName}</strong> de
+                  la plantilla de ${this.team.equipo}?
+                </div>
+                <div slot="actions">
+                  <md-outlined-button @click=${this._closeDeletePlayerDialog}
+                    >Cancelar</md-outlined-button
+                  >
+                  <md-filled-button
+                    @click=${this._confirmDeletePlayer}
+                    style="--md-filled-button-container-color: var(--md-sys-color-error)"
+                    >Eliminar</md-filled-button
                   >
                 </div>
               </md-dialog>
@@ -818,6 +893,8 @@ export class TeamPage extends LitElement {
     if (!this.isAdmin) return;
     this._clearEditPastedImage();
     this.editImageError = '';
+    this.editFormError = '';
+    this.editDestinationTeam = this.team.equipo;
     this.editIsUploadingImage = false;
     this.editIsReadingClipboardImage = false;
     this.editingPlayer = player;
@@ -827,10 +904,17 @@ export class TeamPage extends LitElement {
   private _closeEditPlayer() {
     this._clearEditPastedImage();
     this.editImageError = '';
+    this.editFormError = '';
+    this.editDestinationTeam = '';
     this.editIsUploadingImage = false;
     this.editIsReadingClipboardImage = false;
     this.dialogEditPlayer.close();
     this.editingPlayer = null;
+  }
+
+  private _handleEditTeamChange() {
+    this.editDestinationTeam = this.editTeamField.value;
+    this.editFormError = '';
   }
 
   private _formatDateForInput(date: string | Date | undefined): string {
@@ -854,6 +938,8 @@ export class TeamPage extends LitElement {
     const fullName = this.editFullNameField.value.trim();
     const nationality = this.editNationalityField.value.trim();
     const birthDateInput = this.editBirthDateField.value;
+    const destinationTeam = this.editDestinationTeam || this.team.equipo;
+    const destinationNumber = Number(this.editNumberField.value);
 
     // Formateamos la fecha de YYYY-MM-DD a DD/MM/YYYY para mantener tu estándar
     let formattedBirthDate = birthDateInput;
@@ -863,7 +949,40 @@ export class TeamPage extends LitElement {
     }
 
     if (!name || !position) {
-      alert('El nombre corto y la posición son obligatorios.');
+      this.editFormError = 'El nombre corto y la posición son obligatorios.';
+      return;
+    }
+
+    if (!Number.isInteger(destinationNumber) || destinationNumber < 1) {
+      this.editFormError = 'Indica un número de jersey entero mayor que cero.';
+      return;
+    }
+
+    const destinationKey = destinationTeam.replaceAll('.', '');
+    let sourcePlayers = this.players;
+    let destinationPlayers = this.players;
+    if (destinationTeam !== this.team.equipo) {
+      try {
+        [sourcePlayers, destinationPlayers] = await Promise.all([
+          this._getCurrentTeamPlayers(this.team.equipo.replaceAll('.', '')),
+          this._getCurrentTeamPlayers(destinationKey),
+        ]);
+      } catch (error) {
+        console.error('Error reading current rosters before transfer:', error);
+        this.editFormError =
+          'No fue posible confirmar las plantillas actuales. Inténtalo de nuevo.';
+        return;
+      }
+    }
+    const hasDuplicateNumber = destinationPlayers.some(
+      player =>
+        player.number === destinationNumber &&
+        (destinationTeam !== this.team.equipo ||
+          player.number !== this.editingPlayer?.number),
+    );
+    if (hasDuplicateNumber) {
+      this.editFormError =
+        'Ese número ya está registrado en el equipo de destino.';
       return;
     }
 
@@ -875,8 +994,8 @@ export class TeamPage extends LitElement {
       try {
         imgSrc = await uploadPlayerImage(
           this.editPastedImageBlob,
-          this.team.equipo.replaceAll('.', ''),
-          this.editingPlayer.number,
+          destinationKey,
+          destinationNumber,
         );
       } catch (error) {
         console.error('Error uploading player image:', error);
@@ -888,17 +1007,18 @@ export class TeamPage extends LitElement {
     }
 
     // Buscamos al jugador original en el array global
-    const updatedPlayers = this.players.map(p => {
+    const updatedPlayer: Player = {
+      number: destinationNumber,
+      name,
+      position,
+      fullName,
+      nationality,
+      imgSrc,
+      birthDate: formattedBirthDate,
+    };
+    const updatedPlayers = sourcePlayers.map(p => {
       if (p.number === this.editingPlayer?.number) {
-        return {
-          ...p,
-          name,
-          position,
-          fullName,
-          nationality,
-          imgSrc,
-          birthDate: formattedBirthDate,
-        };
+        return updatedPlayer;
       }
       return p;
     });
@@ -906,11 +1026,112 @@ export class TeamPage extends LitElement {
     // Disparamos el evento de actualización a Firebase
     const updates: FirebaseUpdates = {};
     const teamKey = this.team.equipo.replaceAll('.', '');
-    updates[`/players/${teamKey}`] = updatedPlayers;
+    if (destinationTeam === this.team.equipo) {
+      updates[`/players/${teamKey}`] = updatedPlayers;
+    } else {
+      const sourcePlayer = sourcePlayers.find(
+        player => player.number === this.editingPlayer?.number,
+      );
+      if (!sourcePlayer) {
+        this.editFormError =
+          'El jugador ya no está en la plantilla origen. Recarga e inténtalo de nuevo.';
+        return;
+      }
+
+      updates[`/players/${teamKey}`] = this._hasPlayerParticipation(
+        sourcePlayer.number,
+      )
+        ? sourcePlayers.map(player =>
+            player.number === sourcePlayer.number
+              ? { ...player, historical: true }
+              : player,
+          )
+        : sourcePlayers.filter(player => player.number !== sourcePlayer.number);
+      updates[`/players/${destinationKey}`] = [
+        ...destinationPlayers,
+        updatedPlayer,
+      ];
+    }
 
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
     this.editIsUploadingImage = false;
     this._closeEditPlayer();
+  }
+
+  private _openDeletePlayerDialog() {
+    if (!this.isAdmin || !this.editingPlayer) return;
+
+    if (this._hasPlayerParticipation(this.editingPlayer.number)) {
+      this.editFormError =
+        'No se puede eliminar porque el jugador aparece en alineaciones o eventos de partidos.';
+      return;
+    }
+
+    this.playerPendingDeletion = this.editingPlayer;
+    this.dialogDeletePlayer.show();
+  }
+
+  private async _getCurrentTeamPlayers(teamKey: string): Promise<Player[]> {
+    const snapshot = await get(databaseRef(getDatabase(), `/players/${teamKey}`));
+    const value: unknown = snapshot.val();
+    if (!value) return [];
+    return Array.isArray(value)
+      ? (value as Player[])
+      : (Object.values(value) as Player[]);
+  }
+
+  private _closeDeletePlayerDialog() {
+    this.dialogDeletePlayer.close();
+    this.playerPendingDeletion = null;
+  }
+
+  private _confirmDeletePlayer() {
+    if (!this.isAdmin || !this.playerPendingDeletion) return;
+
+    const teamKey = this.team.equipo.replaceAll('.', '');
+    const updates: FirebaseUpdates = {
+      [`/players/${teamKey}`]: this.players.filter(
+        player => player.number !== this.playerPendingDeletion?.number,
+      ),
+    };
+    this.dispatchEvent(dispatchEventMatchUpdated(updates));
+    this._closeDeletePlayerDialog();
+    this._closeEditPlayer();
+  }
+
+  private _hasPlayerParticipation(playerNumber: number): boolean {
+    return this.matchesList.some(match => {
+      const isLocal = match.local === this.team.equipo;
+      const teamTag: TeamSide = isLocal ? 'local' : 'visitor';
+      const lineup = isLocal ? match.lineupLocal : match.lineupVisitor;
+      if (lineup?.some(player => player.number === playerNumber)) return true;
+
+      if (
+        (getSubstitutionEvents(match.events) || []).some(
+          event =>
+            event.team === teamTag &&
+            (event.playerIn === playerNumber || event.playerOut === playerNumber),
+        )
+      ) {
+        return true;
+      }
+
+      if (
+        (getCardEvents(match.events) || []).some(
+          event => event.team === teamTag && event.player === playerNumber,
+        )
+      ) {
+        return true;
+      }
+
+      return (getGoalEvents(match.events) || []).some(event => {
+        const playerTeam = this.getGoalPlayerTeam(event);
+        return (
+          playerTeam === teamTag &&
+          (event.player === playerNumber || event.assist === playerNumber)
+        );
+      });
+    });
   }
 
   // --- LÓGICA DE ESTADÍSTICAS (SE QUEDA IGUAL) ---
@@ -944,6 +1165,7 @@ export class TeamPage extends LitElement {
         nationality: player.nationality,
         age: this.getAgeFromBirthDate(player.birthDate),
         ownGoals: 0,
+        historical: player.historical,
         image: player.imgSrc || '',
         rawBirthDate: player.birthDate,
       });
