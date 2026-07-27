@@ -54,6 +54,7 @@ interface PlayerStats {
   nationality: string;
   age: string;
   ownGoals: number;
+  historical?: boolean;
   image?: string;
   rawBirthDate?: string | Date; // Guardamos el dato crudo para el formulario
 }
@@ -569,10 +570,12 @@ export class TeamPage extends LitElement {
 
                   <div class="cell cell-num">${player.number}</div>
                   <div class="cell cell-name">${player.fullName}</div>
-                  <div class="cell cell-pos">${player.position}</div>
+                  <div class="cell cell-pos">
+                    ${player.position}${player.historical ? ' · Histórico' : ''}
+                  </div>
 
                   ${
-                    this.isAdmin
+                    this.isAdmin && !player.historical
                       ? html`
                           <md-icon-button
                             class="mobile-edit-btn"
@@ -628,7 +631,7 @@ export class TeamPage extends LitElement {
                   </div>
 
                   ${
-                    this.isAdmin
+                    this.isAdmin && !player.historical
                       ? html`
                           <div class="cell cell-action" style="display: none;">
                             <md-icon-button
@@ -974,7 +977,8 @@ export class TeamPage extends LitElement {
     const hasDuplicateNumber = destinationPlayers.some(
       player =>
         player.number === destinationNumber &&
-        player.number !== this.editingPlayer?.number,
+        (destinationTeam !== this.team.equipo ||
+          player.number !== this.editingPlayer?.number),
     );
     if (hasDuplicateNumber) {
       this.editFormError =
@@ -1025,9 +1029,24 @@ export class TeamPage extends LitElement {
     if (destinationTeam === this.team.equipo) {
       updates[`/players/${teamKey}`] = updatedPlayers;
     } else {
-      updates[`/players/${teamKey}`] = sourcePlayers.filter(
-        player => player.number !== this.editingPlayer?.number,
+      const sourcePlayer = sourcePlayers.find(
+        player => player.number === this.editingPlayer?.number,
       );
+      if (!sourcePlayer) {
+        this.editFormError =
+          'El jugador ya no está en la plantilla origen. Recarga e inténtalo de nuevo.';
+        return;
+      }
+
+      updates[`/players/${teamKey}`] = this._hasPlayerParticipation(
+        sourcePlayer.number,
+      )
+        ? sourcePlayers.map(player =>
+            player.number === sourcePlayer.number
+              ? { ...player, historical: true }
+              : player,
+          )
+        : sourcePlayers.filter(player => player.number !== sourcePlayer.number);
       updates[`/players/${destinationKey}`] = [
         ...destinationPlayers,
         updatedPlayer,
@@ -1146,6 +1165,7 @@ export class TeamPage extends LitElement {
         nationality: player.nationality,
         age: this.getAgeFromBirthDate(player.birthDate),
         ownGoals: 0,
+        historical: player.historical,
         image: player.imgSrc || '',
         rawBirthDate: player.birthDate,
       });
