@@ -4,6 +4,12 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 // Firebase imports
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import {
+  Analytics,
+  initializeAnalytics,
+  isSupported as isAnalyticsSupported,
+  logEvent,
+} from 'firebase/analytics';
+import {
   Auth,
   getAuth,
   onAuthStateChanged,
@@ -26,6 +32,7 @@ import type { MatchFilters } from '../pages/matches-page.js';
 import '../pages/bracket-page.js';
 import '../pages/table-page.js';
 import '../pages/stats-page.js';
+import '../pages/social-page.js';
 import '../pages/match-detail-page.js';
 import '../pages/team-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
@@ -66,6 +73,10 @@ const NAVIGATION_TABS: readonly NavigationTab[] = [
   { label: 'Tabla General', icon: 'format_list_numbered', shortLabel: 'Tabla' },
   { label: 'Liguilla', icon: 'account_tree' },
   { label: 'Estadísticas', icon: 'bar_chart' },
+];
+
+const ADMIN_NAVIGATION_TABS: readonly NavigationTab[] = [
+  { label: 'Redes', icon: 'campaign' },
 ];
 
 /**
@@ -341,6 +352,7 @@ export class LigaMxHrlv extends LitElement {
   ];
 
   private readonly app: FirebaseApp;
+  private analytics?: Analytics;
 
   @property({ attribute: false }) auth: Auth;
 
@@ -374,6 +386,7 @@ export class LigaMxHrlv extends LitElement {
     super();
     this.app = initializeApp(FIREBASE_CONFIG);
     this.auth = getAuth(this.app);
+    this._initializeAnalytics();
   }
 
   override render() {
@@ -382,7 +395,7 @@ export class LigaMxHrlv extends LitElement {
       <header>
         <div class="header-content">
           <nav class="main-navigation" aria-label="Navegación principal">
-            ${NAVIGATION_TABS.map(
+            ${this._navigationTabs.map(
               tab => html`
                 <a
                   href=${this._tabHref(tab.label)}
@@ -634,6 +647,13 @@ export class LigaMxHrlv extends LitElement {
             @edit-match=${this._editMatch}
           ></stats-page>
         `;
+      case 'Redes':
+        return html`
+          <social-page
+            .matchesList=${this.matchesList}
+            .table=${this.table}
+          ></social-page>
+        `;
       default:
         return html``;
     }
@@ -658,6 +678,7 @@ export class LigaMxHrlv extends LitElement {
       );
       this._unsubscribeAllowedWriter = onValue(allowedWriterRef, snapshot => {
         this.isAdmin = snapshot.exists();
+        this._syncRouteFromUrl();
       });
     });
   }
@@ -738,14 +759,44 @@ export class LigaMxHrlv extends LitElement {
     this.routedTeamName = params.get('team');
 
     const tab = params.get('tab');
-    this.selectedTab = NAVIGATION_TABS.some(item => item.label === tab)
+    this.selectedTab = this._navigationTabs.some(item => item.label === tab)
       ? tab!
       : 'Inicio';
     this._syncDocumentTitle();
+    this._trackPageView();
+  }
+
+  private _initializeAnalytics() {
+    void isAnalyticsSupported()
+      .then(supported => {
+        if (!supported) return;
+
+        this.analytics = initializeAnalytics(this.app, {
+          config: { send_page_view: false },
+        });
+        this._trackPageView();
+      })
+      .catch(() => undefined);
+  }
+
+  private _trackPageView() {
+    if (!this.analytics) return;
+
+    logEvent(this.analytics, 'page_view', {
+      page_location: window.location.href,
+      page_path: `${window.location.pathname}${window.location.search}`,
+      page_title: document.title,
+    });
   }
 
   private _tabHref(tab: string): string {
     return `?tab=${encodeURIComponent(tab)}`;
+  }
+
+  private get _navigationTabs(): readonly NavigationTab[] {
+    return this.isAdmin
+      ? [...NAVIGATION_TABS, ...ADMIN_NAVIGATION_TABS]
+      : NAVIGATION_TABS;
   }
 
   private _closeRoutedMatch() {
@@ -812,6 +863,7 @@ export class LigaMxHrlv extends LitElement {
       case 'Calendario':
       case 'Liguilla':
       case 'Estadísticas':
+      case 'Redes':
         return this.selectedTab;
       default:
         return 'Inicio';
