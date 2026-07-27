@@ -648,12 +648,14 @@ export class LigaMxHrlv extends LitElement {
           ></stats-page>
         `;
       case 'Redes':
-        return html`
-          <social-page
-            .matchesList=${this.matchesList}
-            .table=${this.table}
-          ></social-page>
-        `;
+        return this.isAdmin
+          ? html`
+              <social-page
+                .matchesList=${this.matchesList}
+                .table=${this.table}
+              ></social-page>
+            `
+          : html``;
       default:
         return html``;
     }
@@ -669,6 +671,7 @@ export class LigaMxHrlv extends LitElement {
       this._unsubscribeAllowedWriter?.();
       this._unsubscribeAllowedWriter = undefined;
       this.isAdmin = false;
+      this._syncRouteFromUrl();
 
       if (!user) return;
 
@@ -749,6 +752,7 @@ export class LigaMxHrlv extends LitElement {
     await signOut(this.auth);
     this.isAdmin = false;
     this.user = null;
+    this._syncRouteFromUrl();
   }
 
   private _syncRouteFromUrl() {

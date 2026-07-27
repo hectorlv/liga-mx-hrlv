@@ -6,7 +6,7 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import * as teamImages from '../assets/images/index.js';
 import { Match, TableEntry } from '../types/index.js';
 import { LOGOS } from '../utils/constants.js';
-import { hasMatchStarted } from '../utils/matchStatus.js';
+import { hasMatchEnded, hasMatchStarted } from '../utils/matchStatus.js';
 
 type SocialTemplate = 'preview' | 'results' | 'table';
 type SocialPlatform = 'instagram' | 'x';
@@ -527,15 +527,25 @@ export class SocialPostGenerator extends LitElement {
 
     context.textAlign = 'center';
     const hasScore = Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
-    const resultLabel = this.template === 'results' && hasScore
+    const isFinal = this._isFinalMatch(match);
+    const isLive = hasMatchStarted(match) && !isFinal;
+    const showScore = this.template === 'results' && hasScore && (isFinal || isLive);
+    const resultLabel = showScore
       ? `${match.golLocal}  —  ${match.golVisitante}`
       : 'VS';
-    context.fillStyle = this.template === 'results' && hasScore ? '#71f4c6' : '#ffffff';
+    context.fillStyle = showScore ? '#71f4c6' : '#ffffff';
     context.font = `800 ${Math.max(25, Math.min(42, height * 0.34))}px system-ui, sans-serif`;
     context.fillText(resultLabel, x + width / 2, centerY + 5);
     context.fillStyle = '#a9c3d4';
     context.font = `700 ${Math.max(13, Math.min(18, height * 0.15))}px system-ui, sans-serif`;
-    context.fillText(this.template === 'results' ? 'MARCADOR FINAL' : match.hora, x + width / 2, centerY + height * 0.27);
+    const status = this.template === 'results'
+      ? isFinal
+        ? 'MARCADOR FINAL'
+        : isLive
+          ? 'EN VIVO'
+          : `PENDIENTE · ${match.hora}`
+      : match.hora;
+    context.fillText(status, x + width / 2, centerY + height * 0.27);
     context.textAlign = 'left';
   }
 
@@ -626,7 +636,19 @@ export class SocialPostGenerator extends LitElement {
 
     const day = this.dateKey ? this._formatDateLabel(this.dateKey) : 'la jornada';
     if (this.template === 'results') {
-      return `⚽ Resultados del ${day} de la Jornada ${this.jornada}.\n\nRevisa los marcadores y todos los partidos de la jornada en Liga MX HRLV.${directLink}\n\n#LigaMX #Resultados`;
+      const matches = this._selectedMatches();
+      const hasLiveMatch = matches.some(
+        match => hasMatchStarted(match) && !this._isFinalMatch(match),
+      );
+      const hasPendingMatch = matches.some(
+        match => !this._isFinalMatch(match) && !hasMatchStarted(match),
+      );
+      const headline = hasLiveMatch
+        ? `⚽ Partidos en vivo y resultados del ${day} de la Jornada ${this.jornada}.`
+        : hasPendingMatch
+          ? `⚽ Resultados y partidos pendientes del ${day} de la Jornada ${this.jornada}.`
+          : `⚽ Resultados del ${day} de la Jornada ${this.jornada}.`;
+      return `${headline}\n\nRevisa los marcadores y todos los partidos de la jornada en Liga MX HRLV.${directLink}\n\n#LigaMX #Resultados`;
     }
     return `⚽ Previa del ${day} de la Jornada ${this.jornada}.\n\nConsulta horarios, partidos y la tabla general en Liga MX HRLV.${directLink}\n\n#LigaMX #Calendario`;
   }
@@ -663,6 +685,13 @@ export class SocialPostGenerator extends LitElement {
     return playedJornadas.length > 0
       ? Math.max(...playedJornadas)
       : undefined;
+  }
+
+  private _isFinalMatch(match: Match): boolean {
+    return hasMatchEnded(match) ||
+      (!hasMatchStarted(match) &&
+        match.golLocal != null &&
+        match.golVisitante != null);
   }
 
   private async _copyText() {
