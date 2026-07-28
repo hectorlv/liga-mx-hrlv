@@ -11,6 +11,7 @@ import { hasMatchEnded, hasMatchStarted } from '../utils/matchStatus.js';
 type SocialTemplate = 'preview' | 'results' | 'table';
 type SocialPlatform = 'instagram' | 'x';
 type GeneratorContext = 'matches' | 'table';
+type MatchScope = 'jornada' | 'day';
 
 interface CanvasSize {
   width: number;
@@ -224,6 +225,7 @@ export class SocialPostGenerator extends LitElement {
 
   @state() private template: SocialTemplate = 'preview';
   @state() private platform: SocialPlatform = 'instagram';
+  @state() private matchScope: MatchScope = 'jornada';
   @state() private jornada?: number;
   @state() private dateKey?: string;
   @state() private copyStatus = '';
@@ -257,7 +259,7 @@ export class SocialPostGenerator extends LitElement {
             <p class="description">
               ${isTable
                 ? 'Descarga una tabla editorial lista para compartir.'
-                : 'Usa los partidos registrados para crear una previa o los resultados de un día.'}
+                : 'Reúne los nueve partidos en una sola imagen o crea una publicación por día.'}
             </p>
 
             ${
@@ -275,12 +277,21 @@ export class SocialPostGenerator extends LitElement {
                         jornada => html`<option value=${jornada} ?selected=${jornada === this.jornada}>Jornada ${jornada}</option>`,
                       )}
                     </select>
-                    <label for="date">Día</label>
-                    <select id="date" @change=${this._onDateChange}>
-                      ${dates.map(
-                        date => html`<option value=${date} ?selected=${date === this.dateKey}>${this._formatDateLabel(date)}</option>`,
-                      )}
+                    <label for="scope">Partidos incluidos</label>
+                    <select id="scope" @change=${this._onScopeChange}>
+                      <option value="jornada" ?selected=${this.matchScope === 'jornada'}>Jornada completa · ${this._matchesForSelectedJornada().length} partidos</option>
+                      <option value="day" ?selected=${this.matchScope === 'day'}>Solo un día</option>
                     </select>
+                    ${this.matchScope === 'day'
+                      ? html`
+                          <label for="date">Día</label>
+                          <select id="date" @change=${this._onDateChange}>
+                            ${dates.map(
+                              date => html`<option value=${date} ?selected=${date === this.dateKey}>${this._formatDateLabel(date)}</option>`,
+                            )}
+                          </select>
+                        `
+                      : ''}
                   `
             }
 
@@ -332,6 +343,10 @@ export class SocialPostGenerator extends LitElement {
     this.dateKey = (event.target as HTMLSelectElement).value;
   }
 
+  private _onScopeChange(event: Event) {
+    this.matchScope = (event.target as HTMLSelectElement).value as MatchScope;
+  }
+
   private _onPlatformChange(event: Event) {
     this.platform = (event.target as HTMLSelectElement).value as SocialPlatform;
   }
@@ -368,13 +383,19 @@ export class SocialPostGenerator extends LitElement {
   }
 
   private _selectedMatches(): Match[] {
+    const matches = this._matchesForSelectedJornada();
+    return this.matchScope === 'jornada'
+      ? matches
+      : matches.filter(match => this._dateKey(match.fecha) === this.dateKey);
+  }
+
+  private _matchesForSelectedJornada(): Match[] {
     return this.matchesList
-      .filter(
-        match =>
-          match.jornada === this.jornada &&
-          this._dateKey(match.fecha) === this.dateKey,
-      )
-      .sort((first, second) => first.hora.localeCompare(second.hora));
+      .filter(match => match.jornada === this.jornada)
+      .sort((first, second) => {
+        const dateDifference = this._dateKey(first.fecha).localeCompare(this._dateKey(second.fecha));
+        return dateDifference || first.hora.localeCompare(second.hora);
+      });
   }
 
   private _dateKey(value: string | Date): string {
@@ -417,7 +438,9 @@ export class SocialPostGenerator extends LitElement {
       context,
       size,
       this.template === 'results' ? 'RESULTADOS' : 'PREVIA DE JORNADA',
-      `JORNADA ${this.jornada ?? ''} · ${this.dateKey ? this._formatDateLabel(this.dateKey) : ''}`,
+      this.matchScope === 'jornada'
+        ? `JORNADA ${this.jornada ?? ''} · ${matches.length} PARTIDOS`
+        : `JORNADA ${this.jornada ?? ''} · ${this.dateKey ? this._formatDateLabel(this.dateKey) : ''}`,
     );
 
     const startY = size.height * 0.19;
@@ -538,13 +561,16 @@ export class SocialPostGenerator extends LitElement {
     context.fillText(resultLabel, x + width / 2, centerY + 5);
     context.fillStyle = '#a9c3d4';
     context.font = `700 ${Math.max(13, Math.min(18, height * 0.15))}px system-ui, sans-serif`;
+    const schedule = this.matchScope === 'jornada'
+      ? `${this._shortDate(match.fecha)} · ${match.hora}`
+      : match.hora;
     const status = this.template === 'results'
       ? isFinal
         ? 'MARCADOR FINAL'
         : isLive
           ? 'EN VIVO'
-          : `PENDIENTE · ${match.hora}`
-      : match.hora;
+          : `PENDIENTE · ${schedule}`
+      : schedule;
     context.fillText(status, x + width / 2, centerY + height * 0.27);
     context.textAlign = 'left';
   }
@@ -634,7 +660,11 @@ export class SocialPostGenerator extends LitElement {
       return `📊 Así queda la tabla general${jornada ? ` después de la Jornada ${jornada}` : ''}.\n\nConsulta posiciones, resultados y próximos partidos en Liga MX HRLV.${directLink}\n\n#LigaMX #TablaGeneral`;
     }
 
-    const day = this.dateKey ? this._formatDateLabel(this.dateKey) : 'la jornada';
+    const day = this.matchScope === 'jornada'
+      ? `la Jornada ${this.jornada}`
+      : this.dateKey
+        ? this._formatDateLabel(this.dateKey)
+        : 'la jornada';
     if (this.template === 'results') {
       const matches = this._selectedMatches();
       const hasLiveMatch = matches.some(
@@ -644,13 +674,13 @@ export class SocialPostGenerator extends LitElement {
         match => !this._isFinalMatch(match) && !hasMatchStarted(match),
       );
       const headline = hasLiveMatch
-        ? `⚽ Partidos en vivo y resultados del ${day} de la Jornada ${this.jornada}.`
+        ? `⚽ Partidos en vivo y resultados de ${day}${this.matchScope === 'day' ? ` de la Jornada ${this.jornada}` : ''}.`
         : hasPendingMatch
-          ? `⚽ Resultados y partidos pendientes del ${day} de la Jornada ${this.jornada}.`
-          : `⚽ Resultados del ${day} de la Jornada ${this.jornada}.`;
+          ? `⚽ Resultados y partidos pendientes de ${day}${this.matchScope === 'day' ? ` de la Jornada ${this.jornada}` : ''}.`
+          : `⚽ Resultados de ${day}${this.matchScope === 'day' ? ` de la Jornada ${this.jornada}` : ''}.`;
       return `${headline}\n\nRevisa los marcadores y todos los partidos de la jornada en Liga MX HRLV.${directLink}\n\n#LigaMX #Resultados`;
     }
-    return `⚽ Previa del ${day} de la Jornada ${this.jornada}.\n\nConsulta horarios, partidos y la tabla general en Liga MX HRLV.${directLink}\n\n#LigaMX #Calendario`;
+    return `⚽ Previa de ${day}${this.matchScope === 'day' ? ` de la Jornada ${this.jornada}` : ''}.\n\nConsulta horarios, partidos y la tabla general en Liga MX HRLV.${directLink}\n\n#LigaMX #Calendario`;
   }
 
   private _trackingUrl(): string {
@@ -661,7 +691,7 @@ export class SocialPostGenerator extends LitElement {
     const campaign = jornada ? `jornada_${jornada}` : 'liga_mx';
     const content = this.context === 'table'
       ? `tabla_general_jornada_${jornada ?? 'actual'}`
-      : `${this.template}_${this.dateKey ?? 'jornada'}`;
+      : `${this.template}_${this.matchScope === 'jornada' ? 'jornada_completa' : this.dateKey ?? 'jornada'}`;
     const url = new URL('https://ligamx-b16f7.web.app/');
     url.searchParams.set('tab', this.context === 'table' ? 'Tabla General' : 'Calendario');
     if (this.context !== 'table' && this.jornada) {
@@ -728,7 +758,7 @@ export class SocialPostGenerator extends LitElement {
     if (!canvas) return;
     const label = this.context === 'table'
       ? 'tabla-general'
-      : `${this.template === 'results' ? 'resultados' : 'previa'}-jornada-${this.jornada}-${this.dateKey}`;
+      : `${this.template === 'results' ? 'resultados' : 'previa'}-jornada-${this.jornada}-${this.matchScope === 'jornada' ? 'completa' : this.dateKey}`;
     canvas.toBlob(blob => {
       if (!blob) return;
       const anchor = document.createElement('a');
@@ -738,5 +768,13 @@ export class SocialPostGenerator extends LitElement {
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 0);
     }, 'image/png');
+  }
+
+  private _shortDate(value: string | Date): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    }).format(value instanceof Date ? value : new Date(value)).replace('.', '').toLocaleUpperCase('es-MX');
   }
 }
