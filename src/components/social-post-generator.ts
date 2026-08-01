@@ -18,6 +18,7 @@ import {
   buildSocialCopy,
   buildTrackingUrl,
   dateKey,
+  defaultSocialJornada,
   dailyMatchesVariant,
   formatSocialDate,
   formatKickoff,
@@ -36,7 +37,7 @@ const DAY_TEMPLATES = new Set<TemplateId>(['day-preview', 'day-results']);
 
 @customElement('social-post-generator')
 export class SocialPostGenerator extends LitElement {
-  static override styles = css`
+  static override readonly styles = css`
     :host {
       display: block;
       margin: 0 auto 28px;
@@ -240,7 +241,7 @@ export class SocialPostGenerator extends LitElement {
   @state() private presentation: SocialPresentationOptions = {
     ...DEFAULT_SOCIAL_PRESENTATION,
   };
-  @query('canvas') private canvas?: HTMLCanvasElement;
+  @query('canvas') private readonly canvas?: HTMLCanvasElement;
   private readonly imageCache = new Map<
     string,
     Promise<HTMLImageElement | undefined>
@@ -273,6 +274,17 @@ export class SocialPostGenerator extends LitElement {
     const result = buildRenderResult(input);
     const isDay = DAY_TEMPLATES.has(this.template);
     const dates = this._datesForJornada();
+    const dateString = (value: string) => `${value}T12:00:00`;
+    const showDateSelector = isDay
+      ? html` <label for="date">Día</label>
+          <select id="date" @change=${this._onDateChange}>
+            ${dates.map(value => {
+              const selected = value === this.dateSelection;
+              const formattedDate = formatSocialDate(dateString(value));
+              return html`<option value=${value} ?selected=${selected}>${formattedDate}</option>`;
+            })}
+          </select>`
+      : '';
     return html` <section
       class="generator"
       aria-label="Generador editorial para redes"
@@ -326,14 +338,7 @@ export class SocialPostGenerator extends LitElement {
                   <select id="jornada" @change=${this._onJornadaChange}>
                     ${this._jornadas().map(value => html`<option value=${value} ?selected=${value === this.jornada}>Jornada ${value}</option>`)}
                   </select>
-                  ${
-                    isDay
-                      ? html` <label for="date">Día</label>
-                          <select id="date" @change=${this._onDateChange}>
-                            ${dates.map(value => html`<option value=${value} ?selected=${value === this.dateSelection}>${formatSocialDate(`${value}T12:00:00`)}</option>`)}
-                          </select>`
-                      : ''
-                  }
+                  ${showDateSelector}
                 `
           }
           <label for="platform">Copy para</label>
@@ -506,12 +511,12 @@ export class SocialPostGenerator extends LitElement {
       ),
     ]
       .filter(value => value !== '')
-      .sort();
+      .sort((a, b) => a.localeCompare(b));
   }
   private _syncSelection() {
     const jornadas = this._jornadas();
     if (!this.jornada || !jornadas.includes(this.jornada))
-      this.jornada = jornadas[jornadas.length - 1];
+      this.jornada = defaultSocialJornada(this.matchesList);
     const dates = this._datesForJornada();
     if (!this.dateSelection || !dates.includes(this.dateSelection))
       this.dateSelection = dates[0];
@@ -674,17 +679,14 @@ export class SocialPostGenerator extends LitElement {
     const subtitle = input.dateKey
       ? formatSocialDate(`${input.dateKey}T12:00:00`)
       : `JORNADA ${input.jornada} · ${matches.length} PARTIDOS`;
-    await this._drawHeader(
-      context,
-      isResults
-        ? input.template === 'round-results'
-          ? 'RESULTADOS DE LA JORNADA'
-          : 'RESULTADOS'
-        : input.template === 'round-preview'
-          ? 'PREVIA DE JORNADA'
-          : 'PARTIDOS DEL DÍA',
-      subtitle,
-    );
+    let headerTitle: string;
+    if (isResults) {
+      headerTitle = input.template === 'round-results' ? 'RESULTADOS DE LA JORNADA' : 'RESULTADOS';
+    } else {
+      headerTitle = input.template === 'round-preview' ? 'PREVIA DE JORNADA' : 'PARTIDOS DEL DÍA';
+    }
+
+    await this._drawHeader(context, headerTitle, subtitle);
     if (isDaily) await this._drawDailyMatches(context, matches, isResults);
     else await this._drawGroupedMatches(context, matches, isResults);
     this._drawFooter(
@@ -721,16 +723,16 @@ export class SocialPostGenerator extends LitElement {
       );
       y += 29;
       for (const match of group.matches) {
-        await this._drawMatchCard(
+        await this._drawMatchCard({
           context,
           match,
-          58,
+          x: 58,
           y,
-          964,
+          width: 964,
           height,
           isResults,
-          'compact',
-        );
+          layout: 'compact',
+        });
         y += height + gap;
       }
     }
@@ -760,16 +762,16 @@ export class SocialPostGenerator extends LitElement {
       height * visible.length + gap * Math.max(0, visible.length - 1);
     let y = 220 + Math.max(0, (940 - totalHeight) / 2);
     for (const match of visible) {
-      await this._drawMatchCard(
+      await this._drawMatchCard({
         context,
         match,
-        58,
+        x: 58,
         y,
-        964,
+        width: 964,
         height,
         isResults,
-        'daily',
-      );
+        layout: 'daily',
+      });
       y += height + gap;
     }
     if (matches.length > 4)
@@ -779,21 +781,18 @@ export class SocialPostGenerator extends LitElement {
       );
   }
 
-  private async _drawMatchCard(
-    context: CanvasRenderingContext2D,
-    match: Match,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    isResults: boolean,
-    layout: 'compact' | 'daily',
-  ) {
-    context.fillStyle = 'rgba(30, 41, 59, .94)';
-    this._roundedRect(context, x, y, width, height, 18);
-    context.fill();
-    context.strokeStyle = SOCIAL_COLORS.border;
-    context.stroke();
+  private async _drawMatchCard(options: {
+    context: CanvasRenderingContext2D;
+    match: Match;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    isResults: boolean;
+    layout: 'daily' | 'compact';
+  }) {
+    const { context, match, x, y, width, height, isResults, layout } = options;
+    this._drawMatchCardBackground(context, x, y, width, height);
     const isDaily = layout === 'daily';
     const logoSize = isDaily
       ? Math.min(100, height * 0.42)
@@ -801,6 +800,66 @@ export class SocialPostGenerator extends LitElement {
     const centerY = y + height / 2;
     const leftLogoX = x + 25;
     const rightLogoX = x + width - 25 - logoSize;
+
+    await this._drawMatchCardSides({
+      context,
+      match,
+      x,
+      y,
+      width,
+      height,
+      isDaily,
+      isResults,
+      logoSize,
+      leftLogoX,
+      rightLogoX,
+      centerY,
+    });
+  }
+
+  private _drawMatchCardBackground(
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) {
+    context.fillStyle = 'rgba(30, 41, 59, .94)';
+    this._roundedRect(context, x, y, width, height, 18);
+    context.fill();
+    context.strokeStyle = SOCIAL_COLORS.border;
+    context.stroke();
+  }
+
+  private async _drawMatchCardSides(options: {
+    context: CanvasRenderingContext2D;
+    match: Match;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    isDaily: boolean;
+    isResults: boolean;
+    logoSize: number;
+    leftLogoX: number;
+    rightLogoX: number;
+    centerY: number;
+  }) {
+    const {
+      context,
+      match,
+      x,
+      y,
+      width,
+      height,
+      isDaily,
+      isResults,
+      logoSize,
+      leftLogoX,
+      rightLogoX,
+      centerY,
+    } = options;
+
     await this._drawTeamBadge(
       context,
       match.local,
@@ -815,9 +874,7 @@ export class SocialPostGenerator extends LitElement {
       centerY - logoSize / 2,
       logoSize,
     );
-    const teamSize = isDaily
-      ? Math.max(24, Math.min(34, height * 0.14))
-      : Math.max(20, Math.min(27, height * 0.28));
+
     const status = resolveMatchStatus(match);
     const scoreAvailable =
       Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
@@ -826,6 +883,67 @@ export class SocialPostGenerator extends LitElement {
       status === 'finished' &&
       scoreAvailable &&
       match.golLocal !== match.golVisitante;
+
+    this._drawMatchCardTeamNames({
+      context,
+      match,
+      width,
+      leftLogoX,
+      rightLogoX,
+      logoSize,
+      centerY,
+      height,
+      isDaily,
+      highlightWinner,
+    });
+
+    const penalties = isResults ? this._penaltyLabel(match) : undefined;
+    this._drawMatchCardCenter({
+      context,
+      match,
+      x,
+      y,
+      width,
+      height,
+      isResults,
+      isDaily,
+      centerY,
+      status,
+      scoreAvailable,
+      highlightWinner,
+      penalties,
+    });
+  }
+
+  private _drawMatchCardTeamNames(options: {
+    context: CanvasRenderingContext2D;
+    match: Match;
+    width: number;
+    leftLogoX: number;
+    rightLogoX: number;
+    logoSize: number;
+    centerY: number;
+    height: number;
+    isDaily: boolean;
+    highlightWinner: boolean;
+  }) {
+    const {
+      context,
+      match,
+      width,
+      leftLogoX,
+      rightLogoX,
+      logoSize,
+      centerY,
+      height,
+      isDaily,
+      highlightWinner,
+    } = options;
+
+    const teamSize = isDaily
+      ? Math.max(24, Math.min(34, height * 0.14))
+      : Math.max(20, Math.min(27, height * 0.28));
+
     context.fillStyle =
       highlightWinner && match.golLocal > match.golVisitante
         ? SOCIAL_COLORS.primary
@@ -840,6 +958,7 @@ export class SocialPostGenerator extends LitElement {
       'left',
       highlightWinner && match.golLocal > match.golVisitante ? 800 : 700,
     );
+
     context.fillStyle =
       highlightWinner && match.golVisitante > match.golLocal
         ? SOCIAL_COLORS.primary
@@ -854,25 +973,79 @@ export class SocialPostGenerator extends LitElement {
       'right',
       highlightWinner && match.golVisitante > match.golLocal ? 800 : 700,
     );
-    const showScore =
-      isResults &&
-      scoreAvailable &&
-      (status === 'finished' || status === 'live');
+  }
+
+  private _drawMatchCardCenter(options: {
+    context: CanvasRenderingContext2D;
+    match: Match;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    isResults: boolean;
+    isDaily: boolean;
+    centerY: number;
+    status: ReturnType<typeof resolveMatchStatus>;
+    scoreAvailable: boolean;
+    highlightWinner: boolean;
+    penalties?: string;
+  }) {
+    const {
+      context,
+      match,
+      x,
+      width,
+      height,
+      isResults,
+      isDaily,
+      centerY,
+      status,
+      scoreAvailable,
+      penalties,
+    } = options;
+
     const centerX = x + width / 2;
-    const centerWidth = isDaily ? 164 : 126;
+    let centerWidth: number;
+    let centerHeight: number;
+    if (isDaily) {
+      centerWidth = 164;
+      centerHeight = 104;
+    } else if (isResults) {
+      centerWidth = 164;
+      centerHeight = height - 12;
+    } else {
+      centerWidth = 156;
+      centerHeight = 56;
+    }
+
     context.fillStyle = SOCIAL_COLORS.surfaceStrong;
     this._roundedRect(
       context,
       centerX - centerWidth / 2,
-      centerY - (isDaily ? 52 : 28),
+      centerY - centerHeight / 2,
       centerWidth,
-      isDaily ? 104 : 56,
+      centerHeight,
       12,
     );
     context.fill();
     context.textAlign = 'center';
+
+    const showScore =
+      isResults &&
+      scoreAvailable &&
+      (status === 'finished' || status === 'live');
     context.fillStyle = showScore ? SOCIAL_COLORS.primary : '#fff';
-    context.font = `800 ${isDaily ? Math.min(54, Math.max(34, height * 0.2)) : Math.min(35, Math.max(25, height * 0.32))}px system-ui, sans-serif`;
+    // avoid nested ternary by computing font size separately
+    let fontSize: number;
+    if (isDaily) {
+      fontSize = Math.min(54, Math.max(34, height * 0.2));
+    } else if (isResults) {
+      fontSize = 23;
+    } else {
+      fontSize = 20;
+    }
+    context.font = `800 ${fontSize}px system-ui, sans-serif`;
+
     if (isDaily && !isResults) {
       context.font = '800 18px system-ui, sans-serif';
       context.fillStyle = SOCIAL_COLORS.muted;
@@ -881,34 +1054,51 @@ export class SocialPostGenerator extends LitElement {
       context.font = `800 ${Math.min(30, Math.max(22, height * 0.12))}px system-ui, sans-serif`;
       context.fillText(formatKickoff(match.hora || ''), centerX, centerY + 22);
     } else {
+      // avoid nested ternary by computing text and y-offset separately
+      let mainText: string;
+      if (showScore) {
+        mainText = `${match.golLocal} — ${match.golVisitante}`;
+      } else if (isResults) {
+        mainText = '—';
+      } else {
+        mainText = formatKickoff(match.hora || '');
+      }
+
+      let yOffset: number;
+      if (isDaily) {
+        yOffset = centerY + 5;
+      } else if (isResults) {
+        yOffset = centerY + (penalties ? -12 : -7);
+      } else {
+        yOffset = centerY + 7;
+      }
+
+      context.fillText(mainText, centerX, yOffset);
+    }
+
+    const detail = this._matchDetail(match, status, isResults);
+    if (detail) {
+      context.fillStyle = this._statusColor(status);
+      context.font = `700 ${
+        isDaily ? Math.max(14, Math.min(18, height * 0.16)) : 11
+      }px system-ui, sans-serif`;
       context.fillText(
-        showScore
-          ? `${match.golLocal} — ${match.golVisitante}`
-          : isResults
-            ? '—'
-            : formatKickoff(match.hora || ''),
+        detail,
         centerX,
-        centerY + 5,
+        centerY + (isDaily ? 43 : isResults ? (penalties ? 5 : 16) : 0),
       );
     }
-    const detail = this._matchDetail(match, status, isResults);
-    context.fillStyle = this._statusColor(status);
-    context.font = `700 ${Math.max(14, Math.min(18, height * 0.16))}px system-ui, sans-serif`;
-    context.fillText(
-      detail,
-      x + width / 2,
-      centerY + (isDaily ? 43 : Math.min(28, height * 0.31)),
-    );
-    const penalties = this._penaltyLabel(match);
+
     if (penalties) {
       context.fillStyle = SOCIAL_COLORS.muted;
-      context.font = `700 ${isDaily ? 16 : 13}px system-ui, sans-serif`;
+      context.font = `700 ${isDaily ? 16 : isResults ? 10 : 13}px system-ui, sans-serif`;
       context.fillText(
         penalties,
         centerX,
-        centerY + (isDaily ? 67 : height * 0.47),
+        centerY + (isDaily ? 67 : isResults ? 21 : height * 0.47),
       );
     }
+
     context.textAlign = 'left';
   }
 
