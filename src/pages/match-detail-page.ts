@@ -13,6 +13,7 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
   Match,
+  MatchPublicationStatus,
   MatchEvent,
   PhaseMatchEvent,
   Player,
@@ -689,6 +690,30 @@ export class MatchDetailPage extends LitElement {
                         </md-select-option>`,
                     )}
                   </md-filled-select>
+                  <md-filled-select
+                    label="Estado editorial"
+                    id="statusSelect"
+                    .value=${this.match.status || 'scheduled'}
+                  >
+                    <md-select-option value="scheduled">
+                      <div slot="headline">Según cronología del partido</div>
+                    </md-select-option>
+                    <md-select-option value="postponed">
+                      <div slot="headline">Pospuesto</div>
+                    </md-select-option>
+                    <md-select-option value="cancelled">
+                      <div slot="headline">Cancelado</div>
+                    </md-select-option>
+                  </md-filled-select>
+                  <md-filled-text-field
+                    label="Minuto en vivo"
+                    id="liveMinuteInput"
+                    type="number"
+                    min="0"
+                    max="180"
+                    .value=${this.match.liveMinute == null ? '' : String(this.match.liveMinute)}
+                    supporting-text="Opcional; se muestra en Redes cuando el partido está en vivo"
+                  ></md-filled-text-field>
                   ${penaltyFieldsTemplate}
                 </div>
               `
@@ -883,6 +908,12 @@ export class MatchDetailPage extends LitElement {
     const estadioSelect = this.renderRoot.querySelector(
       '#estadioSelect',
     ) as MdFilledSelect;
+    const statusSelect = this.renderRoot.querySelector(
+      '#statusSelect',
+    ) as MdFilledSelect;
+    const liveMinuteInput = this.renderRoot.querySelector(
+      '#liveMinuteInput',
+    ) as MdFilledTextField;
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/fecha`] = replaceDateSeparator(
       fechaInput.value,
@@ -890,6 +921,12 @@ export class MatchDetailPage extends LitElement {
     updates[`/matches/${this.match.idMatch}/hora`] = horaInput.value;
     updates[`/matches/${this.match.idMatch}/estadio`] =
       this._getStadiumSelectValue(estadioSelect);
+    updates[`/matches/${this.match.idMatch}/status`] =
+      statusSelect.value === 'scheduled'
+        ? null
+        : (statusSelect.value as MatchPublicationStatus);
+    updates[`/matches/${this.match.idMatch}/liveMinute`] =
+      this._getLiveMinuteValue(liveMinuteInput);
     if (this._isFinalSecondLeg()) {
       const penaltyLocalInput = this.renderRoot.querySelector(
         '#penaltyLocalInput',
@@ -912,6 +949,13 @@ export class MatchDetailPage extends LitElement {
     if (!input || input.value === '') return null;
     const value = Number(input.value);
     if (!Number.isFinite(value) || value < 0) return null;
+    return Math.floor(value);
+  }
+
+  private _getLiveMinuteValue(input: MdFilledTextField): number | null {
+    if (!input || input.value === '') return null;
+    const value = Number(input.value);
+    if (!Number.isFinite(value) || value < 0 || value > 180) return null;
     return Math.floor(value);
   }
 
