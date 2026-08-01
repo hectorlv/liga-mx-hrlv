@@ -236,6 +236,7 @@ export class SocialPostGenerator extends LitElement {
   @state() private jornada?: number;
   @state() private dateSelection?: string;
   @state() private copyStatus = '';
+  @state() private isDrawing = true;
   @state() private presentation: SocialPresentationOptions = {
     ...DEFAULT_SOCIAL_PRESENTATION,
   };
@@ -245,15 +246,26 @@ export class SocialPostGenerator extends LitElement {
     Promise<HTMLImageElement | undefined>
   >();
   private drawVersion = 0;
+  private committedDrawVersion = -1;
+  private activeDraw?: Promise<void>;
 
   override firstUpdated() {
     this._syncSelection();
-    void this._draw();
+    this._requestDraw();
   }
 
   override updated(changed: PropertyValues) {
     if (changed.has('matchesList')) this._syncSelection();
-    void this._draw();
+    if (
+      changed.has('matchesList') ||
+      changed.has('table') ||
+      changed.has('template') ||
+      changed.has('jornada') ||
+      changed.has('dateSelection') ||
+      changed.has('presentation')
+    ) {
+      this._requestDraw();
+    }
   }
 
   override render() {
@@ -409,7 +421,11 @@ export class SocialPostGenerator extends LitElement {
             <p class="theme-label">Tema: ${SOCIAL_CONFIG.theme}</p>
           </div>
           <md-filled-button
-            ?disabled=${result.errors.length > 0}
+            ?disabled=${
+              result.errors.length > 0 ||
+              this.isDrawing ||
+              this.committedDrawVersion !== this.drawVersion
+            }
             @click=${this._download}
           >
             <md-icon slot="icon">download</md-icon> Descargar PNG
@@ -535,10 +551,16 @@ export class SocialPostGenerator extends LitElement {
     };
   }
 
+  private _requestDraw() {
+    const draw = this._draw();
+    this.activeDraw = draw;
+  }
+
   private async _draw() {
     const target = this.canvas;
     if (!target) return;
     const version = ++this.drawVersion;
+    this.isDrawing = true;
     const canvas = document.createElement('canvas');
     canvas.width = SOCIAL_CONFIG.width;
     canvas.height = SOCIAL_CONFIG.height;
@@ -561,6 +583,8 @@ export class SocialPostGenerator extends LitElement {
     this.canvas.width = SOCIAL_CONFIG.width;
     this.canvas.height = SOCIAL_CONFIG.height;
     this.canvas.getContext('2d')?.drawImage(canvas, 0, 0);
+    this.committedDrawVersion = version;
+    this.isDrawing = false;
   }
 
   private _drawBackdrop(
@@ -1219,8 +1243,18 @@ export class SocialPostGenerator extends LitElement {
         'No se pudo copiar automáticamente; selecciona el texto y cópialo.';
     }
   }
-  private _download() {
-    const result = buildRenderResult(this._input());
+  private async _download() {
+    await this.updateComplete;
+    const drawVersion = this.drawVersion;
+    await this.activeDraw;
+    if (
+      drawVersion !== this.drawVersion ||
+      this.committedDrawVersion !== drawVersion
+    ) {
+      return;
+    }
+    const input = this._input();
+    const result = buildRenderResult(input);
     const canvas = this.canvas;
     if (!canvas || result.errors.length) return;
     canvas.toBlob(blob => {

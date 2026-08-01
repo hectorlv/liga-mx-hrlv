@@ -136,3 +136,31 @@ for (const template of [
     await expect(canvas).toHaveScreenshot(`${template}.png`);
   });
 }
+
+test('bloquea la descarga hasta confirmar el render actual', async ({ page }) => {
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  await expect(generator).toBeVisible();
+  await generator.evaluate(element => {
+    const socialGenerator = element as unknown as {
+      _drawTeamBadge: (...args: unknown[]) => Promise<void>;
+    };
+    const drawTeamBadge = socialGenerator._drawTeamBadge;
+    let shouldDelay = true;
+    socialGenerator._drawTeamBadge = async (...args) => {
+      if (shouldDelay) {
+        shouldDelay = false;
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      await drawTeamBadge.apply(socialGenerator, args);
+    };
+    const select = element.shadowRoot?.querySelector(
+      '#template',
+    ) as HTMLSelectElement;
+    select.value = 'round-results';
+    select.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+  });
+  const download = generator.locator('md-filled-button');
+  await expect(download).toHaveAttribute('disabled', '');
+  await expect(download).not.toHaveAttribute('disabled', '');
+});
