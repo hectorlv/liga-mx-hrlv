@@ -25,7 +25,11 @@ export class SocialPage extends LitElement {
       padding: clamp(26px, 5vw, 52px);
       border-radius: 24px;
       background:
-        radial-gradient(circle at 85% 20%, rgba(45, 224, 166, 0.28), transparent 23%),
+        radial-gradient(
+          circle at 85% 20%,
+          rgba(45, 224, 166, 0.28),
+          transparent 23%
+        ),
         linear-gradient(125deg, #05192d, #0a3550 58%, #062237);
       color: #fff;
     }
@@ -93,23 +97,14 @@ export class SocialPage extends LitElement {
           <p class="eyebrow">Administración · Liga MX HRLV</p>
           <h1>Centro de publicaciones</h1>
           <p class="intro">
-            Genera la imagen, copia el texto y publica. Cada enlace ya identifica la red, jornada y tipo de contenido en Analytics.
+            Genera la imagen, copia el texto y publica. Cada enlace ya
+            identifica la red, jornada y tipo de contenido en Analytics.
           </p>
         </header>
 
-        <p class="section-label">Jornada</p>
         <social-post-generator
           .matchesList=${this.matchesList}
           .table=${this.table}
-          context="matches"
-          initialTemplate="results"
-        ></social-post-generator>
-
-        <p class="section-label">Clasificación</p>
-        <social-post-generator
-          .matchesList=${this.matchesList}
-          .table=${this.table}
-          context="table"
         ></social-post-generator>
       </main>
     `;

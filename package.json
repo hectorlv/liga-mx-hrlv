@@ -5,7 +5,7 @@
   "author": "liga-mx-hrlv",
   "version": "4.16.0",
   "type": "module",
-  "packageManager": "pnpm@11.17.0",
+  "packageManager": "pnpm@11.18.0+sha512.33d83c77da82f49fba836925c6f1b841181ec3132b670639bd012f7075f5c7cf634c5f870147c19aae7478fac01df09d8892e880454896edd23ee9b33757563c",
   "scripts": {
     "lint": "eslint \"src/**/*.{ts,js,html}\"",
     "format": "eslint \"src/**/*.{ts,js,html}\" --fix && prettier \"src/**/*.{ts,js,html,css,json,md}\" --write",
@@ -43,7 +43,7 @@
     "playwright": "^1.62.0",
     "prettier": "^3.9.6",
     "rimraf": "^6.1.3",
-    "rollup": "^4.62.2",
+    "rollup": "^4.62.3",
     "rollup-plugin-esbuild": "^6.2.1",
     "rollup-plugin-workbox": "^9.0.0",
     "serialize-javascript": "^7.0.7",

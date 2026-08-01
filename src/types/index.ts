@@ -1,3 +1,6 @@
+/** Estados editoriales que no pueden inferirse de la cronología del partido. */
+export type MatchPublicationStatus = 'postponed' | 'cancelled';
+
 export interface Match {
   idMatch: number;
   estadio: string;
@@ -10,6 +13,10 @@ export interface Match {
   golVisitante: number;
   penaltyLocal?: number | null;
   penaltyVisitante?: number | null;
+  /** Sobrescribe el estado derivado para partidos que no se jugarán como estaban programados. */
+  status?: MatchPublicationStatus;
+  /** Minuto informado por el administrador durante un partido en vivo. */
+  liveMinute?: number | null;
   lineupLocal: PlayerGame[];
   lineupVisitor: PlayerGame[];
   events: MatchEvent[];
