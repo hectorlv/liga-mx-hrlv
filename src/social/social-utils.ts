@@ -49,6 +49,21 @@ export function resolveMatchStatus(match: Match): ResolvedMatchStatus {
   return 'scheduled';
 }
 
+/** Última jornada con actividad real; conserva el contexto editorial de la tabla. */
+export function latestPlayedJornada(matches: Match[]): number | undefined {
+  const jornadas = matches
+    .filter(
+      match =>
+        hasMatchStarted(match) ||
+        hasMatchEnded(match) ||
+        (Number.isFinite(match.golLocal) &&
+          Number.isFinite(match.golVisitante)),
+    )
+    .map(match => match.jornada)
+    .filter(Number.isFinite);
+  return jornadas.length ? Math.max(...jornadas) : undefined;
+}
+
 export function dateKey(value: string | Date): string {
   const date = toValidDate(value);
   if (!date) return '';

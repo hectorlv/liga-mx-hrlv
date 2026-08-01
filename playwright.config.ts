@@ -11,7 +11,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      'node_modules/.bin/web-dev-server --root-dir dist --app-index index.html --port 8011',
+      'corepack pnpm run build && node_modules/.bin/web-dev-server --root-dir dist --app-index index.html --port 8011',
     url: 'http://127.0.0.1:8011/',
     reuseExistingServer: true,
   },

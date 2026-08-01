@@ -65,6 +65,37 @@ function createFixtures() {
   return { matches, table };
 }
 
+async function mountSocialFixture(
+  page: import('playwright/test').Page,
+  fixtures: ReturnType<typeof createFixtures>,
+) {
+  await page.route('**/*', route => {
+    const hostname = new URL(route.request().url()).hostname;
+    if (
+      hostname.endsWith('.firebaseio.com') ||
+      hostname.endsWith('.googleapis.com') ||
+      hostname.endsWith('.google-analytics.com')
+    ) {
+      return route.abort();
+    }
+    return route.continue();
+  });
+  await page.goto('/');
+  await page.waitForFunction(
+    () => customElements.get('social-page') !== undefined,
+  );
+  await page.evaluate(({ matches, table }) => {
+    document.querySelector('liga-mx-hrlv')?.remove();
+    const fixture = document.createElement('social-page') as HTMLElement & {
+      matchesList: unknown[];
+      table: unknown[];
+    };
+    fixture.matchesList = matches;
+    fixture.table = table;
+    document.body.replaceChildren(fixture);
+  }, fixtures);
+}
+
 for (const template of [
   'round-preview',
   'day-preview',
@@ -74,21 +105,8 @@ for (const template of [
 ]) {
   test(`${template} conserva la composición aprobada`, async ({ page }) => {
     await page.clock.install({ time: new Date('2026-08-09T18:00:00-06:00') });
-    await page.goto('/');
     const fixtures = createFixtures();
-    await page.waitForSelector('liga-mx-hrlv');
-    await page.evaluate(({ matches, table }) => {
-      const app = document.querySelector('liga-mx-hrlv') as unknown as {
-        isAdmin: boolean;
-        matchesList: unknown[];
-        table: unknown[];
-        selectedTab: string;
-      };
-      app.isAdmin = true;
-      app.matchesList = matches;
-      app.table = table;
-      app.selectedTab = 'Redes';
-    }, fixtures);
+    await mountSocialFixture(page, fixtures);
     const generator = page.locator('social-post-generator');
     await expect(generator).toBeVisible();
     await generator.evaluate((element, value) => {
@@ -103,6 +121,14 @@ for (const template of [
     const canvas = generator.locator('canvas');
     await expect(canvas).toHaveJSProperty('width', 1080);
     await expect(canvas).toHaveJSProperty('height', 1350);
+    if (template === 'standings') {
+      await expect(generator.locator('textarea').first()).toHaveValue(
+        /Jornada 1/,
+      );
+      await expect(generator.locator('#tracking-link')).toHaveValue(
+        /utm_campaign=jornada_1/,
+      );
+    }
     await page.waitForTimeout(350);
     await canvas.evaluate(element =>
       element.setAttribute('style', 'width: 1080px; height: 1350px;'),

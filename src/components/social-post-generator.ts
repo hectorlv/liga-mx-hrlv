@@ -22,6 +22,7 @@ import {
   formatSocialDate,
   formatKickoff,
   groupMatchesByDay,
+  latestPlayedJornada,
   resolveMatchStatus,
   selectStandingsRange,
   selectTemplateMatches,
@@ -464,7 +465,10 @@ export class SocialPostGenerator extends LitElement {
       template: this.template,
       matches: this.matchesList,
       standings: this.table,
-      jornada: this.template === 'standings' ? undefined : this.jornada,
+      jornada:
+        this.template === 'standings'
+          ? latestPlayedJornada(this.matchesList)
+          : this.jornada,
       dateKey: DAY_TEMPLATES.has(this.template)
         ? this.dateSelection
         : undefined,
