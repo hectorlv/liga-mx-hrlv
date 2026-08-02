@@ -129,6 +129,11 @@ for (const template of [
         /utm_campaign=jornada_1/,
       );
     }
+    if (template === 'day-results' || template === 'round-results') {
+      await expect(generator.locator('textarea').first()).toHaveValue(
+        /América 0–1 Atlas/,
+      );
+    }
     await page.waitForTimeout(350);
     await canvas.evaluate(element =>
       element.setAttribute('style', 'width: 1080px; height: 1350px;'),
@@ -163,4 +168,21 @@ test('bloquea la descarga hasta confirmar el render actual', async ({ page }) =>
   const download = generator.locator('md-filled-button');
   await expect(download).toHaveAttribute('disabled', '');
   await expect(download).not.toHaveAttribute('disabled', '');
+});
+
+test('selecciona la próxima jornada en vez de la numéricamente mayor', async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date('2026-08-06T18:00:00-06:00') });
+  const fixtures = createFixtures();
+  fixtures.matches.push({
+    ...fixtures.matches[0],
+    idMatch: 22,
+    jornada: 22,
+    fecha: '2026/12/01',
+    hora: '19:00',
+  });
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  await expect(generator.locator('#jornada')).toHaveValue('1');
 });

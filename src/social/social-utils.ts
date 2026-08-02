@@ -2,16 +2,15 @@ import { Match, TableEntry } from '../types/index.js';
 import { hasMatchEnded, hasMatchStarted } from '../utils/matchStatus.js';
 import {
   DailyMatchesVariant,
-  JourneyResultsVariant,
   SOCIAL_CONFIG,
   SocialPresentationOptions,
   StandingsRange,
   TemplateId,
 } from './social-config.js';
+export { type JourneyResultsVariant } from './social-config.js';
 
 export type {
   DailyMatchesVariant,
-  JourneyResultsVariant,
   SocialPresentationOptions,
   StandingsRange,
 };
@@ -62,6 +61,29 @@ export function latestPlayedJornada(matches: Match[]): number | undefined {
     .map(match => match.jornada)
     .filter(Number.isFinite);
   return jornadas.length ? Math.max(...jornadas) : undefined;
+}
+
+/** Jornada editorial actual: la próxima con actividad, o la última que ya se jugó. */
+export function defaultSocialJornada(
+  matches: Match[],
+  now = new Date(),
+): number | undefined {
+  const datedMatches = sortAndDeduplicateMatches(matches)
+    .map(match => ({ match, date: toValidDate(match.fecha) }))
+    .filter(
+      (entry): entry is { match: Match; date: Date } => entry.date !== undefined,
+    )
+    .sort((first, second) => first.date.getTime() - second.date.getTime());
+  const upcoming = datedMatches.find(entry => entry.date.getTime() >= now.getTime());
+  if (upcoming) return upcoming.match.jornada;
+
+  const played = latestPlayedJornada(matches);
+  if (played !== undefined) return played;
+
+  const jornadas = [...new Set(matches.map(match => match.jornada))]
+    .filter(Number.isFinite)
+    .sort((first, second) => first - second);
+  return datedMatches[datedMatches.length - 1]?.match.jornada ?? jornadas[0];
 }
 
 export function dateKey(value: string | Date): string {
@@ -280,12 +302,13 @@ export function buildSocialCopy(
   const matches = selectTemplateMatches(input);
   const summary = matches
     .slice(0, 5)
-    .map(match =>
-      `${match.local} ${Number.isFinite(match.golLocal) ? match.golLocal : ''}–${Number.isFinite(match.golVisitante) ? match.golVisitante : ''} ${match.visitante}`.replace(
-        /\s+–\s+/,
-        ' vs ',
-      ),
-    )
+    .map(match => {
+      const hasScore =
+        Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
+      return hasScore
+        ? `${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}`
+        : `${match.local} vs ${match.visitante}`;
+    })
     .join('\n');
   const copies: Record<TemplateId, string> = {
     'round-preview': `⚽ Todo listo para la${round} de Liga MX HRLV.\n\nPartidos, fechas y horarios para no perderte nada.\n\n${callToAction}\n\n#LigaMX #FutbolMexicano #LigaMXHRLV`,
