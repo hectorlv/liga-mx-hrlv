@@ -673,6 +673,7 @@ export class LigaMxHrlv extends LitElement {
               <social-page
                 .matchesList=${this.matchesList}
                 .table=${this.table}
+                .players=${this.players}
               ></social-page>
             `
           : html``;

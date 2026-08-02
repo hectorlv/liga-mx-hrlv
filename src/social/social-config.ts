@@ -5,7 +5,8 @@ export type TemplateId =
   | 'day-preview'
   | 'day-results'
   | 'standings'
-  | 'round-results';
+  | 'round-results'
+  | 'match-summary';
 
 export type StandingsRange = 'all' | 'top' | 'bottom';
 export type DailyMatchesVariant =

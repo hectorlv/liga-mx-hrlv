@@ -4,7 +4,7 @@ import '@material/web/icon/icon.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import * as teamImages from '../assets/images/index.js';
-import { Match, TableEntry } from '../types/index.js';
+import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { LOGOS } from '../utils/constants.js';
 import {
   DEFAULT_SOCIAL_PRESENTATION,
@@ -17,6 +17,7 @@ import {
   buildRenderResult,
   buildSocialCopy,
   buildTrackingUrl,
+  buildXRoundResultsThread,
   dateKey,
   defaultSocialJornada,
   dailyMatchesVariant,
@@ -25,6 +26,7 @@ import {
   groupMatchesByDay,
   latestPlayedJornada,
   resolveMatchStatus,
+  resolveMatchScorers,
   selectStandingsRange,
   selectTemplateMatches,
   SocialImageInput,
@@ -232,10 +234,12 @@ export class SocialPostGenerator extends LitElement {
 
   @property({ type: Array }) matchesList: Match[] = [];
   @property({ type: Array }) table: TableEntry[] = [];
+  @property({ type: Object }) players: PlayerTeam = new Map();
   @state() private template: TemplateId = 'round-preview';
   @state() private platform: SocialPlatform = 'instagram';
   @state() private jornada?: number;
   @state() private dateSelection?: string;
+  @state() private matchId?: number;
   @state() private copyStatus = '';
   @state() private isDrawing = true;
   @state() private presentation: SocialPresentationOptions = {
@@ -263,6 +267,8 @@ export class SocialPostGenerator extends LitElement {
       changed.has('template') ||
       changed.has('jornada') ||
       changed.has('dateSelection') ||
+      changed.has('matchId') ||
+      changed.has('players') ||
       changed.has('presentation')
     ) {
       this._requestDraw();
@@ -272,7 +278,9 @@ export class SocialPostGenerator extends LitElement {
   override render() {
     const input = this._input();
     const result = buildRenderResult(input);
+    const xThread = buildXRoundResultsThread(input);
     const isDay = DAY_TEMPLATES.has(this.template);
+    const isMatchSummary = this.template === 'match-summary';
     const dates = this._datesForJornada();
     const dateString = (value: string) => `${value}T12:00:00`;
     const showDateSelector = isDay
@@ -281,7 +289,9 @@ export class SocialPostGenerator extends LitElement {
             ${dates.map(value => {
               const selected = value === this.dateSelection;
               const formattedDate = formatSocialDate(dateString(value));
-              return html`<option value=${value} ?selected=${selected}>${formattedDate}</option>`;
+              return html`<option value=${value} ?selected=${selected}>
+                ${formattedDate}
+              </option>`;
             })}
           </select>`
       : '';
@@ -329,6 +339,12 @@ export class SocialPostGenerator extends LitElement {
             >
               Resultados completos de jornada
             </option>
+            <option
+              value="match-summary"
+              ?selected=${this.template === 'match-summary'}
+            >
+              Resumen final por partido
+            </option>
           </select>
           ${
             this.template === 'standings'
@@ -339,6 +355,14 @@ export class SocialPostGenerator extends LitElement {
                     ${this._jornadas().map(value => html`<option value=${value} ?selected=${value === this.jornada}>Jornada ${value}</option>`)}
                   </select>
                   ${showDateSelector}
+                  ${
+                    isMatchSummary
+                      ? html`<label for="match">Partido finalizado</label>
+                          <select id="match" @change=${this._onMatchChange}>
+                            ${this._summaryMatches().map(match => html`<option value=${match.idMatch} ?selected=${match.idMatch === this.matchId}>${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}</option>`)}
+                          </select>`
+                      : ''
+                  }
                 `
           }
           <label for="platform">Copy para</label>
@@ -437,17 +461,52 @@ export class SocialPostGenerator extends LitElement {
           </md-filled-button>
           ${result.errors.length ? html`<p class="validation">${result.errors[0]}</p>` : ''}
           <div class="copy-panel">
-            <h3>Texto para publicar</h3>
-            <textarea
-              aria-label="Texto listo para publicar"
-              readonly
-              .value=${buildSocialCopy(input, this.platform)}
-            ></textarea>
-            <md-outlined-button
-              @click=${() => this._copy(buildSocialCopy(input, this.platform), 'Texto copiado.')}
-              ><md-icon slot="icon">content_copy</md-icon>Copiar
-              texto</md-outlined-button
-            >
+            ${
+              this.platform === 'x' && this.template === 'round-results'
+                ? html`
+                    <h3>Hilo para X</h3>
+                    <p>Publica el primer texto y responde con el segundo.</p>
+                    <label for="x-post"
+                      >Post 1 · Resultados (${xThread.post.length}/280)</label
+                    >
+                    <textarea
+                      id="x-post"
+                      aria-label="Primer post para X"
+                      readonly
+                      .value=${xThread.post}
+                    ></textarea>
+                    <md-outlined-button
+                      @click=${() => this._copy(xThread.post, 'Primer post copiado.')}
+                      ><md-icon slot="icon">content_copy</md-icon>Copiar post
+                      1</md-outlined-button
+                    >
+                    <label for="x-reply">Post 2 · Enlace</label>
+                    <textarea
+                      id="x-reply"
+                      aria-label="Segundo post para X"
+                      readonly
+                      .value=${xThread.reply}
+                    ></textarea>
+                    <md-outlined-button
+                      @click=${() => this._copy(xThread.reply, 'Segundo post copiado.')}
+                      ><md-icon slot="icon">content_copy</md-icon>Copiar post
+                      2</md-outlined-button
+                    >
+                  `
+                : html`
+                    <h3>Texto para publicar</h3>
+                    <textarea
+                      aria-label="Texto listo para publicar"
+                      readonly
+                      .value=${buildSocialCopy(input, this.platform)}
+                    ></textarea>
+                    <md-outlined-button
+                      @click=${() => this._copy(buildSocialCopy(input, this.platform), 'Texto copiado.')}
+                      ><md-icon slot="icon">content_copy</md-icon>Copiar
+                      texto</md-outlined-button
+                    >
+                  `
+            }
             <label for="alt-text">Descripción alternativa</label>
             <textarea
               id="alt-text"
@@ -486,6 +545,7 @@ export class SocialPostGenerator extends LitElement {
       template: this.template,
       matches: this.matchesList,
       standings: this.table,
+      matchId: this.template === 'match-summary' ? this.matchId : undefined,
       jornada:
         this.template === 'standings'
           ? latestPlayedJornada(this.matchesList)
@@ -520,13 +580,36 @@ export class SocialPostGenerator extends LitElement {
     const dates = this._datesForJornada();
     if (!this.dateSelection || !dates.includes(this.dateSelection))
       this.dateSelection = dates[0];
+    this._syncMatchSelection();
+  }
+  private _summaryMatches(): Match[] {
+    return selectTemplateMatches({
+      ...this._input(),
+      template: 'round-results',
+      matchId: undefined,
+    }).filter(
+      match =>
+        resolveMatchStatus(match) === 'finished' &&
+        Number.isFinite(match.golLocal) &&
+        Number.isFinite(match.golVisitante),
+    );
+  }
+  private _syncMatchSelection() {
+    const matches = this._summaryMatches();
+    if (!this.matchId || !matches.some(match => match.idMatch === this.matchId))
+      this.matchId = matches[0]?.idMatch;
   }
   private _onTemplateChange(event: Event) {
     this.template = (event.target as HTMLSelectElement).value as TemplateId;
+    this._syncMatchSelection();
   }
   private _onJornadaChange(event: Event) {
     this.jornada = Number((event.target as HTMLSelectElement).value);
     this.dateSelection = this._datesForJornada()[0];
+    this._syncMatchSelection();
+  }
+  private _onMatchChange(event: Event) {
+    this.matchId = Number((event.target as HTMLSelectElement).value);
   }
   private _onDateChange(event: Event) {
     this.dateSelection = (event.target as HTMLSelectElement).value;
@@ -673,6 +756,10 @@ export class SocialPostGenerator extends LitElement {
     input: SocialImageInput,
   ) {
     const matches = selectTemplateMatches(input);
+    if (input.template === 'match-summary') {
+      await this._drawMatchSummary(context, input, matches[0]);
+      return;
+    }
     const isDaily = DAY_TEMPLATES.has(input.template);
     const isResults =
       input.template !== 'round-preview' && input.template !== 'day-preview';
@@ -681,9 +768,15 @@ export class SocialPostGenerator extends LitElement {
       : `JORNADA ${input.jornada} · ${matches.length} PARTIDOS`;
     let headerTitle: string;
     if (isResults) {
-      headerTitle = input.template === 'round-results' ? 'RESULTADOS DE LA JORNADA' : 'RESULTADOS';
+      headerTitle =
+        input.template === 'round-results'
+          ? 'RESULTADOS DE LA JORNADA'
+          : 'RESULTADOS';
     } else {
-      headerTitle = input.template === 'round-preview' ? 'PREVIA DE JORNADA' : 'PARTIDOS DEL DÍA';
+      headerTitle =
+        input.template === 'round-preview'
+          ? 'PREVIA DE JORNADA'
+          : 'PARTIDOS DEL DÍA';
     }
 
     await this._drawHeader(context, headerTitle, subtitle);
@@ -696,6 +789,125 @@ export class SocialPostGenerator extends LitElement {
         ? 'Marcadores y fichas completas'
         : 'Calendario, horarios y resultados',
     );
+  }
+
+  private async _drawMatchSummary(
+    context: CanvasRenderingContext2D,
+    input: SocialImageInput,
+    match: Match | undefined,
+  ) {
+    if (!match) return;
+    await this._drawHeader(
+      context,
+      'MARCADOR FINAL',
+      `JORNADA ${match.jornada}`,
+    );
+    const scoreY = 365;
+    const badgeSize = 116;
+    await this._drawTeamBadge(
+      context,
+      match.local,
+      122,
+      scoreY - 58,
+      badgeSize,
+    );
+    await this._drawTeamBadge(
+      context,
+      match.visitante,
+      842,
+      scoreY - 58,
+      badgeSize,
+    );
+    context.fillStyle = SOCIAL_COLORS.text;
+    context.font = '800 30px system-ui, sans-serif';
+    this._drawFittedText(context, match.local, 180, 530, 320, 30, 'center');
+    this._drawFittedText(context, match.visitante, 900, 530, 320, 30, 'center');
+    context.fillStyle = SOCIAL_COLORS.surfaceStrong;
+    this._roundedRect(context, 374, 284, 332, 154, 22);
+    context.fill();
+    context.fillStyle = SOCIAL_COLORS.primary;
+    context.font = '800 76px system-ui, sans-serif';
+    context.textAlign = 'center';
+    context.fillText(`${match.golLocal} — ${match.golVisitante}`, 540, 382);
+    context.textAlign = 'left';
+    const scorers = resolveMatchScorers(match, this.players);
+    this._drawScorerColumn(context, 'LOCAL', scorers.local, 58, 610, 456);
+    this._drawScorerColumn(
+      context,
+      'VISITANTE',
+      scorers.visitor,
+      566,
+      610,
+      456,
+    );
+    this._drawFooter(
+      input.presentation,
+      context,
+      'Marcador final y anotadores registrados',
+    );
+  }
+
+  private _drawScorerColumn(
+    context: CanvasRenderingContext2D,
+    title: string,
+    scorers: ReturnType<typeof resolveMatchScorers>['local'],
+    x: number,
+    y: number,
+    width: number,
+  ) {
+    context.fillStyle = 'rgba(30, 41, 59, .94)';
+    this._roundedRect(context, x, y, width, 480, 18);
+    context.fill();
+    context.fillStyle = SOCIAL_COLORS.primary;
+    context.font = '800 18px system-ui, sans-serif';
+    context.fillText(`ANOTADORES · ${title}`, x + 28, y + 42);
+    if (!scorers.length) {
+      return;
+    }
+    const visible = scorers.slice(0, 9);
+    const rowHeight = Math.min(45, 370 / visible.length);
+    visible.forEach((scorer, index) => {
+      const rowY = y + 88 + index * rowHeight;
+      context.fillStyle = 'rgba(51, 65, 85, .72)';
+      this._roundedRect(context, x + 20, rowY, width - 40, rowHeight - 7, 8);
+      context.fill();
+      context.fillStyle = SOCIAL_COLORS.text;
+      context.font = '700 22px system-ui, sans-serif';
+      this._drawFittedText(
+        context,
+        scorer.name,
+        x + 38,
+        rowY + rowHeight * 0.63,
+        width - 150,
+        22,
+        'left',
+      );
+      context.textAlign = 'right';
+      context.fillStyle = SOCIAL_COLORS.muted;
+      context.font = '800 16px system-ui, sans-serif';
+      context.fillText(
+        scorer.minute,
+        x + width - (scorer.ownGoal ? 78 : 38),
+        rowY + rowHeight * 0.61,
+      );
+      context.textAlign = 'left';
+      if (scorer.ownGoal) {
+        context.textAlign = 'right';
+        context.fillStyle = SOCIAL_COLORS.warning;
+        context.font = '800 14px system-ui, sans-serif';
+        context.fillText('AG', x + width - 38, rowY + rowHeight * 0.61);
+        context.textAlign = 'left';
+      }
+    });
+    if (scorers.length > visible.length) {
+      context.fillStyle = SOCIAL_COLORS.muted;
+      context.font = '700 16px system-ui, sans-serif';
+      context.fillText(
+        `+${scorers.length - visible.length} anotadores`,
+        x + 28,
+        y + 452,
+      );
+    }
   }
 
   private async _drawGroupedMatches(

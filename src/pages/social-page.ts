@@ -1,11 +1,11 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import '../components/social-post-generator.js';
-import { Match, TableEntry } from '../types/index.js';
+import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 
 @customElement('social-page')
 export class SocialPage extends LitElement {
-  static override styles = css`
+  static override readonly styles = css`
     :host {
       display: block;
       width: 100%;
@@ -89,6 +89,7 @@ export class SocialPage extends LitElement {
 
   @property({ type: Array }) matchesList: Match[] = [];
   @property({ type: Array }) table: TableEntry[] = [];
+  @property({ type: Object }) players: PlayerTeam = new Map();
 
   override render() {
     return html`
@@ -105,6 +106,7 @@ export class SocialPage extends LitElement {
         <social-post-generator
           .matchesList=${this.matchesList}
           .table=${this.table}
+          .players=${this.players}
         ></social-post-generator>
       </main>
     `;
