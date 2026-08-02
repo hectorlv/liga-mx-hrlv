@@ -134,15 +134,25 @@ for (const template of [
         /América 0–1 Atlas/,
       );
     }
-    await page.waitForTimeout(350);
     await canvas.evaluate(element =>
       element.setAttribute('style', 'width: 1080px; height: 1350px;'),
     );
+    await page.waitForFunction(() => {
+      const generator = document.querySelector('social-post-generator');
+      const canvas = generator?.shadowRoot?.querySelector('canvas');
+      if (!canvas) {
+        return false;
+      }
+      const styles = window.getComputedStyle(canvas);
+      return styles.width === '1080px' && styles.height === '1350px';
+    });
     await expect(canvas).toHaveScreenshot(`${template}.png`);
   });
 }
 
-test('bloquea la descarga hasta confirmar el render actual', async ({ page }) => {
+test('bloquea la descarga hasta confirmar el render actual', async ({
+  page,
+}) => {
   await mountSocialFixture(page, createFixtures());
   const generator = page.locator('social-post-generator');
   await expect(generator).toBeVisible();
@@ -163,7 +173,9 @@ test('bloquea la descarga hasta confirmar el render actual', async ({ page }) =>
       '#template',
     ) as HTMLSelectElement;
     select.value = 'round-results';
-    select.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    select.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
   });
   const download = generator.locator('md-filled-button');
   await expect(download).toHaveAttribute('disabled', '');
@@ -185,4 +197,95 @@ test('selecciona la próxima jornada en vez de la numéricamente mayor', async (
   await mountSocialFixture(page, fixtures);
   const generator = page.locator('social-post-generator');
   await expect(generator.locator('#jornada')).toHaveValue('1');
+});
+
+test('prepara resultados de jornada como hilo de X sin rebasar 280 caracteres', async ({
+  page,
+}) => {
+  const fixtures = createFixtures();
+  fixtures.matches[8].golLocal = null as unknown as number;
+  fixtures.matches[8].golVisitante = null as unknown as number;
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  await generator.evaluate(element => {
+    const root = element.shadowRoot!;
+    const platform = root.querySelector('#platform') as HTMLSelectElement;
+    platform.value = 'x';
+    platform.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
+    const template = root.querySelector('#template') as HTMLSelectElement;
+    template.value = 'round-results';
+    template.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
+  });
+  const post = await generator.locator('#x-post').inputValue();
+  await expect(generator.locator('#x-post')).toBeVisible();
+  expect(post.length).toBeLessThanOrEqual(280);
+  expect(post).not.toContain('null');
+  expect(post).not.toContain('León 0–1 Necaxa');
+  await expect(generator.locator('#x-reply')).toHaveValue(/utm_source=x/);
+});
+
+test('prioriza un clásico cuando los resultados no caben en el post de X', async ({
+  page,
+}) => {
+  const fixtures = createFixtures();
+  fixtures.matches.forEach((match, index) => {
+    match.local =
+      index === 0
+        ? 'América'
+        : `Equipo local extraordinariamente largo ${index}`;
+    match.visitante =
+      index === 0
+        ? 'Guadalajara'
+        : `Equipo visitante extraordinariamente largo ${index}`;
+  });
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  await generator.evaluate(element => {
+    const root = element.shadowRoot!;
+    const platform = root.querySelector('#platform') as HTMLSelectElement;
+    platform.value = 'x';
+    platform.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
+    const template = root.querySelector('#template') as HTMLSelectElement;
+    template.value = 'round-results';
+    template.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
+  });
+  await expect(generator.locator('#x-post')).toHaveValue(
+    /América 0–1 Guadalajara/,
+  );
+});
+
+test('permite descargar el resumen final de un partido', async ({ page }) => {
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  await generator.evaluate(element => {
+    const select = element.shadowRoot?.querySelector(
+      '#template',
+    ) as HTMLSelectElement;
+    select.value = 'match-summary';
+    select.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
+  });
+  await expect(generator.locator('#match')).toBeVisible();
+  await expect(generator.locator('md-filled-button')).not.toHaveAttribute(
+    'disabled',
+    '',
+  );
+  const firstPreview = await generator
+    .locator('canvas')
+    .evaluate(canvas => (canvas as HTMLCanvasElement).toDataURL());
+  await generator.locator('#match').selectOption({ index: 1 });
+  await expect
+    .poll(() =>
+      generator.locator('canvas').evaluate(canvas => (canvas as HTMLCanvasElement).toDataURL()),
+    )
+    .not.toBe(firstPreview);
 });

@@ -1,4 +1,5 @@
-import { Match, TableEntry } from '../types/index.js';
+import { Match, PlayerTeam, TableEntry } from '../types/index.js';
+import { formatMatchMinute, getGoalEvents } from '../utils/functionUtils.js';
 import { hasMatchEnded, hasMatchStarted } from '../utils/matchStatus.js';
 import {
   DailyMatchesVariant,
@@ -9,11 +10,7 @@ import {
 } from './social-config.js';
 export { type JourneyResultsVariant } from './social-config.js';
 
-export type {
-  DailyMatchesVariant,
-  SocialPresentationOptions,
-  StandingsRange,
-};
+export type { DailyMatchesVariant, SocialPresentationOptions, StandingsRange };
 
 export type SocialPlatform = 'instagram' | 'x';
 export type ResolvedMatchStatus =
@@ -25,7 +22,19 @@ export interface SocialImageInput {
   standings: TableEntry[];
   jornada?: number;
   dateKey?: string;
+  matchId?: number;
   presentation?: SocialPresentationOptions;
+}
+
+export interface SocialXThreadCopy {
+  post: string;
+  reply: string;
+}
+
+export interface SocialScorer {
+  name: string;
+  ownGoal: boolean;
+  minute: string;
 }
 
 export interface SocialRenderResult {
@@ -71,10 +80,13 @@ export function defaultSocialJornada(
   const datedMatches = sortAndDeduplicateMatches(matches)
     .map(match => ({ match, date: toValidDate(match.fecha) }))
     .filter(
-      (entry): entry is { match: Match; date: Date } => entry.date !== undefined,
+      (entry): entry is { match: Match; date: Date } =>
+        entry.date !== undefined,
     )
     .sort((first, second) => first.date.getTime() - second.date.getTime());
-  const upcoming = datedMatches.find(entry => entry.date.getTime() >= now.getTime());
+  const upcoming = datedMatches.find(
+    entry => entry.date.getTime() >= now.getTime(),
+  );
   if (upcoming) return upcoming.match.jornada;
 
   const played = latestPlayedJornada(matches);
@@ -170,9 +182,12 @@ export function selectTemplateMatches(input: SocialImageInput): Match[] {
   const selected = sortAndDeduplicateMatches(input.matches).filter(match =>
     input.jornada == null ? true : match.jornada === input.jornada,
   );
-  return input.dateKey
+  const dated = input.dateKey
     ? selected.filter(match => dateKey(match.fecha) === input.dateKey)
     : selected;
+  return input.template === 'match-summary' && input.matchId != null
+    ? dated.filter(match => match.idMatch === input.matchId)
+    : dated;
 }
 
 export interface SocialMatchDayGroup {
@@ -232,7 +247,9 @@ export function validateSocialInput(input: SocialImageInput): string[] {
   const matches = selectTemplateMatches(input);
   if (!matches.length) return ['No hay partidos para la selección actual.'];
   const isResults =
-    input.template === 'day-results' || input.template === 'round-results';
+    input.template === 'day-results' ||
+    input.template === 'round-results' ||
+    input.template === 'match-summary';
   return matches.flatMap(match => {
     if (!match.local?.trim() || !match.visitante?.trim()) {
       return [`El partido ${match.idMatch} no tiene ambos equipos.`];
@@ -243,6 +260,14 @@ export function validateSocialInput(input: SocialImageInput): string[] {
     const status = resolveMatchStatus(match);
     const hasScore =
       Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
+    if (
+      input.template === 'match-summary' &&
+      (!hasScore || status !== 'finished')
+    ) {
+      return [
+        `El partido ${match.idMatch} debe estar finalizado y tener marcador.`,
+      ];
+    }
     if (isResults && !hasScore && status === 'live') {
       return [
         `El partido ${match.idMatch} no tiene marcador o estado editorial.`,
@@ -285,6 +310,7 @@ export function templateLabel(template: TemplateId): string {
     'day-results': 'Resultados del día',
     standings: 'Tabla general',
     'round-results': 'Resultados completos de jornada',
+    'match-summary': 'Resumen final de partido',
   };
   return labels[template];
 }
@@ -301,7 +327,7 @@ export function buildSocialCopy(
   const round = input.jornada ? ` Jornada ${input.jornada}` : '';
   const matches = selectTemplateMatches(input);
   const summary = matches
-    .slice(0, 5)
+    .slice(0, input.template === 'round-results' ? 9 : 5)
     .map(match => {
       const hasScore =
         Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
@@ -316,8 +342,103 @@ export function buildSocialCopy(
     'day-results': `📊 Resultados del día${round}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #Resultados`,
     standings: `📈 Así marcha la tabla general${round ? ` después de la${round}` : ''}.\n\n${callToAction}\n\n#LigaMX #TablaGeneral`,
     'round-results': `🏁 Resultados completos de la${round}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #Resultados`,
+    'match-summary': `🏁 Marcador final${round}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #Resultados`,
   };
   return copies[input.template];
+}
+
+const CLASSIC_PAIRS = [
+  ['América', 'Guadalajara'],
+  ['América', 'Cruz Azul'],
+  ['América', 'Universidad Nacional'],
+  ['Monterrey', 'Tigres de la U.A.N.L.'],
+] as const;
+
+function isClassic(match: Match): boolean {
+  return CLASSIC_PAIRS.some(
+    ([first, second]) =>
+      (match.local === first && match.visitante === second) ||
+      (match.local === second && match.visitante === first),
+  );
+}
+
+function resultLine(match: Match): string {
+  return `${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}`;
+}
+
+/** Copy listo para publicar manualmente como un hilo de dos posts en X. */
+export function buildXRoundResultsThread(
+  input: SocialImageInput,
+): SocialXThreadCopy {
+  const matches = selectTemplateMatches({
+    ...input,
+    matchId: undefined,
+  }).filter(
+    match =>
+      resolveMatchStatus(match) === 'finished' &&
+      Number.isFinite(match.golLocal) &&
+      Number.isFinite(match.golVisitante),
+  );
+  const ranked = matches
+    .map((match, index) => ({ match, index }))
+    .sort((first, second) => {
+      const classicOrder =
+        Number(isClassic(second.match)) - Number(isClassic(first.match));
+      if (classicOrder) return classicOrder;
+      const firstGoals =
+        (first.match.golLocal || 0) + (first.match.golVisitante || 0);
+      const secondGoals =
+        (second.match.golLocal || 0) + (second.match.golVisitante || 0);
+      if (secondGoals !== firstGoals) return secondGoals - firstGoals;
+      const firstDifference = Math.abs(
+        (first.match.golLocal || 0) - (first.match.golVisitante || 0),
+      );
+      const secondDifference = Math.abs(
+        (second.match.golLocal || 0) - (second.match.golVisitante || 0),
+      );
+      return secondDifference - firstDifference || first.index - second.index;
+    });
+  const header = `🏁 Resultados J${input.jornada || ''}`.trim();
+  const suffix = '#LigaMX #Resultados';
+  const lines: string[] = [];
+  for (const { match } of ranked) {
+    const next = [...lines, resultLine(match)];
+    const candidate = `${header}\n\n${next.join('\n')}\n\n${suffix}`;
+    if (candidate.length <= 280) lines.push(resultLine(match));
+  }
+  return {
+    post: `${header}\n\n${lines.join('\n')}\n\n${suffix}`,
+    reply: `Consulta marcadores, fichas y detalles de la Jornada ${input.jornada || ''}:\n${buildTrackingUrl(input, 'x')}`,
+  };
+}
+
+export function resolveMatchScorers(
+  match: Match,
+  players: PlayerTeam,
+): { local: SocialScorer[]; visitor: SocialScorer[] } {
+  const resolve = (team: string, number: number) =>
+    players
+      .get(team.replaceAll('.', ''))
+      ?.find(player => player.number === number)?.name || `Jugador #${number}`;
+  const scorers = {
+    local: [] as SocialScorer[],
+    visitor: [] as SocialScorer[],
+  };
+  getGoalEvents(match.events || []).forEach(goal => {
+    const creditedTeam = goal.team === 'local' ? match.local : match.visitante;
+    const playerTeam = goal.ownGoal
+      ? goal.team === 'local'
+        ? match.visitante
+        : match.local
+      : creditedTeam;
+    const side = goal.team === 'local' ? 'local' : 'visitor';
+    scorers[side].push({
+      name: resolve(playerTeam, goal.player),
+      ownGoal: Boolean(goal.ownGoal),
+      minute: formatMatchMinute(goal.minute, goal.addedTime),
+    });
+  });
+  return scorers;
 }
 
 export function buildTrackingUrl(
