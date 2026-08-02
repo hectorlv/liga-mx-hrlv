@@ -425,10 +425,15 @@ export function resolveMatchScorers(
     visitor: [] as SocialScorer[],
   };
   getGoalEvents(match.events || []).forEach(goal => {
-    const team = goal.team === 'local' ? match.local : match.visitante;
+    const creditedTeam = goal.team === 'local' ? match.local : match.visitante;
+    const playerTeam = goal.ownGoal
+      ? goal.team === 'local'
+        ? match.visitante
+        : match.local
+      : creditedTeam;
     const side = goal.team === 'local' ? 'local' : 'visitor';
     scorers[side].push({
-      name: resolve(team, goal.player),
+      name: resolve(playerTeam, goal.player),
       ownGoal: Boolean(goal.ownGoal),
       minute: formatMatchMinute(goal.minute, goal.addedTime),
     });
