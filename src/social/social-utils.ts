@@ -303,10 +303,11 @@ export function buildSocialCopy(
   const summary = matches
     .slice(0, 5)
     .map(match => {
-      const text = `${match.local} ${Number.isFinite(match.golLocal) ? match.golLocal : ''}–${Number.isFinite(match.golVisitante) ? match.golVisitante : ''} ${match.visitante}`;
-      // Replace en-dash with ' vs ' without using a backtracking-prone regex
-      const parts = text.split('–').map(p => p.trim());
-      return parts.join(' vs ');
+      const hasScore =
+        Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
+      return hasScore
+        ? `${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}`
+        : `${match.local} vs ${match.visitante}`;
     })
     .join('\n');
   const copies: Record<TemplateId, string> = {

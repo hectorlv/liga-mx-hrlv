@@ -129,6 +129,11 @@ for (const template of [
         /utm_campaign=jornada_1/,
       );
     }
+    if (template === 'day-results' || template === 'round-results') {
+      await expect(generator.locator('textarea').first()).toHaveValue(
+        /América 0–1 Atlas/,
+      );
+    }
     await page.waitForTimeout(350);
     await canvas.evaluate(element =>
       element.setAttribute('style', 'width: 1080px; height: 1350px;'),
