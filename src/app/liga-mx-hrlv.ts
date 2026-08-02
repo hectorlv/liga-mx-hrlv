@@ -325,6 +325,16 @@ export class LigaMxHrlv extends LitElement {
         font-size: 18px;
       }
 
+      .footer-x-mark {
+        display: inline-grid;
+        width: 18px;
+        height: 18px;
+        place-items: center;
+        font-size: 0.9rem;
+        font-weight: 900;
+        line-height: 1;
+      }
+
       .footer-link:hover {
         border-color: var(--md-sys-color-primary);
         background: var(--md-sys-color-primary-container);
@@ -461,13 +471,23 @@ export class LigaMxHrlv extends LitElement {
         <nav class="footer-links" aria-label="Contacto y apoyo">
           <a
             class="footer-link"
-            href="https://www.instagram.com/hectorrlove"
+            href="https://www.instagram.com/ligamx_hrlv"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Visitar Instagram de HRLV"
+            aria-label="Visitar Instagram de Liga MX HRLV"
           >
             <md-icon aria-hidden="true">photo_camera</md-icon>
             Instagram
+          </a>
+          <a
+            class="footer-link"
+            href="https://x.com/LigaMX_HRLV"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Visitar X de Liga MX HRLV"
+          >
+            <span class="footer-x-mark" aria-hidden="true">𝕏</span>
+            X
           </a>
           <a
             class="footer-link"
@@ -771,7 +791,7 @@ export class LigaMxHrlv extends LitElement {
   }
 
   private _initializeAnalytics() {
-    void isAnalyticsSupported()
+    isAnalyticsSupported()
       .then(supported => {
         if (!supported) return;
 
