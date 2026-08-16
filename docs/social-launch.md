@@ -6,7 +6,7 @@ Crear cuentas dedicadas en X e Instagram con el mismo nombre de usuario si está
 
 > Calendario, resultados, tabla, liguilla y estadísticas de la Liga MX. Sitio no oficial, con fines informativos.
 
-Enlazar el sitio en la bio: `https://ligamx-b16f7.web.app/`
+Enlazar el sitio en la bio: `https://ligamx.hectorrlove.com/`
 
 La imagen de vista previa para enlaces se publica desde `social-preview.png`; no usar escudos ni marcas de clubes como identidad de las cuentas.
 
@@ -21,7 +21,7 @@ Usar siempre la pantalla más útil para cada publicación y añadir estos pará
 
 Ejemplo:
 
-`https://ligamx-b16f7.web.app/?tab=Calendario&utm_source=x&utm_medium=social&utm_campaign=apertura_2026`
+`https://ligamx.hectorrlove.com/?tab=Calendario&utm_source=x&utm_medium=social&utm_campaign=apertura_2026`
 
 Firebase Analytics registra automáticamente las visitas y conserva los parámetros UTM para atribuirlas a cada red.
 

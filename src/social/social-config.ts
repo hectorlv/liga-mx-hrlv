@@ -37,7 +37,7 @@ export interface SocialConfig {
 
 export const SOCIAL_CONFIG: SocialConfig = {
   brandName: 'Liga MX HRLV',
-  siteUrl: 'https://ligamx-b16f7.web.app/',
+  siteUrl: 'https://ligamx.hectorrlove.com/',
   locale: 'es-MX',
   timezone: 'America/Mexico_City',
   width: 1080,
