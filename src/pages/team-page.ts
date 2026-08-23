@@ -59,6 +59,8 @@ interface PlayerStats {
   rawBirthDate?: string | Date; // Guardamos el dato crudo para el formulario
 }
 
+const HISTORICAL_DESTINATION = '__historical__';
+
 @customElement('team-page')
 export class TeamPage extends LitElement {
   static override readonly styles = [
@@ -490,6 +492,8 @@ export class TeamPage extends LitElement {
   @state() private playerPendingDeletion: PlayerStats | null = null;
 
   override render() {
+    const isMarkingHistorical =
+      this.editDestinationTeam === HISTORICAL_DESTINATION;
     const clearEditImageButton = this.editPastedImagePreviewUrl
       ? html`
           <md-outlined-button @click=${this._clearEditPastedImage}>
@@ -661,8 +665,15 @@ export class TeamPage extends LitElement {
                     label="Número de jersey"
                     type="number"
                     value="${this.editingPlayer?.number || ''}"
-                    ?disabled=${this.editDestinationTeam === this.team.equipo}
-                    title="Solo se puede cambiar el dorsal al mover al jugador a otro equipo"
+                    ?disabled=${
+                      this.editDestinationTeam === this.team.equipo ||
+                      isMarkingHistorical
+                    }
+                    title=${
+                      isMarkingHistorical
+                        ? 'El dorsal se conserva al marcar al jugador como histórico'
+                        : 'Solo se puede cambiar el dorsal al mover al jugador a otro equipo'
+                    }
                   ></md-filled-text-field>
                   <md-filled-select
                     id="editTeam"
@@ -684,7 +695,25 @@ export class TeamPage extends LitElement {
                           </md-select-option>
                         `,
                       )}
+                    <md-select-option
+                      value=${HISTORICAL_DESTINATION}
+                      ?selected=${isMarkingHistorical}
+                    >
+                      <div slot="headline">
+                        Fuera de la Liga MX · mantener como histórico
+                      </div>
+                    </md-select-option>
                   </md-filled-select>
+                  ${
+                    isMarkingHistorical
+                      ? html`<p class="full-width">
+                          Se conservarán la ficha y las estadísticas en
+                          ${this.team.equipo}. El jugador dejará de estar
+                          disponible para acciones de partido y no podrá
+                          reactivarse desde esta pantalla.
+                        </p>`
+                      : null
+                  }
                   ${
                     this.editFormError
                       ? html`<p class="form-error full-width">
@@ -697,11 +726,13 @@ export class TeamPage extends LitElement {
                     label="Nombre corto"
                     required
                     value="${this.editingPlayer?.name || ''}"
+                    ?disabled=${isMarkingHistorical}
                   ></md-filled-text-field>
                   <md-filled-select
                     id="editPosition"
                     label="Posición"
                     class="full-width"
+                    ?disabled=${isMarkingHistorical}
                   >
                     <md-select-option
                       value="Portero"
@@ -729,11 +760,13 @@ export class TeamPage extends LitElement {
                     label="Nombre Completo"
                     class="full-width"
                     value="${this.editingPlayer?.fullName || ''}"
+                    ?disabled=${isMarkingHistorical}
                   ></md-filled-text-field>
                   <md-filled-text-field
                     id="editNationality"
                     label="Nacionalidad"
                     value="${this.editingPlayer?.nationality || ''}"
+                    ?disabled=${isMarkingHistorical}
                   ></md-filled-text-field>
                   <md-filled-text-field
                     id="editBirthDate"
@@ -742,8 +775,11 @@ export class TeamPage extends LitElement {
                     value="${this._formatDateForInput(
                       this.editingPlayer?.rawBirthDate,
                     )}"
+                    ?disabled=${isMarkingHistorical}
                   ></md-filled-text-field>
-                  <div class="image-input-section full-width">
+                  ${
+                    !isMarkingHistorical
+                      ? html`<div class="image-input-section full-width">
                     <div
                       class="image-paste-zone ${this._getImagePasteZoneClass()}"
                       tabindex="0"
@@ -772,7 +808,9 @@ export class TeamPage extends LitElement {
                         ${this._getClipboardButtonLabel()}
                       </md-outlined-button>
                     </div>
-                  </div>
+                  </div>`
+                      : null
+                  }
                 </div>
                 <div slot="actions">
                   <md-text-button
@@ -940,6 +978,7 @@ export class TeamPage extends LitElement {
     const birthDateInput = this.editBirthDateField.value;
     const destinationTeam = this.editDestinationTeam || this.team.equipo;
     const destinationNumber = Number(this.editNumberField.value);
+    const isLeavingLeague = destinationTeam === HISTORICAL_DESTINATION;
 
     // Formateamos la fecha de YYYY-MM-DD a DD/MM/YYYY para mantener tu estándar
     let formattedBirthDate = birthDateInput;
@@ -955,6 +994,29 @@ export class TeamPage extends LitElement {
 
     if (!Number.isInteger(destinationNumber) || destinationNumber < 1) {
       this.editFormError = 'Indica un número de jersey entero mayor que cero.';
+      return;
+    }
+
+    const teamKey = this.team.equipo.replaceAll('.', '');
+    if (isLeavingLeague) {
+      const sourcePlayer = this.players.find(
+        player => player.number === this.editingPlayer?.number,
+      );
+      if (!sourcePlayer) {
+        this.editFormError =
+          'El jugador ya no está en la plantilla origen. Recarga e inténtalo de nuevo.';
+        return;
+      }
+
+      const updates: FirebaseUpdates = {
+        [`/players/${teamKey}`]: this.players.map(player =>
+          player.number === sourcePlayer.number
+            ? { ...sourcePlayer, historical: true }
+            : player,
+        ),
+      };
+      this.dispatchEvent(dispatchEventMatchUpdated(updates));
+      this._closeEditPlayer();
       return;
     }
 
@@ -1025,7 +1087,6 @@ export class TeamPage extends LitElement {
 
     // Disparamos el evento de actualización a Firebase
     const updates: FirebaseUpdates = {};
-    const teamKey = this.team.equipo.replaceAll('.', '');
     if (destinationTeam === this.team.equipo) {
       updates[`/players/${teamKey}`] = updatedPlayers;
     } else {
