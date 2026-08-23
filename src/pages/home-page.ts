@@ -755,6 +755,14 @@ export class HomePage extends LitElement {
   }
 
   private _getFocusMatches(): Match[] {
+    const liveMatches = this.matchesList.filter(match => isMatchLive(match));
+    if (liveMatches.length > 0) {
+      return liveMatches.sort(
+        (a, b) =>
+          this._matchTime(a) - this._matchTime(b) || a.idMatch - b.idMatch,
+      );
+    }
+
     const focusMatch = this._getFocusMatch();
     if (!focusMatch) return [];
 

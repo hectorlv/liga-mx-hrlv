@@ -216,31 +216,33 @@ export class LineupsCard extends LitElement {
                       </md-icon-button>
                     </div>
 
-                    ${this.localPlayers.filter(player => !player.historical).map(player => {
-                      const isTitular = lineupLocal?.some(
-                        p => p.number === player.number && p.titular,
-                      );
-                      return html`
-                        <div
-                          class="player-row ${isTitular ? 'selected' : ''}"
-                          role="button"
-                          tabindex="0"
-                          @click=${(e: Event) =>
+                    ${this.localPlayers
+                      .filter(player => !player.historical)
+                      .map(player => {
+                        const isTitular = lineupLocal?.some(
+                          p => p.number === player.number && p.titular,
+                        );
+                        return html`
+                          <div
+                            class="player-row ${isTitular ? 'selected' : ''}"
+                            role="button"
+                            tabindex="0"
+                            @click=${(e: Event) =>
                             this._toggleRow(e, 'local', player.number)}
-                        >
-                          <md-checkbox
-                            id="lineupLocal-${player.number}"
-                            .checked=${isTitular}
-                            @change=${(e: Event) =>
+                          >
+                            <md-checkbox
+                              id="lineupLocal-${player.number}"
+                              .checked=${isTitular}
+                              @change=${(e: Event) =>
                               this._onLineupChange(e, 'local', player.number)}
-                            @click=${(e: Event) => e.stopPropagation()}
-                          ></md-checkbox>
-                          <div class="player-info-wrapper">
-                            <player-info .player=${player}></player-info>
+                              @click=${(e: Event) => e.stopPropagation()}
+                            ></md-checkbox>
+                            <div class="player-info-wrapper">
+                              <player-info .player=${player}></player-info>
+                            </div>
                           </div>
-                        </div>
-                      `;
-                    })}
+                        `;
+                      })}
                   </div>
 
                   <div class="team-column">
@@ -254,31 +256,33 @@ export class LineupsCard extends LitElement {
                       </md-icon-button>
                     </div>
 
-                    ${this.visitorPlayers.filter(player => !player.historical).map(player => {
-                      const isTitular = lineupVisitor?.some(
-                        p => p.number === player.number && p.titular,
-                      );
-                      return html`
-                        <div
-                          class="player-row ${isTitular ? 'selected' : ''}"
-                          role="button"
-                          tabindex="0"
-                          @click=${(e: Event) =>
+                    ${this.visitorPlayers
+                      .filter(player => !player.historical)
+                      .map(player => {
+                        const isTitular = lineupVisitor?.some(
+                          p => p.number === player.number && p.titular,
+                        );
+                        return html`
+                          <div
+                            class="player-row ${isTitular ? 'selected' : ''}"
+                            role="button"
+                            tabindex="0"
+                            @click=${(e: Event) =>
                             this._toggleRow(e, 'visitor', player.number)}
-                        >
-                          <md-checkbox
-                            id="lineupVisitor-${player.number}"
-                            .checked=${isTitular}
-                            @change=${(e: Event) =>
+                          >
+                            <md-checkbox
+                              id="lineupVisitor-${player.number}"
+                              .checked=${isTitular}
+                              @change=${(e: Event) =>
                               this._onLineupChange(e, 'visitor', player.number)}
-                            @click=${(e: Event) => e.stopPropagation()}
-                          ></md-checkbox>
-                          <div class="player-info-wrapper">
-                            <player-info .player=${player}></player-info>
+                              @click=${(e: Event) => e.stopPropagation()}
+                            ></md-checkbox>
+                            <div class="player-info-wrapper">
+                              <player-info .player=${player}></player-info>
+                            </div>
                           </div>
-                        </div>
-                      `;
-                    })}
+                        `;
+                      })}
                   </div>
                 </div>
 
