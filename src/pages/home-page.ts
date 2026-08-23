@@ -758,7 +758,8 @@ export class HomePage extends LitElement {
     const liveMatches = this.matchesList.filter(match => isMatchLive(match));
     if (liveMatches.length > 0) {
       return liveMatches.sort(
-        (a, b) => this._matchTime(a) - this._matchTime(b) || a.idMatch - b.idMatch,
+        (a, b) =>
+          this._matchTime(a) - this._matchTime(b) || a.idMatch - b.idMatch,
       );
     }
 

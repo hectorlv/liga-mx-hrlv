@@ -1,11 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { getDownloadURL, getStorage, ref } from 'firebase/storage';
-import {
-  get,
-  getDatabase,
-  ref as databaseRef,
-} from 'firebase/database';
+import { get, getDatabase, ref as databaseRef } from 'firebase/database';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import {
   FirebaseUpdates,
@@ -687,14 +683,15 @@ export class TeamPage extends LitElement {
                     >
                       <div slot="headline">Mantener en ${this.team.equipo}</div>
                     </md-select-option>
-                    ${LOGOS.filter(team => team.equipo !== this.team.equipo)
-                      .map(
-                        team => html`
-                          <md-select-option value=${team.equipo}>
-                            <div slot="headline">${team.equipo}</div>
-                          </md-select-option>
-                        `,
-                      )}
+                    ${LOGOS.filter(
+                      team => team.equipo !== this.team.equipo,
+                    ).map(
+                      team => html`
+                        <md-select-option value=${team.equipo}>
+                          <div slot="headline">${team.equipo}</div>
+                        </md-select-option>
+                      `,
+                    )}
                     <md-select-option
                       value=${HISTORICAL_DESTINATION}
                       ?selected=${isMarkingHistorical}
@@ -780,35 +777,35 @@ export class TeamPage extends LitElement {
                   ${
                     !isMarkingHistorical
                       ? html`<div class="image-input-section full-width">
-                    <div
-                      class="image-paste-zone ${this._getImagePasteZoneClass()}"
-                      tabindex="0"
-                      role="button"
-                      @paste=${this._handleEditImagePaste}
-                      title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
-                    >
-                      ${this._renderEditImagePreviewContent()}
-                    </div>
-                    <div class="image-actions">
-                      <p class="${this._getImageMessageClass()}">
-                        ${
+                          <div
+                            class="image-paste-zone ${this._getImagePasteZoneClass()}"
+                            tabindex="0"
+                            role="button"
+                            @paste=${this._handleEditImagePaste}
+                            title="Haz click aquí y pega una imagen con Ctrl+V o Cmd+V"
+                          >
+                            ${this._renderEditImagePreviewContent()}
+                          </div>
+                          <div class="image-actions">
+                            <p class="${this._getImageMessageClass()}">
+                              ${
                           this.editImageError ||
                           'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'
                         }
-                      </p>
-                      ${clearEditImageButton}
-                      <md-outlined-button
-                        @click=${this._readEditImageFromClipboard}
-                        ?disabled=${
+                            </p>
+                            ${clearEditImageButton}
+                            <md-outlined-button
+                              @click=${this._readEditImageFromClipboard}
+                              ?disabled=${
                           this.editIsReadingClipboardImage ||
                           this.editIsUploadingImage
                         }
-                      >
-                        <md-icon slot="icon">content_paste_go</md-icon>
-                        ${this._getClipboardButtonLabel()}
-                      </md-outlined-button>
-                    </div>
-                  </div>`
+                            >
+                              <md-icon slot="icon">content_paste_go</md-icon>
+                              ${this._getClipboardButtonLabel()}
+                            </md-outlined-button>
+                          </div>
+                        </div>`
                       : null
                   }
                 </div>
@@ -835,8 +832,8 @@ export class TeamPage extends LitElement {
                 <div slot="headline">Eliminar jugador</div>
                 <div slot="content">
                   ¿Quieres eliminar definitivamente a
-                  <strong>${this.playerPendingDeletion?.fullName}</strong> de
-                  la plantilla de ${this.team.equipo}?
+                  <strong>${this.playerPendingDeletion?.fullName}</strong> de la
+                  plantilla de ${this.team.equipo}?
                 </div>
                 <div slot="actions">
                   <md-outlined-button @click=${this._closeDeletePlayerDialog}
@@ -1133,7 +1130,9 @@ export class TeamPage extends LitElement {
   }
 
   private async _getCurrentTeamPlayers(teamKey: string): Promise<Player[]> {
-    const snapshot = await get(databaseRef(getDatabase(), `/players/${teamKey}`));
+    const snapshot = await get(
+      databaseRef(getDatabase(), `/players/${teamKey}`),
+    );
     const value: unknown = snapshot.val();
     if (!value) return [];
     return Array.isArray(value)
@@ -1171,7 +1170,8 @@ export class TeamPage extends LitElement {
         (getSubstitutionEvents(match.events) || []).some(
           event =>
             event.team === teamTag &&
-            (event.playerIn === playerNumber || event.playerOut === playerNumber),
+            (event.playerIn === playerNumber ||
+              event.playerOut === playerNumber),
         )
       ) {
         return true;

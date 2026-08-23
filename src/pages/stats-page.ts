@@ -1715,9 +1715,9 @@ export class StatsPage extends LitElement {
                   >
                   <span class="tournament-summary-value"
                     >${this._formatTournamentAverage(
-                          tournamentSummary.totalGoals,
-                          tournamentSummary.completedMatches,
-                        )}</span
+                      tournamentSummary.totalGoals,
+                      tournamentSummary.completedMatches,
+                    )}</span
                   >
                 </div>
                 <div class="tournament-summary-item">
@@ -1726,9 +1726,9 @@ export class StatsPage extends LitElement {
                   >
                   <span class="tournament-summary-value"
                     >${this._formatTournamentAverage(
-                          tournamentSummary.totalCards,
-                          tournamentSummary.completedMatches,
-                        )}</span
+                      tournamentSummary.totalCards,
+                      tournamentSummary.completedMatches,
+                    )}</span
                   >
                 </div>
               </div>
@@ -1746,9 +1746,9 @@ export class StatsPage extends LitElement {
                   <h4 class="goal-analysis-title">¿En qué minutos se anota?</h4>
                   <div class="distribution-list">
                     ${this._renderDistributionRows(
-                          goalsByTimeRange,
-                          regularTimeGoals,
-                        )}
+                      goalsByTimeRange,
+                      regularTimeGoals,
+                    )}
                   </div>
                   ${regularTimeGoalsMessage} ${extraTimeGoalsMessage}
                 </section>
@@ -1756,12 +1756,12 @@ export class StatsPage extends LitElement {
                   <h4 class="goal-analysis-title">¿Cómo se anotan?</h4>
                   <div class="distribution-list">
                     ${this._renderDistributionRows(
-                          goalsByType,
-                          goalsByType.reduce(
-                            (total, item) => total + item.count,
-                            0,
-                          ),
-                        )}
+                      goalsByType,
+                      goalsByType.reduce(
+                        (total, item) => total + item.count,
+                        0,
+                      ),
+                    )}
                   </div>
                   ${noGoalTypesMessage}
                 </section>
