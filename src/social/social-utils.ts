@@ -156,6 +156,10 @@ export function formatKickoff(time: string): string {
   return `${displayHour}:${String(minutes).padStart(2, '0')} ${period}`;
 }
 
+export function formatMatchCount(count: number): string {
+  return `${count} ${count === 1 ? 'PARTIDO' : 'PARTIDOS'}`;
+}
+
 export function statusLabel(status: ResolvedMatchStatus): string {
   const labels: Record<ResolvedMatchStatus, string> = {
     scheduled: 'programado',

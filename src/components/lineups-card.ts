@@ -228,13 +228,13 @@ export class LineupsCard extends LitElement {
                             role="button"
                             tabindex="0"
                             @click=${(e: Event) =>
-                            this._toggleRow(e, 'local', player.number)}
+                              this._toggleRow(e, 'local', player.number)}
                           >
                             <md-checkbox
                               id="lineupLocal-${player.number}"
                               .checked=${isTitular}
                               @change=${(e: Event) =>
-                              this._onLineupChange(e, 'local', player.number)}
+                                this._onLineupChange(e, 'local', player.number)}
                               @click=${(e: Event) => e.stopPropagation()}
                             ></md-checkbox>
                             <div class="player-info-wrapper">
@@ -268,13 +268,17 @@ export class LineupsCard extends LitElement {
                             role="button"
                             tabindex="0"
                             @click=${(e: Event) =>
-                            this._toggleRow(e, 'visitor', player.number)}
+                              this._toggleRow(e, 'visitor', player.number)}
                           >
                             <md-checkbox
                               id="lineupVisitor-${player.number}"
                               .checked=${isTitular}
                               @change=${(e: Event) =>
-                              this._onLineupChange(e, 'visitor', player.number)}
+                                this._onLineupChange(
+                                  e,
+                                  'visitor',
+                                  player.number,
+                                )}
                               @click=${(e: Event) => e.stopPropagation()}
                             ></md-checkbox>
                             <div class="player-info-wrapper">

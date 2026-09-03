@@ -138,7 +138,9 @@ for (const template of [
       element.setAttribute('style', 'width: 1080px; height: 1350px;'),
     );
     await page.waitForFunction(() => {
-      const generator = document.querySelector('social-post-generator');
+      const generator = document
+        .querySelector('social-page')
+        ?.shadowRoot?.querySelector('social-post-generator');
       const canvas = generator?.shadowRoot?.querySelector('canvas');
       if (!canvas) {
         return false;
@@ -197,6 +199,25 @@ test('selecciona la próxima jornada en vez de la numéricamente mayor', async (
   await mountSocialFixture(page, fixtures);
   const generator = page.locator('social-post-generator');
   await expect(generator.locator('#jornada')).toHaveValue('1');
+});
+
+test('separa el estado pospuesto del horario y pluraliza por día', async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date('2026-08-06T18:00:00-06:00') });
+  const fixtures = createFixtures();
+  fixtures.matches = fixtures.matches.slice(0, 3);
+  fixtures.matches[0].status = 'postponed';
+  fixtures.matches[1].fecha = '2026/08/08';
+  fixtures.matches[2].fecha = '2026/08/08';
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  const canvas = generator.locator('canvas');
+  await expect(generator).toBeVisible();
+  await canvas.evaluate(element =>
+    element.setAttribute('style', 'width: 1080px; height: 1350px;'),
+  );
+  await expect(canvas).toHaveScreenshot('round-preview-postponed.png');
 });
 
 test('prepara resultados de jornada como hilo de X sin rebasar 280 caracteres', async ({
