@@ -21,6 +21,7 @@ import {
   dateKey,
   defaultSocialJornada,
   dailyMatchesVariant,
+  formatMatchCount,
   formatSocialDate,
   formatKickoff,
   groupMatchesByDay,
@@ -929,7 +930,7 @@ export class SocialPostGenerator extends LitElement {
       context.fillStyle = SOCIAL_COLORS.primary;
       context.font = '700 18px system-ui, sans-serif';
       context.fillText(
-        `${group.label} · ${group.matches.length} PARTIDOS`,
+        `${group.label} · ${formatMatchCount(group.matches.length)}`,
         58,
         y + 18,
       );
@@ -1281,6 +1282,8 @@ export class SocialPostGenerator extends LitElement {
         yOffset = centerY + 5;
       } else if (isResults) {
         yOffset = centerY + (penalties ? -12 : -7);
+      } else if (status === 'postponed' || status === 'cancelled') {
+        yOffset = centerY + 16;
       } else {
         yOffset = centerY + 7;
       }
@@ -1290,15 +1293,19 @@ export class SocialPostGenerator extends LitElement {
 
     const detail = this._matchDetail(match, status, isResults);
     if (detail) {
+      let detailYOffset = centerY;
+      if (isDaily) {
+        detailYOffset += 43;
+      } else if (isResults) {
+        detailYOffset += penalties ? 5 : 16;
+      } else if (status === 'postponed' || status === 'cancelled') {
+        detailYOffset -= 10;
+      }
       context.fillStyle = this._statusColor(status);
       context.font = `700 ${
         isDaily ? Math.max(14, Math.min(18, height * 0.16)) : 11
       }px system-ui, sans-serif`;
-      context.fillText(
-        detail,
-        centerX,
-        centerY + (isDaily ? 43 : isResults ? (penalties ? 5 : 16) : 0),
-      );
+      context.fillText(detail, centerX, detailYOffset);
     }
 
     if (penalties) {

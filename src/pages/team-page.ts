@@ -789,17 +789,17 @@ export class TeamPage extends LitElement {
                           <div class="image-actions">
                             <p class="${this._getImageMessageClass()}">
                               ${
-                          this.editImageError ||
-                          'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'
-                        }
+                                this.editImageError ||
+                                'Si pegas una nueva imagen, se reemplazará la URL guardada al guardar el formulario.'
+                              }
                             </p>
                             ${clearEditImageButton}
                             <md-outlined-button
                               @click=${this._readEditImageFromClipboard}
                               ?disabled=${
-                          this.editIsReadingClipboardImage ||
-                          this.editIsUploadingImage
-                        }
+                                this.editIsReadingClipboardImage ||
+                                this.editIsUploadingImage
+                              }
                             >
                               <md-icon slot="icon">content_paste_go</md-icon>
                               ${this._getClipboardButtonLabel()}
