@@ -131,7 +131,7 @@ for (const template of [
     }
     if (template === 'day-results' || template === 'round-results') {
       await expect(generator.locator('textarea').first()).toHaveValue(
-        /América 0–1 Atlas/,
+        /@clubamerica 0–1 @atlasfc/,
       );
     }
     await canvas.evaluate(element =>
@@ -245,7 +245,7 @@ test('prepara resultados de jornada como hilo de X sin rebasar 280 caracteres', 
   await expect(generator.locator('#x-post')).toBeVisible();
   expect(post.length).toBeLessThanOrEqual(280);
   expect(post).not.toContain('null');
-  expect(post).not.toContain('León 0–1 Necaxa');
+  expect(post).not.toMatch(/^@clubleonfc .* @ClubNecaxa$/m);
   await expect(generator.locator('#x-reply')).toHaveValue(/utm_source=x/);
 });
 
@@ -279,7 +279,7 @@ test('prioriza un clásico cuando los resultados no caben en el post de X', asyn
     );
   });
   await expect(generator.locator('#x-post')).toHaveValue(
-    /América 0–1 Guadalajara/,
+    /@ClubAmerica 0–1 @Chivas/,
   );
 });
 
