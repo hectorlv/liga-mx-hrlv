@@ -336,8 +336,8 @@ export function buildSocialCopy(
       const hasScore =
         Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
       return hasScore
-        ? `${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}`
-        : `${match.local} vs ${match.visitante}`;
+        ? `${socialTeamMention(match.local, platform)} ${match.golLocal}–${match.golVisitante} ${socialTeamMention(match.visitante, platform)}`
+        : `${socialTeamMention(match.local, platform)} vs ${socialTeamMention(match.visitante, platform)}`;
     })
     .join('\n');
   const copies: Record<TemplateId, string> = {
@@ -367,7 +367,7 @@ function isClassic(match: Match): boolean {
 }
 
 function resultLine(match: Match): string {
-  return `${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}`;
+  return `${socialTeamMention(match.local, 'x')} ${match.golLocal}–${match.golVisitante} ${socialTeamMention(match.visitante, 'x')}`;
 }
 
 /** Copy listo para publicar manualmente como un hilo de dos posts en X. */
@@ -474,4 +474,97 @@ export function buildRenderResult(input: SocialImageInput): SocialRenderResult {
     errors,
     filename: `liga-mx-hrlv-${input.template}-j${input.jornada || 'actual'}-${date}.png`,
   };
+}
+
+export const socialMediaUsernames = {
+  america: {
+    x: 'ClubAmerica',
+    instagram: 'clubamerica',
+  },
+  atlante: {
+    x: 'Atlante',
+    instagram: 'atlantefc',
+  },
+  atlas: {
+    x: 'atlasfc',
+    instagram: 'atlasfc',
+  },
+  clubAtleticoDeSanLuis: {
+    x: 'AtletideSanLuis',
+    instagram: 'atletidesanluis',
+  },
+  cruzAzul: {
+    x: 'CruzAzul',
+    instagram: 'cruzazul',
+  },
+  fcJuarez: {
+    x: 'fcjuarezoficial',
+    instagram: 'fc_juarez',
+  },
+  gallosBlancosDeQueretaro: {
+    x: 'Club_Queretaro',
+    instagram: 'clubqueretaro',
+  },
+  guadalajara: {
+    x: 'Chivas',
+    instagram: 'chivas',
+  },
+  leon: {
+    x: 'clubleonfc',
+    instagram: 'clubleon_oficial',
+  },
+  monterrey: {
+    x: 'Rayados',
+    instagram: 'rayados',
+  },
+  necaxa: {
+    x: 'ClubNecaxa',
+    instagram: 'clubnecaxa',
+  },
+  pachuca: {
+    x: 'Tuzos',
+    instagram: 'tuzosoficial',
+  },
+  pueblaFc: {
+    x: 'ClubPueblaMX',
+    instagram: 'clubpuebla',
+  },
+  santosLaguna: {
+    x: 'ClubSantos',
+    instagram: 'clubsantos',
+  },
+  tijuana: {
+    x: 'Xolos',
+    instagram: 'xolos',
+  },
+  toluca: {
+    x: 'TolucaFC',
+    instagram: 'tolucafc',
+  },
+  tigresDeLaUanl: {
+    x: 'TigresOficial',
+    instagram: 'clubtigres',
+  },
+  universidadNacional: {
+    x: 'PumasMX',
+    instagram: 'pumasmx',
+  },
+} satisfies Record<string, Record<SocialPlatform, string>>;
+
+/** Relaciona los nombres del calendario con las claves del catálogo de cuentas. */
+export function socialTeamMention(
+  team: string,
+  platform: SocialPlatform,
+): string {
+  const normalize = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .toLowerCase();
+  const key = normalize(team);
+  const account = Object.entries(socialMediaUsernames).find(
+    ([name]) => normalize(name) === key,
+  )?.[1][platform];
+  return account ? `@${account.replace(/^@+/, '')}` : team;
 }
