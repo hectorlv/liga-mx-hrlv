@@ -1616,7 +1616,7 @@ export class StatsPage extends LitElement {
         <button
           class="stats-category-tab ${this._getCategoryClass('players')}"
           type="button"
-          ?aria-pressed=${this.activeCategory === 'players'}
+          aria-pressed=${this.activeCategory === 'players' ? 'true' : 'false'}
           @click=${() => (this.activeCategory = 'players')}
         >
           <md-icon>groups</md-icon>
@@ -1625,7 +1625,7 @@ export class StatsPage extends LitElement {
         <button
           class="stats-category-tab ${this._getCategoryClass('teams')}"
           type="button"
-          ?aria-pressed=${this.activeCategory === 'teams'}
+          aria-pressed=${this.activeCategory === 'teams' ? 'true' : 'false'}
           @click=${() => (this.activeCategory = 'teams')}
         >
           <md-icon>shield</md-icon>
@@ -1634,7 +1634,7 @@ export class StatsPage extends LitElement {
         <button
           class="stats-category-tab ${this._getCategoryClass('tournament')}"
           type="button"
-          ?aria-pressed=${this.activeCategory === 'tournament'}
+          aria-pressed=${this.activeCategory === 'tournament' ? 'true' : 'false'}
           @click=${() => (this.activeCategory = 'tournament')}
         >
           <md-icon>emoji_events</md-icon>

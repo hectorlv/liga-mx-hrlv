@@ -2,6 +2,7 @@ import { LitElement, css, html } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
+import { POSTSEASON_FORMAT } from '../utils/constants.js';
 import { isMatchLive } from '../utils/matchStatus.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 
@@ -27,10 +28,10 @@ export class TablePage extends LitElement {
         display: flex;
         gap: 16px;
         margin-bottom: 16px;
-        font-size; 0.8rem;
+        font-size: 0.8rem;
         flex-wrap: wrap;
         justify-content: center;
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
       }
       .legend-item {
         display: flex;
@@ -109,7 +110,7 @@ export class TablePage extends LitElement {
         grid-area: pos;
         justify-content: center;
         font-weight: bold;
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
         font-size: 0.9rem;
         position: relative;
       }
@@ -328,15 +329,16 @@ export class TablePage extends LitElement {
   override render() {
     return html`
       <main>
+        <p class="table-status" role="note">Tabla en vivo y provisional: los resultados no finalizados no confirman clasificación ni eliminación.</p>
         <div class="legend">
           <div class="legend-item">
             <div class="dot qualified"></div>
             Clasificado
           </div>
-          <div class="legend-item">
+          ${POSTSEASON_FORMAT.playInSpots > 0 ? html`<div class="legend-item">
             <div class="dot playin"></div>
             Play-in
-          </div>
+          </div>` : ''}
           <div class="legend-item">
             <div class="dot eliminated"></div>
             Eliminado
@@ -348,13 +350,13 @@ export class TablePage extends LitElement {
             <div class="header-cell">Pos</div>
             <div class="header-cell"></div>
             <div class="header-cell align-left">Equipo</div>
-            <div class="header-cell">JJ</div>
+            <div class="header-cell" title="Partidos jugados">JJ</div>
             <div class="header-cell">JG</div>
             <div class="header-cell">JE</div>
             <div class="header-cell">JP</div>
             <div class="header-cell">GF</div>
             <div class="header-cell">GC</div>
-            <div class="header-cell">DG</div>
+            <div class="header-cell" title="Diferencia de goles">DG</div>
             <div class="header-cell">PTS</div>
           </div>
 
@@ -384,11 +386,11 @@ export class TablePage extends LitElement {
 
                 <div class="mobile-stats">
                   <div class="stat-pill">
-                    <span class="stat-label">JJ:</span>
+                    <span class="stat-label" aria-label="Partidos jugados">JJ:</span>
                     <span>${team.jj}</span>
                   </div>
                   <div class="stat-pill">
-                    <span class="stat-label">DG:</span>
+                    <span class="stat-label" aria-label="Diferencia de goles">DG:</span>
                     <span>${team.dg}</span>
                   </div>
                   <div class="stat-pill">

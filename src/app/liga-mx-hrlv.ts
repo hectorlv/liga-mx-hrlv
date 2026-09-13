@@ -22,6 +22,7 @@ import { Unsubscribe } from 'firebase/database';
 import '@material/web/icon/icon.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/text-button.js';
+import '@material/web/iconbutton/icon-button.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
 // Styles and components
@@ -61,6 +62,7 @@ import {
 } from '../utils/playoffCalculator.js';
 import { calculateTable } from '../utils/tableCalculator.js';
 import { APP_BUILD_DATE, APP_VERSION_LABEL } from '../utils/version.js';
+import { registerServiceWorker } from '../utils/serviceWorker.js';
 import type { AdminUpdateEventDetail } from '../utils/functionUtils.js';
 import '../utils/material.js';
 
@@ -256,6 +258,37 @@ export class LigaMxHrlv extends LitElement {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
       }
+      .skip-link {
+        position: absolute;
+        top: -56px;
+        left: 12px;
+        z-index: 200;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        font-weight: 700;
+      }
+      .skip-link:focus { top: 12px; }
+      .content-message {
+        max-width: 680px;
+        margin: 32px auto;
+        padding: 24px;
+        text-align: center;
+      }
+      .data-warning {
+        margin: 12px auto 0;
+        max-width: 960px;
+        padding: 10px 16px;
+        border: 1px solid #a16207;
+        border-radius: 8px;
+        background: #fef3c7;
+        color: #713f12;
+        font-weight: 700;
+      }
+      @media (max-width: 600px) {
+        .scrollTopButton { bottom: 12px; right: 12px; padding: 8px; }
+      }
 
       /* FOOTER */
       .app-footer {
@@ -379,6 +412,10 @@ export class LigaMxHrlv extends LitElement {
   @state() selectedTab: string = 'Inicio';
   @state() titleError: string = '';
   @state() contentError: string = '';
+  @state() private publicDataError = '';
+  @state() private publicDataStale = '';
+  @state() private publicDataLoaded = false;
+  @state() private showScrollTop = false;
   @state() user: User | null = null;
   @state() isAdmin: boolean = false;
   @state() routedMatchId: string | null = null;
@@ -395,17 +432,22 @@ export class LigaMxHrlv extends LitElement {
   private _unsubscribeAdminRevisions?: Unsubscribe;
   private _unsubscribeAuth?: Unsubscribe;
   private readonly _boundRouteChange = () => this._syncRouteFromUrl();
+  private readonly _boundScroll = () => {
+    this.showScrollTop = window.scrollY > 320;
+  };
 
   constructor() {
     super();
     this.app = initializeApp(FIREBASE_CONFIG);
     this.auth = getAuth(this.app);
+    registerServiceWorker();
     this._initializeAnalytics();
   }
 
   override render() {
     const adminStatus = this.isAdmin ? 'Admin' : 'Sin permisos';
     return html`
+      <a class="skip-link" href="#main-content">Saltar al contenido</a>
       <header>
         <div class="header-content">
           <nav class="main-navigation" aria-label="Navegación principal">
@@ -452,16 +494,18 @@ export class LigaMxHrlv extends LitElement {
         </div>
       </header>
 
-      <main>${this._getTab()}</main>
+      ${this.publicDataStale ? html`<p class="data-warning" role="status">${this.publicDataStale} Se muestra el último dato disponible.</p>` : ''}
+      <main id="main-content" tabindex="-1">${this._getTab()}</main>
 
-      <md-icon
+      <md-icon-button
         id="scrollTopButton"
-        class="scrollTopButton material-icons-outlined"
-        title="Volver arriba"
+        class="scrollTopButton"
+        aria-label="Volver arriba"
+        ?hidden=${!this.showScrollTop}
         @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       >
-        arrow_upward
-      </md-icon>
+        <md-icon>arrow_upward</md-icon>
+      </md-icon-button>
 
       <footer class="app-footer">
         <p class="footer-credit">
@@ -555,16 +599,22 @@ export class LigaMxHrlv extends LitElement {
   }
 
   private _getTab() {
+    if (this.publicDataError) {
+      return html`<section class="content-message" role="alert">
+        <h1>No se pudieron actualizar los datos</h1>
+        <p>${this.publicDataError}</p>
+        <md-filled-button @click=${this._retryPublicData}>Reintentar</md-filled-button>
+      </section>`;
+    }
     if (this.routedMatchId !== null) {
+      if (!/^\d+$/.test(this.routedMatchId)) return this._notFound('Partido');
       const routedMatch = this.matchesList.find(
         match => String(match.idMatch) === this.routedMatchId,
       );
 
-      if (!routedMatch) {
-        return html`<p style="padding: 40px; text-align: center;">
-          Cargando detalles del partido...
-        </p>`;
-      }
+      if (!routedMatch) return this.publicDataLoaded
+        ? this._notFound('Partido')
+        : html`<p class="content-message" aria-live="polite">Cargando detalles del partido…</p>`;
 
       return html`
         <match-detail-page
@@ -582,16 +632,15 @@ export class LigaMxHrlv extends LitElement {
     }
 
     const routedTeamName = this.routedTeamName;
-    if (routedTeamName) {
+    if (routedTeamName !== null) {
+      if (!routedTeamName) return this._notFound('Equipo');
       const team = this.table.find(entry => entry.equipo === routedTeamName);
       const teamPosition =
         this.table.findIndex(entry => entry.equipo === routedTeamName) + 1;
 
-      if (!team) {
-        return html`<p style="padding: 40px; text-align: center;">
-          Cargando detalles del equipo...
-        </p>`;
-      }
+      if (!team) return this.publicDataLoaded
+        ? this._notFound('Equipo')
+        : html`<p class="content-message" aria-live="polite">Cargando detalles del equipo…</p>`;
 
       return html`
         <team-page
@@ -689,6 +738,8 @@ export class LigaMxHrlv extends LitElement {
     super.connectedCallback();
     this._syncRouteFromUrl();
     window.addEventListener('popstate', this._boundRouteChange);
+    window.addEventListener('scroll', this._boundScroll, { passive: true });
+    this._boundScroll();
     this._subscribePublicData();
     this._unsubscribeAuth = onAuthStateChanged(this.auth, async user => {
       this.user = user;
@@ -721,26 +772,66 @@ export class LigaMxHrlv extends LitElement {
     if (this._unsubscribeMatches) return;
     this._unsubscribeMatches = fetchMatches((matches: Match[]) => {
       this.matchesList = matches;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribeTeams = fetchTeams((teams: string[]) => {
       this.teams = teams;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribeStadiums = fetchStadiums((stadiums: string[]) => {
       this.stadiums = stadiums;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribePlayers = fetchPlayers((players: PlayerTeam) => {
       this.players = players;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribeU23NationalTeamCallups = fetchU23NationalTeamCallups(
       (callups: U23NationalTeamCallups) => {
         this.u23NationalTeamCallups = callups;
       },
+      this._handlePublicDataError,
     );
+  }
+
+  private _markPublicDataLoaded() {
+    this.publicDataLoaded = true;
+    this.publicDataError = '';
+    this.publicDataStale = '';
+  }
+
+  private _handlePublicDataError = (error: Error) => {
+    if (this.publicDataLoaded) {
+      this.publicDataStale = error.message;
+      return;
+    }
+    this.publicDataError = error.message;
+  };
+
+  private _retryPublicData = () => {
+    this.publicDataError = '';
+    this.publicDataStale = '';
+    this._unsubscribeMatches?.();
+    this._unsubscribeTeams?.();
+    this._unsubscribeStadiums?.();
+    this._unsubscribePlayers?.();
+    this._unsubscribeU23NationalTeamCallups?.();
+    this._unsubscribeMatches = undefined;
+    this._subscribePublicData();
+  };
+
+  private _notFound(entity: 'Partido' | 'Equipo') {
+    return html`<section class="content-message" role="status">
+      <h1>${entity} no encontrado</h1>
+      <p>La dirección no corresponde a un registro disponible.</p>
+      <md-filled-button @click=${entity === 'Partido' ? this._closeRoutedMatch : this._closeRoutedTeam}>Volver</md-filled-button>
+    </section>`;
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('popstate', this._boundRouteChange);
+    window.removeEventListener('scroll', this._boundScroll);
     this._unsubscribeAuth?.();
     this._unsubscribeMatches?.();
     this._unsubscribeTeams?.();
@@ -811,8 +902,8 @@ export class LigaMxHrlv extends LitElement {
   private _syncRouteFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const matchParam = params.get('match');
-    this.routedMatchId = matchParam?.trim() ? matchParam : null;
-    this.routedTeamName = params.get('team');
+    this.routedMatchId = params.has('match') ? (matchParam?.trim() ?? '') : null;
+    this.routedTeamName = params.has('team') ? (params.get('team')?.trim() ?? '') : null;
 
     const tab = params.get('tab');
     this.selectedTab = this._navigationTabs.some(item => item.label === tab)

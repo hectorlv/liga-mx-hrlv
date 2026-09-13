@@ -16,6 +16,7 @@ import {
 } from '../types';
 
 type SimpleCallback<T> = (data: T) => void;
+type ErrorCallback = (error: Error) => void;
 
 export type AdminRevisions = {
   [key: string]: number | AdminRevisions;
@@ -75,6 +76,7 @@ function subscribeToFirebasePath<T>(
   path: string,
   callback: SimpleCallback<T>,
   isArray: boolean = true,
+  onError?: ErrorCallback,
 ): Unsubscribe {
   const db = getDatabase();
   const dbRef = ref(db, path);
@@ -95,13 +97,16 @@ function subscribeToFirebasePath<T>(
     },
     error => {
       console.error('Firebase subscription error at path:', path, error);
-      callback(isArray ? ([] as unknown as T) : (new Map() as unknown as T));
+      onError?.(new Error(`No se pudieron leer los datos de ${path}.`));
     },
   );
   return unsubscribe;
 }
 
-export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
+export function fetchMatches(
+  callback: SimpleCallback<Match[]>,
+  onError?: ErrorCallback,
+): Unsubscribe {
   const db = getDatabase();
   return onValue(ref(db, '/matches'), snapshot => {
     const raw = snapshot.val() as Record<string, Match> | Match[] | null;
@@ -131,20 +136,27 @@ export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
     callback(formattedMatches as Match[]);
   }, error => {
     console.error('Firebase subscription error at path: /matches', error);
-    callback([]);
+    onError?.(new Error('No se pudieron leer los partidos.'));
   });
 }
 
-export function fetchTeams(callback: SimpleCallback<string[]>): Unsubscribe {
-  return subscribeToFirebasePath<string[]>('/teams', callback);
+export function fetchTeams(
+  callback: SimpleCallback<string[]>,
+  onError?: ErrorCallback,
+): Unsubscribe {
+  return subscribeToFirebasePath<string[]>('/teams', callback, true, onError);
 }
 
-export function fetchStadiums(callback: SimpleCallback<string[]>): Unsubscribe {
-  return subscribeToFirebasePath<string[]>('/stadiums', callback);
+export function fetchStadiums(
+  callback: SimpleCallback<string[]>,
+  onError?: ErrorCallback,
+): Unsubscribe {
+  return subscribeToFirebasePath<string[]>('/stadiums', callback, true, onError);
 }
 
 export function fetchPlayers(
   callback: SimpleCallback<PlayerTeam>,
+  onError?: ErrorCallback,
 ): Unsubscribe {
   const callbackWrapper = (teamsMap: PlayerTeam) => {
     const orderPosition = ['Portero', 'Defensa', 'Medio', 'Delantero'];
@@ -164,16 +176,19 @@ export function fetchPlayers(
     '/players',
     callbackWrapper,
     false,
+    onError,
   );
 }
 
 export function fetchU23NationalTeamCallups(
   callback: SimpleCallback<U23NationalTeamCallups>,
+  onError?: ErrorCallback,
 ): Unsubscribe {
   return subscribeToFirebasePath<U23NationalTeamCallups>(
     '/u23NationalTeamCallups',
     callback,
     false,
+    onError,
   );
 }
 

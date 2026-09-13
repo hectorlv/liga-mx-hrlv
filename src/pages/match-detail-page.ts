@@ -217,7 +217,7 @@ export class MatchDetailPage extends LitElement {
 
       .aggregate-score {
         margin-top: 8px;
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
         font-size: 0.9rem;
         font-weight: 800;
         line-height: 1;
@@ -226,7 +226,7 @@ export class MatchDetailPage extends LitElement {
 
       .match-resolution-note {
         margin-top: 8px;
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
         font-size: 0.78rem;
         font-weight: 800;
         line-height: 1.2;

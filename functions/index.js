@@ -2,7 +2,10 @@ import { initializeApp } from 'firebase-admin/app';
 import { getDatabase } from 'firebase-admin/database';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
-initializeApp();
+const firebaseApp = initializeApp({
+  databaseURL: 'https://ligamx-b16f7-default-rtdb.firebaseio.com',
+});
+const database = getDatabase(firebaseApp);
 
 const ALLOWED_ROOTS = new Set([
   'matches',
@@ -41,6 +44,12 @@ function getAtPath(source, path) {
       current && typeof current === 'object' ? current[segment] : undefined,
     source,
   );
+}
+
+function getRevision(revisions, resource) {
+  const directValue = revisions?.[resource];
+  if (directValue !== undefined) return Number(directValue) || 0;
+  return Number(getAtPath(revisions, `/${resource}`) || 0);
 }
 
 function setAtPath(target, path, value) {
@@ -87,48 +96,34 @@ export const applyAdminUpdates = onCall(
       throw new HttpsError('permission-denied', 'Se requiere permiso administrativo.');
 
     const { updates, expectedRevisions, resources } = validateRequest(request.data);
-    let conflict = null;
-    const transaction = await getDatabase().ref().transaction(current => {
-      const root = current && typeof current === 'object' ? structuredClone(current) : {};
-      const revisions =
-        root.adminRevisions && typeof root.adminRevisions === 'object'
-          ? root.adminRevisions
-          : {};
-      const actual = Object.fromEntries(
-        resources.map(resource => [
-          resource,
-          Number(getAtPath(revisions, `/${resource}`) || 0),
-        ]),
-      );
-      const mismatched = resources.filter(
-        resource => actual[resource] !== expectedRevisions[resource],
-      );
-      if (mismatched.length) {
-        conflict = {
-          resources: mismatched,
-          revisions: Object.fromEntries(mismatched.map(key => [key, actual[key]])),
-          current: Object.fromEntries(
-            mismatched.map(key => [key, getAtPath(root, `/${key}`) ?? null]),
-          ),
-        };
-        return;
-      }
-      Object.entries(updates).forEach(([path, value]) => setAtPath(root, path, value));
-      root.adminRevisions = revisions;
-      resources.forEach(resource => {
-        setAtPath(root.adminRevisions, `/${resource}`, actual[resource] + 1);
-      });
-      return root;
-    });
-
-    if (!transaction.committed && conflict) {
-      return { ok: false, code: 'conflict', ...conflict };
+    const snapshot = await database.ref('/adminRevisions').once('value');
+    const revisions =
+      snapshot.val() && typeof snapshot.val() === 'object'
+        ? structuredClone(snapshot.val())
+        : {};
+    const actual = Object.fromEntries(
+      resources.map(resource => [resource, getRevision(revisions, resource)]),
+    );
+    const mismatched = resources.filter(
+      resource => actual[resource] !== expectedRevisions[resource],
+    );
+    if (mismatched.length) {
+      return {
+        ok: false,
+        code: 'conflict',
+        resources: mismatched,
+        revisions: Object.fromEntries(mismatched.map(key => [key, actual[key]])),
+        current: Object.fromEntries(mismatched.map(key => [key, null])),
+      };
     }
-    if (!transaction.committed)
-      throw new HttpsError('aborted', 'No fue posible guardar los cambios.');
-    const revisions = Object.fromEntries(
+    const writeUpdates = { ...updates };
+    resources.forEach(resource => {
+      writeUpdates[`/adminRevisions/${resource}`] = actual[resource] + 1;
+    });
+    await database.ref().update(writeUpdates);
+    const nextRevisions = Object.fromEntries(
       resources.map(resource => [resource, expectedRevisions[resource] + 1]),
     );
-    return { ok: true, revisions };
+    return { ok: true, revisions: nextRevisions };
   },
 );

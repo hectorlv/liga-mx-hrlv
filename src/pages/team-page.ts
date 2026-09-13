@@ -129,7 +129,7 @@ export class TeamPage extends LitElement {
         gap: 8px;
       }
       .team-table-stat {
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
         font-size: 0.82rem;
         font-weight: 700;
         white-space: nowrap;
@@ -502,7 +502,7 @@ export class TeamPage extends LitElement {
     return html`
       <main>
         <div class="header-container">
-          <md-icon-button @click=${() => this._goBack()} title="Volver">
+          <md-icon-button @click=${() => this._goBack()} title="Volver" aria-label="Volver a la tabla">
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
           ${getTeamImage(this.team.equipo)}

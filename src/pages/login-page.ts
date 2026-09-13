@@ -112,6 +112,7 @@ export class LoginPage extends LitElement {
   @state() private titleError: string = '';
   @state() private contentError: string = '';
   @state() private isLoading: boolean = true; // Empieza en true mientras checamos la sesión
+  @state() private isSubmitting = false;
 
   @query('#emailInput') emailInput!: MdFilledTextField;
   @query('#passwordInput') passwordInput!: MdFilledTextField;
@@ -132,7 +133,7 @@ export class LoginPage extends LitElement {
   }
 
   override render() {
-    // Si Firebase está decidiendo si ya hay un usuario logueado, no mostramos el formulario de golpe
+    // Solo la comprobación inicial sustituye el formulario; un envío conserva el borrador.
     if (this.isLoading) {
       return html`
         <div
@@ -156,7 +157,7 @@ export class LoginPage extends LitElement {
         <h2>Bienvenido</h2>
         <p class="subtitle">Inicia sesión para gestionar el torneo.</p>
 
-        <form @submit=${this._handleLogin} novalidate>
+        <form class=${this.isSubmitting ? 'loading-state' : ''} @submit=${this._handleLogin} novalidate>
           <md-filled-text-field
             id="emailInput"
             label="Correo electrónico"
@@ -177,9 +178,13 @@ export class LoginPage extends LitElement {
             <md-icon slot="leading-icon">lock</md-icon>
           </md-filled-text-field>
 
-          <md-filled-button type="submit" ?disabled=${this.isLoading}>
+          <div role="alert" aria-live="assertive">
+            ${this.contentError ? html`<p>${this.contentError}</p>` : ''}
+          </div>
+
+          <md-filled-button type="submit" ?disabled=${this.isSubmitting}>
             <md-icon slot="icon">login</md-icon>
-            Ingresar
+            ${this.isSubmitting ? 'Ingresando…' : 'Ingresar'}
           </md-filled-button>
         </form>
       </div>
@@ -215,7 +220,7 @@ export class LoginPage extends LitElement {
       return;
     }
 
-    this.isLoading = true; // Desactivar botón temporalmente
+    this.isSubmitting = true;
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -225,7 +230,8 @@ export class LoginPage extends LitElement {
       );
       this._dispatchLoginSuccess(userCredential.user);
     } catch (error: unknown) {
-      this.isLoading = false;
+      this.isSubmitting = false;
+      this.passwordInput.value = '';
       let errorMsg = 'Ocurrió un error al iniciar sesión. Intenta nuevamente.';
 
       // Traducción amigable de errores comunes de Firebase
@@ -243,14 +249,14 @@ export class LoginPage extends LitElement {
         }
       }
 
-      this._showError('Error de Autenticación', errorMsg);
+      this._showError('Error de autenticación', errorMsg);
     }
   }
 
   private _showError(title: string, content: string) {
     this.titleError = title;
     this.contentError = content;
-    this.dialog.show();
+    this.requestUpdate();
   }
 
   private _dispatchLoginSuccess(user: User) {

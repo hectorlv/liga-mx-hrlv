@@ -17,7 +17,7 @@ import { MdFilledButton } from '@material/web/button/filled-button.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdSwitch } from '@material/web/switch/switch.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
-import { JORNADA_LIGUILLA, LIGUILLA } from '../utils/constants.js';
+import { JORNADA_LIGUILLA, LIGUILLA, POSTSEASON_FORMAT } from '../utils/constants.js';
 import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
@@ -60,13 +60,13 @@ export class MatchesPage extends LitElement {
       }
 
       .empty-state {
-        display:flex;
-        flex:direction: column;
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 64px 24px;
-        text-align: center
-        color: var(--md-sys-color-surface-variant);
+        text-align: center;
+        color: #475569;
         gap: 12px;
       }
 
@@ -257,12 +257,12 @@ export class MatchesPage extends LitElement {
 
       .status-chip.live {
         background: color-mix(in srgb, var(--app-color-danger) 14%, white);
-        color: var(--app-color-danger);
+        color: #b91c1c;
       }
 
       .status-chip.lineups {
         background: color-mix(in srgb, var(--md-sys-color-primary) 12%, white);
-        color: var(--md-sys-color-primary);
+        color: #155e75;
       }
 
       /* Cabeceras de tabla (ocultas en móvil) */
@@ -529,7 +529,9 @@ export class MatchesPage extends LitElement {
                 >
               `,
             )}
-            ${JORNADA_LIGUILLA.map(
+            ${JORNADA_LIGUILLA.filter(
+              jornada => POSTSEASON_FORMAT.playInSpots > 0 || !/play.?in/i.test(jornada.descripcion),
+            ).map(
               i => html`
                 <md-select-option value="${i.id}"
                   ><div slot="headline">${i.descripcion}</div></md-select-option
@@ -569,14 +571,15 @@ export class MatchesPage extends LitElement {
             ></md-switch>
             <span>Solo partidos de Liguilla</span>
           </div>
+          <md-filled-button @click=${this._clearFilters}>Limpiar filtros</md-filled-button>
         </div>
         ${
           this.matchesRender.length === 0
             ? html`
                 <div class="empty-state">
                   <md-icon>event_busy</md-icon>
-                  <h3>No hay partidos hoy</h3>
-                  <p>Intenta cambiar los filtros o selecciona otra jornada.</p>
+                  <h3>${this.todayDateSelected ? 'No hay partidos hoy' : 'No hay partidos con estos filtros'}</h3>
+                  <p>${this.todayDateSelected ? 'No hay encuentros programados para hoy.' : 'Intenta cambiar o limpiar los filtros.'}</p>
                 </div>
               `
             : html`
@@ -729,8 +732,7 @@ export class MatchesPage extends LitElement {
           match.fecha.getFullYear() === this.todayDate.getFullYear() &&
           match.fecha.getMonth() === this.todayDate.getMonth() &&
           match.fecha.getDate() === this.todayDate.getDate());
-      const noPlayIn = match.jornada !== 18 && match.jornada !== 19; // Solo torneo sin playin
-      return findTeam && findMatchDay && todayDate && onlyPlayOff && noPlayIn;
+      return findTeam && findMatchDay && todayDate && onlyPlayOff;
     });
   }
 
@@ -745,6 +747,15 @@ export class MatchesPage extends LitElement {
       false;
     this._filtersChanged();
   }
+
+  private _clearFilters = () => {
+    this.teamsSelect.value = '';
+    this.matchDaySelect.value = '';
+    this.todayDateSelected = false;
+    this.todayDateCheckbox.selected = false;
+    this.onlyPlayOffSwitch.selected = false;
+    this._filterMatches('', '', false, false);
+  };
 
   private _onResize() {
     const isMobile = window.innerWidth < 600;

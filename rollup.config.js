@@ -3,7 +3,7 @@ import babel from '@rollup/plugin-babel';
 import { rollupPluginHTML as html } from "@web/rollup-plugin-html";
 import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 import _esbuild from 'rollup-plugin-esbuild';
-import { generateSW } from 'rollup-plugin-workbox';
+import { injectManifest } from 'rollup-plugin-workbox';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import image from '@rollup/plugin-image';
@@ -44,8 +44,7 @@ export default {
     /** Enable using HTML as rollup entrypoint */
     html({
       minify: true,
-      injectServiceWorker: true,
-      serviceWorkerPath: 'dist/sw.js',
+      injectServiceWorker: false,
     }),
     image(),
     json(),
@@ -83,19 +82,14 @@ export default {
       exclude: ['node_modules/**'],
       babelHelpers: 'bundled',
     }),
-    /** Create and inject a service worker */
-    generateSW({
-      globIgnores: ['polyfills/*.js', 'nomodule-*.js'],
-      navigateFallback: '/index.html',
-      // where to output the generated sw
+    /** Build our version-safe service worker after Rollup has emitted assets. */
+    injectManifest({
+      swSrc: path.join('src', 'service-worker.js'),
       swDest: path.join('dist', 'sw.js'),
-      // directory to match patterns against to be precached
       globDirectory: path.join('dist'),
-      // cache any html js and css by default
-      globPatterns: ['**/*.{html,js,css,webmanifest}'],
-      skipWaiting: true,
-      clientsClaim: true,
-      runtimeCaching: [{ urlPattern: 'polyfills/*.js', handler: 'CacheFirst' }],
+      globPatterns: ['**/*.{html,js,css,webmanifest,png,svg,webp,jpg,jpeg}'],
+      globIgnores: ['sw.js', 'sw.js.map', 'workbox-*.js', 'workbox-*.js.map'],
+      maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
     }),
   ],
 };
