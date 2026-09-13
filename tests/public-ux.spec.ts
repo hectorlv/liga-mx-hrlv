@@ -30,6 +30,40 @@ async function mountPage(page: Page, tagName: string, setup: string) {
   );
 }
 
+test('en móvil la cronología identifica el equipo y el marcador tras cada gol', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mountPage(
+    page,
+    'events-timeline',
+    `component.match = {
+      idMatch: 1, estadio: 'Estadio HRLV', fecha: '2026/09/13', hora: '19:00', jornada: 1,
+      local: 'América', visitante: 'Atlas', golLocal: 2, golVisitante: 1,
+      lineupLocal: [], lineupVisitor: [],
+      events: [
+        { id: 'goal-local', type: 'goal', team: 'local', player: 9, minute: 10, period: '1T', sequence: 1 },
+        { id: 'card-visitor', type: 'card', team: 'visitor', player: 4, cardType: 'yellow', minute: 20, period: '1T', sequence: 2 },
+        { id: 'own-goal', type: 'goal', team: 'local', player: 3, ownGoal: true, minute: 30, period: '1T', sequence: 3 },
+        { id: 'goal-visitor', type: 'goal', team: 'visitor', player: 11, minute: 30, period: '1T', sequence: 4 },
+      ],
+    }; component.localPlayers = [{ name: 'Local', number: 9 }]; component.visitorPlayers = [{ name: 'Visitante', number: 11 }, { name: 'Defensa', number: 3 }, { name: 'Defensa', number: 4 }];`,
+  );
+
+  const timeline = page.locator('events-timeline');
+  await expect(timeline.getByText('América · Local').first()).toBeVisible();
+  await expect(timeline.getByText('Atlas · Visitante').first()).toBeVisible();
+  await expect(
+    timeline.getByLabel('Marcador tras el gol: 1 a 0'),
+  ).toBeVisible();
+  await expect(
+    timeline.getByLabel('Marcador tras el gol: 2 a 0'),
+  ).toBeVisible();
+  await expect(
+    timeline.getByLabel('Marcador tras el gol: 2 a 1'),
+  ).toBeVisible();
+});
+
 test('en móvil Más revela las secciones ocultas y cierra con Escape', async ({ page }) => {
   await blockRemoteServices(page);
   await page.setViewportSize({ width: 390, height: 844 });
