@@ -99,6 +99,15 @@ test('muestra todos los partidos en vivo aunque hayan comenzado a distinta hora'
     /América[\s\S]*Atlas/,
     /Toluca[\s\S]*León/,
   ]);
+  await expect(page.locator('.hero')).not.toHaveClass(/is-compact/);
+});
+
+test('compacta el hero cuando solo hay un destacado', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-08-09T15:00:00-06:00') });
+  await mountHomeFixture(page, [createMatch(1, 'América', 'Atlas', '18:00')]);
+
+  await expect(page.locator('.hero')).toHaveClass(/is-compact/);
+  await expect(page.getByLabel('Accesos rápidos')).toBeVisible();
 });
 
 test('guarda Mi equipo localmente y prioriza su partido en vivo', async ({

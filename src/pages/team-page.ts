@@ -20,8 +20,10 @@ import {
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
+  getPlayerImageErrorMessage,
   readImageFromClipboard,
   uploadPlayerImage,
+  validatePlayerImageForPreview,
 } from '../utils/playerImageUpload.js';
 import { LOGOS } from '../utils/constants.js';
 import { hasMatchEnded } from '../utils/matchStatus.js';
@@ -470,6 +472,8 @@ export class TeamPage extends LitElement {
 
   @query('#dialogEditPlayer') dialogEditPlayer!: MdDialog;
   @query('#dialogDeletePlayer') dialogDeletePlayer!: MdDialog;
+  @query('#dialogConfirmPlayerAction') dialogConfirmPlayerAction!: MdDialog;
+  @query('#editPlayerImageFile') editPlayerImageFile!: HTMLInputElement;
   @query('#editName') editNameField!: MdFilledTextField;
   @query('#editTeam') editTeamField!: MdFilledSelect;
   @query('#editNumber') editNumberField!: MdFilledTextField;
@@ -487,6 +491,14 @@ export class TeamPage extends LitElement {
   @state() private editFormError = '';
   @state() private editDestinationTeam = '';
   @state() private playerPendingDeletion: PlayerStats | null = null;
+  @state() private editSaveState: 'idle' | 'saving' | 'error' | 'conflict' =
+    'idle';
+  @state() private editSaveMessage = '';
+  @state() private pendingPlayerAction: 'transfer' | 'historical' | null = null;
+
+  private get _isSavingPlayer() {
+    return this.editIsUploadingImage || this.editSaveState === 'saving';
+  }
 
   override render() {
     const isMarkingHistorical =
@@ -778,6 +790,13 @@ export class TeamPage extends LitElement {
                   ${
                     !isMarkingHistorical
                       ? html`<div class="image-input-section full-width">
+                          <input
+                            id="editPlayerImageFile"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            @change=${this._handleEditImageFile}
+                            hidden
+                          />
                           <div
                             class="image-paste-zone ${this._getImagePasteZoneClass()}"
                             tabindex="0"
@@ -796,10 +815,17 @@ export class TeamPage extends LitElement {
                             </p>
                             ${clearEditImageButton}
                             <md-outlined-button
+                              @click=${() => this.editPlayerImageFile?.click()}
+                              ?disabled=${this._isSavingPlayer}
+                            >
+                              <md-icon slot="icon">image</md-icon>
+                              Elegir imagen
+                            </md-outlined-button>
+                            <md-outlined-button
                               @click=${this._readEditImageFromClipboard}
                               ?disabled=${
                                 this.editIsReadingClipboardImage ||
-                                this.editIsUploadingImage
+                                this._isSavingPlayer
                               }
                             >
                               <md-icon slot="icon">content_paste_go</md-icon>
@@ -811,22 +837,51 @@ export class TeamPage extends LitElement {
                   }
                 </div>
                 <div slot="actions">
+                  ${
+                    this.editSaveMessage
+                      ? html`<p class="form-error" role="status" aria-live="polite">
+                          ${this.editSaveMessage}
+                        </p>`
+                      : null
+                  }
                   <md-text-button
                     @click=${this._openDeletePlayerDialog}
-                    ?disabled=${this.editIsUploadingImage}
+                    ?disabled=${this._isSavingPlayer}
                     style="color: var(--md-sys-color-error)"
                     >Eliminar jugador</md-text-button
                   >
                   <md-outlined-button
                     @click=${this._closeEditPlayer}
-                    ?disabled=${this.editIsUploadingImage}
+                    ?disabled=${this._isSavingPlayer}
                     >Cancelar</md-outlined-button
                   >
                   <md-filled-button
                     @click=${this._saveEditedPlayer}
-                    ?disabled=${this.editIsUploadingImage}
-                    >Guardar</md-filled-button
+                    ?disabled=${this._isSavingPlayer}
+                    >${this.editSaveState === 'saving' ? 'Guardando…' : 'Guardar'}</md-filled-button
                   >
+                </div>
+              </md-dialog>
+              <md-dialog id="dialogConfirmPlayerAction" type="modal">
+                <div slot="headline">
+                  ${this.pendingPlayerAction === 'transfer'
+                    ? 'Confirmar transferencia'
+                    : 'Confirmar salida histórica'}
+                </div>
+                <div slot="content">
+                  ${this.pendingPlayerAction === 'transfer'
+                    ? html`Vas a transferir a <strong>${this.editingPlayer?.fullName}</strong>
+                        (#${this.editingPlayer?.number}) de ${this.team.equipo} a
+                        <strong>${this.editDestinationTeam}</strong> con dorsal
+                        #${this.editNumberField?.value || this.editingPlayer?.number}.
+                        La etapa anterior quedará archivada.`
+                    : html`Vas a marcar a <strong>${this.editingPlayer?.fullName}</strong>
+                        (#${this.editingPlayer?.number}) de ${this.team.equipo} como
+                        histórico. Dejará de estar disponible para acciones de partido.`}
+                </div>
+                <div slot="actions">
+                  <md-outlined-button @click=${this._cancelPendingPlayerAction}>Cancelar</md-outlined-button>
+                  <md-filled-button @click=${this._confirmPendingPlayerAction}>Confirmar</md-filled-button>
                 </div>
               </md-dialog>
               <md-dialog id="dialogDeletePlayer" type="modal">
@@ -834,7 +889,8 @@ export class TeamPage extends LitElement {
                 <div slot="content">
                   ¿Quieres eliminar definitivamente a
                   <strong>${this.playerPendingDeletion?.fullName}</strong> de la
-                  plantilla de ${this.team.equipo}?
+                  plantilla de ${this.team.equipo} con dorsal
+                  #${this.playerPendingDeletion?.number}? Esta acción no se puede deshacer.
                 </div>
                 <div slot="actions">
                   <md-outlined-button @click=${this._closeDeletePlayerDialog}
@@ -933,6 +989,9 @@ export class TeamPage extends LitElement {
     this.editDestinationTeam = this.team.equipo;
     this.editIsUploadingImage = false;
     this.editIsReadingClipboardImage = false;
+    this.editSaveState = 'idle';
+    this.editSaveMessage = '';
+    this.pendingPlayerAction = null;
     this.editingPlayer = player;
     this.dialogEditPlayer.show();
   }
@@ -944,6 +1003,9 @@ export class TeamPage extends LitElement {
     this.editDestinationTeam = '';
     this.editIsUploadingImage = false;
     this.editIsReadingClipboardImage = false;
+    this.editSaveState = 'idle';
+    this.editSaveMessage = '';
+    this.pendingPlayerAction = null;
     this.dialogEditPlayer.close();
     this.editingPlayer = null;
   }
@@ -965,7 +1027,7 @@ export class TeamPage extends LitElement {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  private async _saveEditedPlayer() {
+  private async _saveEditedPlayer(confirmedAction = false) {
     if (!this.isAdmin) return;
     if (!this.editingPlayer) return;
 
@@ -1014,6 +1076,11 @@ export class TeamPage extends LitElement {
         return;
       }
 
+      if (!confirmedAction) {
+        this.pendingPlayerAction = 'historical';
+        this.dialogConfirmPlayerAction.show();
+        return;
+      }
       const updates: FirebaseUpdates = {
         [`/players/${teamKey}`]: this.players.map(player =>
           player.number === sourcePlayer.number
@@ -1021,8 +1088,14 @@ export class TeamPage extends LitElement {
             : player,
         ),
       };
-      this.dispatchEvent(dispatchEventMatchUpdated(updates));
-      this._closeEditPlayer();
+      this.editSaveState = 'saving';
+      this.editSaveMessage = 'Guardando salida histórica…';
+      this.dispatchEvent(
+        dispatchEventMatchUpdated(updates, result => {
+          if (!result.ok) return this._handleEditSaveFailure(result);
+          this._closeEditPlayer();
+        }),
+      );
       return;
     }
 
@@ -1054,6 +1127,15 @@ export class TeamPage extends LitElement {
       return;
     }
 
+    if (destinationTeam !== this.team.equipo && !confirmedAction) {
+      this.pendingPlayerAction = 'transfer';
+      this.dialogConfirmPlayerAction.show();
+      return;
+    }
+
+    this.editSaveState = 'saving';
+    this.editSaveMessage = 'Guardando jugador…';
+
     let imgSrc = this.editingPlayer.image || '';
     if (this.editPastedImageBlob) {
       this.editIsUploadingImage = true;
@@ -1067,9 +1149,10 @@ export class TeamPage extends LitElement {
         );
       } catch (error) {
         console.error('Error uploading player image:', error);
-        this.editImageError =
-          'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
+        this.editImageError = getPlayerImageErrorMessage(error);
         this.editIsUploadingImage = false;
+        this.editSaveState = 'error';
+        this.editSaveMessage = this.editImageError;
         return;
       }
     }
@@ -1122,9 +1205,34 @@ export class TeamPage extends LitElement {
       ];
     }
 
-    this.dispatchEvent(dispatchEventMatchUpdated(updates));
     this.editIsUploadingImage = false;
-    this._closeEditPlayer();
+    this.dispatchEvent(
+      dispatchEventMatchUpdated(updates, result => {
+        if (!result.ok) return this._handleEditSaveFailure(result);
+        this._closeEditPlayer();
+      }),
+    );
+  }
+
+  private _handleEditSaveFailure(result: { code: string; message?: string }) {
+    this.editSaveState = result.code === 'conflict' ? 'conflict' : 'error';
+    this.editSaveMessage =
+      result.message ||
+      (this.editSaveState === 'conflict'
+        ? 'Hay cambios remotos. Revisa antes de volver a guardar.'
+        : 'No se pudo guardar el jugador. Inténtalo de nuevo.');
+  }
+
+  private _cancelPendingPlayerAction() {
+    this.pendingPlayerAction = null;
+    this.dialogConfirmPlayerAction.close();
+  }
+
+  private _confirmPendingPlayerAction() {
+    if (!this.pendingPlayerAction) return;
+    this.pendingPlayerAction = null;
+    this.dialogConfirmPlayerAction.close();
+    void this._saveEditedPlayer(true);
   }
 
   private _openDeletePlayerDialog() {
@@ -1165,9 +1273,15 @@ export class TeamPage extends LitElement {
         player => player.number !== this.playerPendingDeletion?.number,
       ),
     };
-    this.dispatchEvent(dispatchEventMatchUpdated(updates));
-    this._closeDeletePlayerDialog();
-    this._closeEditPlayer();
+    this.editSaveState = 'saving';
+    this.editSaveMessage = 'Eliminando jugador…';
+    this.dispatchEvent(
+      dispatchEventMatchUpdated(updates, result => {
+        if (!result.ok) return this._handleEditSaveFailure(result);
+        this._closeDeletePlayerDialog();
+        this._closeEditPlayer();
+      }),
+    );
   }
 
   private _hasPlayerParticipation(playerNumber: number): boolean {
@@ -1329,7 +1443,7 @@ export class TeamPage extends LitElement {
     </div>`;
   }
 
-  private _handleEditImagePaste(event: ClipboardEvent) {
+  private async _handleEditImagePaste(event: ClipboardEvent) {
     const imageFile = event.clipboardData?.items
       ? Array.from(event.clipboardData.items).find(item =>
           item.type.startsWith('image/'),
@@ -1348,8 +1462,7 @@ export class TeamPage extends LitElement {
     }
 
     event.preventDefault();
-    this.editImageError = '';
-    this._setEditPastedImage(blob);
+    await this._setEditPastedImage(blob);
   }
 
   private async _readEditImageFromClipboard() {
@@ -1358,7 +1471,7 @@ export class TeamPage extends LitElement {
 
     try {
       const blob = await readImageFromClipboard();
-      this._setEditPastedImage(blob);
+      await this._setEditPastedImage(blob);
     } catch (error) {
       this.editImageError =
         error instanceof Error
@@ -1369,10 +1482,24 @@ export class TeamPage extends LitElement {
     }
   }
 
-  private _setEditPastedImage(blob: Blob) {
+  private async _handleEditImageFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) await this._setEditPastedImage(file);
+  }
+
+  private async _setEditPastedImage(blob: Blob) {
+    try {
+      await validatePlayerImageForPreview(blob);
+    } catch (error) {
+      this.editImageError = getPlayerImageErrorMessage(error);
+      return;
+    }
     this._revokeEditPreviewUrl();
     this.editPastedImageBlob = blob;
     this.editPastedImagePreviewUrl = URL.createObjectURL(blob);
+    this.editImageError = '';
   }
 
   private readonly _clearEditPastedImage = () => {

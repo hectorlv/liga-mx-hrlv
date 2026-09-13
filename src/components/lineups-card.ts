@@ -109,6 +109,18 @@ export class LineupsCard extends LitElement {
         color: var(--md-sys-color-on-surface);
       }
 
+      .lineup-count,
+      .lineup-save-status {
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.82rem;
+      }
+
+      .lineup-limit-error {
+        color: var(--md-sys-color-error);
+        margin: 0 auto 0 0;
+        font-size: 0.9rem;
+      }
+
       /* FILA DE JUGADOR */
       .player-row {
         display: flex;
@@ -162,6 +174,10 @@ export class LineupsCard extends LitElement {
   @state() private addPlayerSide: TeamSide | null = null;
   @state() private lineupsCollapsed = false;
   @state() private lastMatchId: number | null = null;
+  @state() private lineupSaveState: 'idle' | 'saving' | 'error' | 'conflict' =
+    'idle';
+  @state() private lineupSaveMessage = '';
+  @state() private lineupError = '';
 
   override render() {
     if (!this.match) return html``;
@@ -171,6 +187,8 @@ export class LineupsCard extends LitElement {
       ? 'Ver alineaciones'
       : 'Ocultar alineaciones';
     const lineupsIcon = this.lineupsCollapsed ? 'visibility' : 'visibility_off';
+    const localCount = (lineupLocal || []).filter(player => player.titular).length;
+    const visitorCount = (lineupVisitor || []).filter(player => player.titular).length;
 
     if (!this.isAdmin) {
       return this._renderReadOnlyLineups();
@@ -208,6 +226,7 @@ export class LineupsCard extends LitElement {
                   <div class="team-column">
                     <div class="lineup-header">
                       <h4>${local} (Local)</h4>
+                      <span class="lineup-count">Titulares: ${localCount}/11</span>
                       <md-icon-button
                         @click=${() => this._openAddPlayerDialog('local')}
                         title="Agregar jugador"
@@ -248,6 +267,7 @@ export class LineupsCard extends LitElement {
                   <div class="team-column">
                     <div class="lineup-header">
                       <h4>${visitante} (Visitante)</h4>
+                      <span class="lineup-count">Titulares: ${visitorCount}/11</span>
                       <md-icon-button
                         @click=${() => this._openAddPlayerDialog('visitor')}
                         title="Agregar jugador"
@@ -291,12 +311,19 @@ export class LineupsCard extends LitElement {
                 </div>
 
                 <div class="card-footer">
+                  ${
+                    this.lineupError
+                      ? html`<p class="lineup-limit-error" role="alert">${this.lineupError}</p>`
+                      : this.lineupSaveMessage
+                        ? html`<p class="lineup-save-status" role="status" aria-live="polite">${this.lineupSaveMessage}</p>`
+                        : null
+                  }
                   <md-filled-button
-                    ?disabled=${!this._lineupsReady()}
+                    ?disabled=${!this._lineupsReady() || this.lineupSaveState === 'saving'}
                     @click=${this.updateLineups}
                   >
                     <md-icon slot="icon">save</md-icon>
-                    Guardar Alineaciones
+                    ${this.lineupSaveState === 'saving' ? 'Guardando…' : 'Guardar Alineaciones'}
                   </md-filled-button>
                 </div>
               `
@@ -420,12 +447,20 @@ export class LineupsCard extends LitElement {
     const key = side === 'local' ? 'lineupLocal' : 'lineupVisitor';
     const lineup = [...(this.match[key] || [])];
     if ((e.target as MdCheckbox).checked) {
-      if (!lineup.some(p => p.number === playerId))
+      if (!lineup.some(p => p.number === playerId)) {
+        if (lineup.filter(player => player.titular).length >= 11) {
+          (e.target as MdCheckbox).checked = false;
+          this.lineupError = 'Cada equipo puede registrar un máximo de 11 titulares.';
+          return;
+        }
         lineup.push({ number: playerId, titular: true });
+      }
     } else {
       const idx = lineup.findIndex(p => p.number === playerId);
       if (idx !== -1) lineup.splice(idx, 1);
     }
+    this.lineupError = '';
+    this.lineupSaveMessage = '';
     this.match = { ...this.match, [key]: lineup };
   }
 
@@ -487,21 +522,32 @@ export class LineupsCard extends LitElement {
     if (!this.match) return;
     const lineupLocal = this.match.lineupLocal || [];
     const lineupVisitor = this.match.lineupVisitor || [];
-    if (
-      lineupLocal.filter(player => player.titular).length > 11 ||
-      lineupVisitor.filter(player => player.titular).length > 11
-    ) {
-      this.dialogLineups.show();
+    if (!this._lineupsReady()) {
+      this.lineupError = 'Guarda únicamente cuando ambos equipos tengan 11 titulares.';
       return;
     }
     const updatedMatch: FirebaseUpdates = {};
     updatedMatch[`/matches/${this.match.idMatch}/lineupLocal`] = lineupLocal;
     updatedMatch[`/matches/${this.match.idMatch}/lineupVisitor`] =
       lineupVisitor;
-    this.dispatchEvent(dispatchEventMatchUpdated(updatedMatch));
-
-    this.dialogLineups.show();
-    this.lineupsCollapsed = true;
+    this.lineupSaveState = 'saving';
+    this.lineupSaveMessage = 'Guardando alineaciones…';
+    this.dispatchEvent(
+      dispatchEventMatchUpdated(updatedMatch, result => {
+        if (!result.ok) {
+          this.lineupSaveState = result.code === 'conflict' ? 'conflict' : 'error';
+          this.lineupSaveMessage =
+            result.code === 'conflict'
+              ? 'Hay cambios remotos. Revisa antes de volver a guardar.'
+              : result.message || 'No se pudieron guardar las alineaciones.';
+          return;
+        }
+        this.lineupSaveState = 'idle';
+        this.lineupSaveMessage = '';
+        this.dialogLineups.show();
+        this.lineupsCollapsed = true;
+      }),
+    );
   }
 
   private _lineupsReady(): boolean {

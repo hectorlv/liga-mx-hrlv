@@ -9,8 +9,10 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import { FirebaseUpdates, Match, Player, TeamSide } from '../types';
 import { dispatchEventMatchUpdated } from '../utils/functionUtils';
 import {
+  getPlayerImageErrorMessage,
   readImageFromClipboard,
   uploadPlayerImage,
+  validatePlayerImageForPreview,
 } from '../utils/playerImageUpload';
 
 export interface PlayerCreatedDetail {
@@ -118,12 +120,21 @@ export class PlayerRegistrationDialog extends LitElement {
   private readonly newPlayerFullNameField!: MdFilledTextField;
   @query('#newPlayerNationality')
   private readonly newPlayerNationalityField!: MdFilledTextField;
+  @query('#newPlayerImageFile')
+  private readonly newPlayerImageFile!: HTMLInputElement;
 
   @state() private pastedImageBlob: Blob | null = null;
   @state() private pastedImagePreviewUrl = '';
   @state() private isUploadingImage = false;
   @state() private isReadingClipboardImage = false;
   @state() private imageError = '';
+  @state() private saveState: 'idle' | 'saving' | 'error' | 'conflict' =
+    'idle';
+  @state() private saveMessage = '';
+
+  private get _isSaving() {
+    return this.isUploadingImage || this.saveState === 'saving';
+  }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
@@ -185,6 +196,13 @@ export class PlayerRegistrationDialog extends LitElement {
             type="date"
           ></md-filled-text-field>
           <div class="image-input-section full-width">
+            <input
+              id="newPlayerImageFile"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              @change=${this._handleImageFile}
+              hidden
+            />
             <div
               class="image-paste-zone ${
                 this.pastedImagePreviewUrl ? 'has-image' : ''
@@ -203,7 +221,7 @@ export class PlayerRegistrationDialog extends LitElement {
                     />`
                   : html`<div>
                       <md-icon>content_paste</md-icon>
-                      <p>Pega aquí la foto del jugador</p>
+                      <p>Pega o elige la foto del jugador</p>
                       <p class="image-help">
                         En escritorio usa Ctrl+V o Cmd+V. En móvil usa el botón
                         Leer portapapeles.
@@ -228,9 +246,16 @@ export class PlayerRegistrationDialog extends LitElement {
                   : null
               }
               <md-outlined-button
+                @click=${() => this.newPlayerImageFile?.click()}
+                ?disabled=${this._isSaving}
+              >
+                <md-icon slot="icon">image</md-icon>
+                Elegir imagen
+              </md-outlined-button>
+              <md-outlined-button
                 @click=${this._readImageFromClipboard}
                 ?disabled=${
-                  this.isReadingClipboardImage || this.isUploadingImage
+                  this.isReadingClipboardImage || this._isSaving
                 }
               >
                 <md-icon slot="icon">content_paste_go</md-icon>
@@ -244,15 +269,24 @@ export class PlayerRegistrationDialog extends LitElement {
           </div>
         </div>
         <div slot="actions">
+          ${
+            this.saveMessage
+              ? html`<p role="status" aria-live="polite" class=${
+                  this.saveState === 'error' || this.saveState === 'conflict'
+                    ? 'image-error'
+                    : 'image-help'
+                }>${this.saveMessage}</p>`
+              : null
+          }
           <md-outlined-button
             @click=${this._cancel}
-            ?disabled=${this.isUploadingImage}
+            ?disabled=${this._isSaving}
             >Cancelar</md-outlined-button
           >
           <md-filled-button
             @click=${this._save}
-            ?disabled=${this.isUploadingImage}
-            >Guardar</md-filled-button
+            ?disabled=${this._isSaving}
+            >${this.saveState === 'saving' ? 'Guardando…' : 'Guardar'}</md-filled-button
           >
         </div>
       </md-dialog>
@@ -282,6 +316,8 @@ export class PlayerRegistrationDialog extends LitElement {
     this.imageError = '';
     this.isUploadingImage = false;
     this.isReadingClipboardImage = false;
+    this.saveState = 'idle';
+    this.saveMessage = '';
   }
 
   private _cancel() {
@@ -337,6 +373,8 @@ export class PlayerRegistrationDialog extends LitElement {
       return;
     }
     this.newPlayerNumberField?.setCustomValidity('');
+    this.saveState = 'saving';
+    this.saveMessage = 'Guardando jugador…';
 
     let imgSrc = '';
     if (this.pastedImageBlob) {
@@ -350,12 +388,14 @@ export class PlayerRegistrationDialog extends LitElement {
         );
       } catch (error) {
         console.error('Error uploading player image:', error);
-        this.imageError =
-          'No fue posible subir la imagen. Revisa las reglas de Storage e inténtalo de nuevo.';
+        this.imageError = getPlayerImageErrorMessage(error);
         this.isUploadingImage = false;
+        this.saveState = 'error';
+        this.saveMessage = this.imageError;
         return;
       }
     }
+    this.isUploadingImage = false;
 
     const player: Player = {
       id: crypto.randomUUID(),
@@ -377,7 +417,17 @@ export class PlayerRegistrationDialog extends LitElement {
           [`/players/${this._teamKey()}`]: players,
         },
         result => {
-          if (!result.ok) return;
+          if (!result.ok) {
+            this.saveState = result.code === 'conflict' ? 'conflict' : 'error';
+            this.saveMessage =
+              (result.code === 'error' ? result.message : '') ||
+              (this.saveState === 'conflict'
+                ? 'Hay cambios remotos. Revisa antes de volver a guardar.'
+                : 'No se pudo guardar el jugador. Inténtalo de nuevo.');
+            return;
+          }
+          this.saveState = 'idle';
+          this.saveMessage = '';
           this.dispatchEvent(
             new CustomEvent<PlayerCreatedDetail>('player-created', {
               detail: { side, player, players },
@@ -391,7 +441,7 @@ export class PlayerRegistrationDialog extends LitElement {
     );
   }
 
-  private _handleImagePaste(event: ClipboardEvent) {
+  private async _handleImagePaste(event: ClipboardEvent) {
     const imageItem = event.clipboardData?.items
       ? Array.from(event.clipboardData.items).find(item =>
           item.type.startsWith('image/'),
@@ -407,15 +457,14 @@ export class PlayerRegistrationDialog extends LitElement {
       return;
     }
     event.preventDefault();
-    this.imageError = '';
-    this._setPastedImage(blob);
+    await this._setPastedImage(blob);
   }
 
   private async _readImageFromClipboard() {
     this.isReadingClipboardImage = true;
     this.imageError = '';
     try {
-      this._setPastedImage(await readImageFromClipboard());
+      await this._setPastedImage(await readImageFromClipboard());
     } catch (error) {
       this.imageError =
         error instanceof Error
@@ -426,10 +475,24 @@ export class PlayerRegistrationDialog extends LitElement {
     }
   }
 
-  private _setPastedImage(blob: Blob) {
+  private async _handleImageFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) await this._setPastedImage(file);
+  }
+
+  private async _setPastedImage(blob: Blob) {
+    try {
+      await validatePlayerImageForPreview(blob);
+    } catch (error) {
+      this.imageError = getPlayerImageErrorMessage(error);
+      return;
+    }
     this._revokePreviewUrl();
     this.pastedImageBlob = blob;
     this.pastedImagePreviewUrl = URL.createObjectURL(blob);
+    this.imageError = '';
   }
 
   private readonly _clearPastedImage = () => {

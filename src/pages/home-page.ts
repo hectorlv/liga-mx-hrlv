@@ -71,6 +71,27 @@ export class HomePage extends LitElement {
         min-width: 0;
       }
 
+      .hero.is-compact {
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .hero.is-compact .hero-copy {
+        gap: 8px;
+      }
+
+      .hero.is-compact h1 {
+        font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+      }
+
+      .hero.is-compact .hero-copy p {
+        font-size: 0.92rem;
+      }
+
+      .hero.is-compact .match-focus {
+        padding: 12px;
+      }
+
       .eyebrow {
         display: inline-flex;
         align-items: center;
@@ -569,7 +590,7 @@ export class HomePage extends LitElement {
 
     return html`
       <section class="home-shell" aria-label="Inicio Liga MX HRLV">
-        <div class="hero">
+        <div class="hero ${focusMatches.length === 1 ? 'is-compact' : ''}">
           <div class="hero-copy">
             <div class="eyebrow">
               <md-icon>sports_soccer</md-icon>

@@ -38,6 +38,56 @@ export class TablePage extends LitElement {
         align-items: center;
         gap: 6px;
       }
+
+      .table-guide {
+        margin: 0 auto 14px;
+        max-width: 760px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 10px;
+        background: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface);
+      }
+
+      .table-guide summary {
+        padding: 11px 14px;
+        cursor: pointer;
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .table-guide summary:focus-visible {
+        outline: 3px solid var(--md-sys-color-primary);
+        outline-offset: -3px;
+      }
+
+      .table-guide-content {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 16px;
+        margin: 0;
+        padding: 0 14px 14px;
+        font-size: 0.8rem;
+      }
+
+      .table-guide-content div {
+        display: flex;
+        gap: 6px;
+      }
+
+      .table-guide-content dt {
+        font-weight: 900;
+      }
+
+      .table-guide-content dd {
+        margin: 0;
+        color: var(--md-sys-color-on-surface-variant);
+      }
+
+      @media (max-width: 420px) {
+        .table-guide-content {
+          grid-template-columns: 1fr;
+        }
+      }
       .dot {
         width: 10px;
         height: 10px;
@@ -330,6 +380,20 @@ export class TablePage extends LitElement {
     return html`
       <main>
         <p class="table-status" role="note">Tabla en vivo y provisional: los resultados no finalizados no confirman clasificación ni eliminación.</p>
+        <details class="table-guide">
+          <summary>Cómo leer la tabla</summary>
+          <dl class="table-guide-content">
+            <div><dt>Pos</dt><dd>Posición</dd></div>
+            <div><dt>JJ</dt><dd>Partidos jugados</dd></div>
+            <div><dt>JG</dt><dd>Partidos ganados</dd></div>
+            <div><dt>JE</dt><dd>Partidos empatados</dd></div>
+            <div><dt>JP</dt><dd>Partidos perdidos</dd></div>
+            <div><dt>GF</dt><dd>Goles a favor</dd></div>
+            <div><dt>GC</dt><dd>Goles en contra</dd></div>
+            <div><dt>DG</dt><dd>Diferencia de goles</dd></div>
+            <div><dt>PTS</dt><dd>Puntos</dd></div>
+          </dl>
+        </details>
         <div class="legend">
           <div class="legend-item">
             <div class="dot qualified"></div>
@@ -347,17 +411,17 @@ export class TablePage extends LitElement {
 
         <div class="table-container">
           <div class="desktop-header">
-            <div class="header-cell">Pos</div>
+            <div class="header-cell" title="Posición">Pos</div>
             <div class="header-cell"></div>
             <div class="header-cell align-left">Equipo</div>
             <div class="header-cell" title="Partidos jugados">JJ</div>
-            <div class="header-cell">JG</div>
-            <div class="header-cell">JE</div>
-            <div class="header-cell">JP</div>
-            <div class="header-cell">GF</div>
-            <div class="header-cell">GC</div>
+            <div class="header-cell" title="Partidos ganados">JG</div>
+            <div class="header-cell" title="Partidos empatados">JE</div>
+            <div class="header-cell" title="Partidos perdidos">JP</div>
+            <div class="header-cell" title="Goles a favor">GF</div>
+            <div class="header-cell" title="Goles en contra">GC</div>
             <div class="header-cell" title="Diferencia de goles">DG</div>
-            <div class="header-cell">PTS</div>
+            <div class="header-cell" title="Puntos">PTS</div>
           </div>
 
           ${this.table.map((team, index) => {

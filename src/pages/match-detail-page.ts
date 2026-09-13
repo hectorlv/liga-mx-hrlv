@@ -437,6 +437,9 @@ export class MatchDetailPage extends LitElement {
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
+  @state() private editSaveState: 'idle' | 'saving' | 'error' | 'conflict' =
+    'idle';
+  @state() private editSaveMessage = '';
   @state() selectedTeam: string | null = null;
   @query('#halftimeMinuteInput') halftimeMinuteInput!: MdFilledTextField;
 
@@ -716,6 +719,13 @@ export class MatchDetailPage extends LitElement {
                   ></md-filled-text-field>
                   ${penaltyFieldsTemplate}
                 </div>
+                ${
+                  this.editSaveMessage
+                    ? html`<p role="status" aria-live="polite" class="match-resolution-note">
+                        ${this.editSaveMessage}
+                      </p>`
+                    : null
+                }
               `
             : html`
                 <div class="match-meta">
@@ -908,6 +918,7 @@ export class MatchDetailPage extends LitElement {
   private editMatchInfo() {
     if (!this.isAdmin) return;
     if (!this.match) return;
+    if (this.editSaveState === 'saving') return;
 
     const fechaInput = this.renderRoot.querySelector(
       '#fechaInput',
@@ -963,9 +974,21 @@ export class MatchDetailPage extends LitElement {
       updates[`/matches/${this.match.idMatch}/penaltyVisitante`] =
         this._getPenaltyInputValue(penaltyVisitanteInput);
     }
+    this.editSaveState = 'saving';
+    this.editSaveMessage = 'Guardando cambios del partido…';
     this.dispatchEvent(
       dispatchEventMatchUpdated(updates, result => {
-        if (result.ok) this.isEditing = false;
+        if (result.ok) {
+          this.editSaveState = 'idle';
+          this.editSaveMessage = '';
+          this.isEditing = false;
+          return;
+        }
+        this.editSaveState = result.code === 'conflict' ? 'conflict' : 'error';
+        this.editSaveMessage =
+          result.code === 'conflict'
+            ? 'Hay cambios remotos. Revisa antes de volver a guardar.'
+            : result.message || 'No se pudieron guardar los cambios del partido.';
       }),
     );
   }
@@ -991,11 +1014,19 @@ export class MatchDetailPage extends LitElement {
 
     if (this.isEditing) {
       return html`
-        <md-icon-button @click=${this.editMatchInfo} title="Guardar"
+        <md-icon-button
+          @click=${this.editMatchInfo}
+          ?disabled=${this.editSaveState === 'saving'}
+          title=${this.editSaveState === 'saving' ? 'Guardando…' : 'Guardar'}
           ><md-icon>save</md-icon></md-icon-button
         >
         <md-icon-button
-          @click=${() => (this.isEditing = false)}
+          @click=${() => {
+            this.isEditing = false;
+            this.editSaveState = 'idle';
+            this.editSaveMessage = '';
+          }}
+          ?disabled=${this.editSaveState === 'saving'}
           title="Cancelar"
           ><md-icon>cancel</md-icon></md-icon-button
         >

@@ -98,6 +98,17 @@ export class BracketPage extends LitElement {
         font-weight: 700;
       }
 
+      .bracket-pending-note {
+        margin: 0 0 18px;
+        padding: 12px 14px;
+        border-left: 4px solid var(--md-sys-color-primary);
+        border-radius: 0 8px 8px 0;
+        background: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
       .bracket-grid {
         display: grid;
         grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr) minmax(
@@ -447,6 +458,10 @@ export class BracketPage extends LitElement {
           <div class="bracket-status">${this._getBracketStatus()}</div>
         </div>
 
+        ${!this._hasConfirmedBracketMatch()
+          ? html`<p class="bracket-pending-note" role="note">Los cruces aparecerán al cerrar la fase regular. Semifinales y final se confirmarán cuando concluya cada ronda previa.</p>`
+          : ''}
+
         <section class="bracket-grid" aria-label="Llaves de liguilla">
           ${BRACKET_ROUNDS.map(round => this._renderRound(round))}
         </section>
@@ -634,7 +649,20 @@ export class BracketPage extends LitElement {
       this.matchesList,
       this.table,
     );
-    return result?.winner ? `Campeón: ${result.winner}` : 'En curso';
+    if (result?.winner) return `Campeón: ${result.winner}`;
+    return this._hasConfirmedBracketMatch() ? 'En curso' : 'Por definir';
+  }
+
+  private _hasConfirmedBracketMatch(): boolean {
+    return BRACKET_ROUNDS.some(round =>
+      round.series.some(series => {
+        const { ida, vuelta } = getPlayoffSeriesMatches(
+          series.config,
+          this.matchesList,
+        );
+        return Boolean(ida || vuelta);
+      }),
+    );
   }
 
   private _showMatchDetails(match: Match) {

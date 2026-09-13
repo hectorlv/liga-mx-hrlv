@@ -260,6 +260,24 @@ export class StatsPage extends LitElement {
         color: var(--md-sys-color-on-surface-variant);
       }
 
+      .empty-insight {
+        display: grid;
+        gap: 7px;
+        margin: 0;
+        padding: 14px;
+        border-radius: 8px;
+        background: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .empty-insight a {
+        width: fit-content;
+        color: var(--md-sys-color-primary);
+        font-weight: 800;
+      }
+
       /* ESTILO LIMPIO PARA TODAS LAS TABLAS */
       .table-wrapper {
         width: 100%;
@@ -1109,7 +1127,7 @@ export class StatsPage extends LitElement {
     getValue: (player: PlayerStats) => number | string,
   ) {
     if (players.length === 0) {
-      return html`<p class="meta">${emptyMessage}</p>`;
+      return this._renderEmptyInsight(emptyMessage, 'Ver calendario');
     }
 
     return html`
@@ -1149,7 +1167,10 @@ export class StatsPage extends LitElement {
 
   private _renderTopContributorsContent(players: PlayerStats[]) {
     if (players.length === 0) {
-      return html`<p class="meta">Sin aportaciones registradas.</p>`;
+      return this._renderEmptyInsight(
+        'Aún no hay goles ni asistencias registrados. La clasificación aparecerá al cerrar partidos.',
+        'Ver calendario',
+      );
     }
 
     return html`
@@ -1193,7 +1214,10 @@ export class StatsPage extends LitElement {
 
   private _renderDisciplineContent(players: PlayerStats[]) {
     if (players.length === 0) {
-      return html`<p class="meta">Sin tarjetas registradas.</p>`;
+      return this._renderEmptyInsight(
+        'Aún no hay tarjetas registradas. La disciplina individual aparecerá con los eventos del partido.',
+        'Ver calendario',
+      );
     }
 
     return html`
@@ -1236,7 +1260,11 @@ export class StatsPage extends LitElement {
 
   private _renderNationalitiesContent(nationalities: NationalityStat[]) {
     if (nationalities.length === 0) {
-      return html`<p class="meta">Sin jugadores registrados.</p>`;
+      return this._renderEmptyInsight(
+        'Aún no hay jugadores disponibles para agrupar por nacionalidad.',
+        'Ver tabla',
+        '?tab=Tabla%20General',
+      );
     }
 
     return html`
@@ -1265,7 +1293,10 @@ export class StatsPage extends LitElement {
 
   private _renderFairPlayContent(teams: TeamStats[]) {
     if (teams.length === 0) {
-      return html`<p class="meta">Sin tarjetas.</p>`;
+      return this._renderEmptyInsight(
+        'Aún no hay tarjetas registradas para construir la tabla de fair play.',
+        'Ver calendario',
+      );
     }
 
     return html`
@@ -1306,7 +1337,10 @@ export class StatsPage extends LitElement {
 
   private _renderTeamOffenseDefenseContent(teams: TeamStats[]) {
     if (teams.length === 0) {
-      return html`<p class="meta">No hay datos.</p>`;
+      return this._renderEmptyInsight(
+        'Aún no hay resultados finalizados para comparar ataque y defensa.',
+        'Ver calendario',
+      );
     }
 
     return html`
@@ -1491,7 +1525,11 @@ export class StatsPage extends LitElement {
 
   private _renderU23TableContent(teamStats: TeamStats[]) {
     if (teamStats.length === 0) {
-      return html`<p class="meta">No hay datos.</p>`;
+      return this._renderEmptyInsight(
+        'Aún no hay datos de menores para calcular el avance de cada equipo.',
+        'Ver tabla',
+        '?tab=Tabla%20General',
+      );
     }
 
     const rows = this._buildU23StatsRows(teamStats);
@@ -1519,7 +1557,10 @@ export class StatsPage extends LitElement {
 
   private _renderRegularTimeGoalsMessage(goals: number) {
     if (goals !== 0) return null;
-    return html`<p class="meta">Sin goles de tiempo regular.</p>`;
+    return this._renderEmptyInsight(
+      'Aún no hay goles de tiempo regular registrados.',
+      'Ver calendario',
+    );
   }
 
   private _renderExtraTimeGoalsMessage(goals: number) {
@@ -1535,7 +1576,18 @@ export class StatsPage extends LitElement {
 
   private _renderNoGoalTypesMessage(goals: GoalDistributionStat[]) {
     if (goals.some(item => item.count !== 0)) return null;
-    return html`<p class="meta">Sin goles registrados.</p>`;
+    return this._renderEmptyInsight(
+      'Aún no hay goles registrados para mostrar su distribución.',
+      'Ver calendario',
+    );
+  }
+
+  private _renderEmptyInsight(
+    message: string,
+    linkLabel?: string,
+    href = '?tab=Calendario',
+  ) {
+    return html`<p class="empty-insight">${message}${linkLabel ? html`<a href=${href}>${linkLabel}</a>` : ''}</p>`;
   }
 
   private _renderCallupButton() {
@@ -1580,19 +1632,19 @@ export class StatsPage extends LitElement {
     const u23TableContent = this._renderU23TableContent(teamStats);
     const topScorersContent = this._renderTopPlayerContent(
       topScorers,
-      'Sin goles registrados.',
+      'Aún no hay goles registrados. El ranking aparecerá al cerrar partidos.',
       'G',
       player => player.goals,
     );
     const topAssistsContent = this._renderTopPlayerContent(
       topAssists,
-      'Sin asistencias registradas.',
+      'Aún no hay asistencias registradas. El ranking aparecerá al cerrar partidos.',
       'Ast',
       player => player.assists,
     );
     const topMinutesContent = this._renderTopPlayerContent(
       topMinutes,
-      'Sin minutos registrados.',
+      'Aún no hay minutos registrados. El ranking aparecerá al registrar alineaciones.',
       'Min',
       player => `${player.minutes}'`,
     );
@@ -2496,7 +2548,10 @@ export class StatsPage extends LitElement {
         <div class="table-wrapper">
           ${
             teams.length === 0
-              ? html`<p class="meta">Sin partidos finalizados.</p>`
+              ? this._renderEmptyInsight(
+                  'Aún no hay partidos finalizados para calcular porterías en cero.',
+                  'Ver calendario',
+                )
               : html`
                   <table class="modern-table">
                     <thead>
@@ -2547,7 +2602,10 @@ export class StatsPage extends LitElement {
         </div>
         ${
           teams.length === 0
-            ? html`<p class="meta">Sin equipos registrados.</p>`
+            ? this._renderEmptyInsight(
+                'Aún no hay equipos con resultados finalizados para comparar local y visita.',
+                'Ver calendario',
+              )
             : html`
                 <div class="table-wrapper venue-desktop-table">
                   <table class="modern-table">
