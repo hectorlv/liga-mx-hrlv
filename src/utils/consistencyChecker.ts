@@ -64,8 +64,7 @@ function addMatchIssues(issues: ConsistencyIssue[], matches: Match[]) {
     ) {
       const fromEvents = goals.reduce(
         (score, goal) => {
-          const localGoal = goal.team === 'local' ? !goal.ownGoal : goal.ownGoal;
-          if (localGoal) score.local += 1;
+          if (goal.team === 'local') score.local += 1;
           else score.visitante += 1;
           return score;
         },

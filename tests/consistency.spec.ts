@@ -1,4 +1,5 @@
 import { expect, test } from 'playwright/test';
+import { analyzeConsistency } from '../src/utils/consistencyChecker.js';
 
 async function mountConsistency(
   page: import('playwright/test').Page,
@@ -51,4 +52,20 @@ test('informa cuando no hay inconsistencias', async ({ page }) => {
   await expect(page.locator('consistency-page')).toContainText(
     'Sin inconsistencias detectadas',
   );
+});
+
+test('no marca inconsistencia cuando un autogol ya está acreditado al equipo del evento', () => {
+  const issues = analyzeConsistency([
+    {
+      idMatch: 9, estadio: 'Estadio HRLV', fecha: '2026/08/07', hora: '19:00', jornada: 1,
+      local: 'América', visitante: 'Atlas', golLocal: 1, golVisitante: 0,
+      lineupLocal: [], lineupVisitor: [],
+      events: [{
+        id: 'own-goal', type: 'goal', team: 'local', player: 8, ownGoal: true,
+        minute: 30, period: '1T', sequence: 1,
+      }],
+    },
+  ], new Map());
+
+  expect(issues.some(issue => issue.kind === 'score-event-mismatch')).toBe(false);
 });

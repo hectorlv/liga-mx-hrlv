@@ -96,34 +96,58 @@ export const applyAdminUpdates = onCall(
       throw new HttpsError('permission-denied', 'Se requiere permiso administrativo.');
 
     const { updates, expectedRevisions, resources } = validateRequest(request.data);
-    const snapshot = await database.ref('/adminRevisions').once('value');
-    const revisions =
-      snapshot.val() && typeof snapshot.val() === 'object'
-        ? structuredClone(snapshot.val())
-        : {};
-    const actual = Object.fromEntries(
-      resources.map(resource => [resource, getRevision(revisions, resource)]),
-    );
-    const mismatched = resources.filter(
-      resource => actual[resource] !== expectedRevisions[resource],
-    );
-    if (mismatched.length) {
-      return {
-        ok: false,
-        code: 'conflict',
-        resources: mismatched,
-        revisions: Object.fromEntries(mismatched.map(key => [key, actual[key]])),
-        current: Object.fromEntries(mismatched.map(key => [key, null])),
-      };
-    }
-    const writeUpdates = { ...updates };
-    resources.forEach(resource => {
-      writeUpdates[`/adminRevisions/${resource}`] = actual[resource] + 1;
+    let conflict = null;
+    const result = await database.ref().transaction(current => {
+      const root =
+        current && typeof current === 'object' ? structuredClone(current) : {};
+      const revisions =
+        root.adminRevisions && typeof root.adminRevisions === 'object'
+          ? root.adminRevisions
+          : {};
+      const actual = Object.fromEntries(
+        resources.map(resource => [resource, getRevision(revisions, resource)]),
+      );
+      const mismatched = resources.filter(
+        resource => actual[resource] !== expectedRevisions[resource],
+      );
+      if (mismatched.length) {
+        conflict = {
+          ok: false,
+          code: 'conflict',
+          resources: mismatched,
+          revisions: Object.fromEntries(
+            mismatched.map(resource => [resource, actual[resource]]),
+          ),
+          current: Object.fromEntries(
+            mismatched.map(resource => [resource, getAtPath(root, `/${resource}`) ?? null]),
+          ),
+        };
+        // La primera ejecución local puede no tener aún el estado remoto. Al
+        // devolverlo sin cambios, RTDB reconcilia y reintenta contra el
+        // servidor; el último intento determina si se responde conflicto.
+        return root;
+      }
+
+      conflict = null;
+      Object.entries(updates).forEach(([path, value]) =>
+        setAtPath(root, path, value),
+      );
+      resources.forEach(resource =>
+        setAtPath(root, `/adminRevisions/${resource}`, actual[resource] + 1),
+      );
+      return root;
     });
-    await database.ref().update(writeUpdates);
-    const nextRevisions = Object.fromEntries(
-      resources.map(resource => [resource, expectedRevisions[resource] + 1]),
-    );
-    return { ok: true, revisions: nextRevisions };
+
+    if (conflict) return conflict;
+    if (!result.committed) {
+      throw new HttpsError('aborted', 'No fue posible completar el guardado.');
+    }
+
+    return {
+      ok: true,
+      revisions: Object.fromEntries(
+        resources.map(resource => [resource, expectedRevisions[resource] + 1]),
+      ),
+    };
   },
 );

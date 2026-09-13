@@ -81,6 +81,12 @@ function seriesWinner(
     : second[0];
 }
 
+function orderByRegularSeasonRank(teams: string[], rank: Map<string, number>) {
+  return [...teams].sort(
+    (left, right) => (rank.get(left) ?? Infinity) - (rank.get(right) ?? Infinity),
+  );
+}
+
 /**
  * Pure calculation. It does not persist or mutate the table, and it never
  * promotes an incomplete series. The caller saves the one batch of changes.
@@ -101,16 +107,19 @@ export function calculateQuarterFinal(
   ];
   quarters.forEach(series => assignSeries(updates, series, ranked, matches));
 
-  const semiTeams = quarters.map(series => seriesWinner(series, matches, rank));
-  if (semiTeams.every((team): team is string => !!team)) {
+  const quarterWinners = quarters.map(series => seriesWinner(series, matches, rank));
+  if (quarterWinners.every((team): team is string => !!team)) {
+    const semiTeams = orderByRegularSeasonRank(quarterWinners, rank);
     assignSeries(updates, LIGUILLA.semi1, semiTeams, matches);
     assignSeries(updates, LIGUILLA.semi2, semiTeams, matches);
-    const finalTeams = [
+    const semiWinners = [
       seriesWinner(LIGUILLA.semi1, matches, rank),
       seriesWinner(LIGUILLA.semi2, matches, rank),
     ];
-    if (finalTeams.every((team): team is string => !!team))
+    if (semiWinners.every((team): team is string => !!team)) {
+      const finalTeams = orderByRegularSeasonRank(semiWinners, rank);
       assignSeries(updates, LIGUILLA.final, finalTeams, matches);
+    }
   }
   return updates;
 }
