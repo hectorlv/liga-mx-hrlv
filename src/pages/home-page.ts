@@ -1,6 +1,6 @@
 import '@material/web/icon/icon.js';
 import { css, html, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, Player, PlayerTeam, TableEntry } from '../types/index.js';
 import {
@@ -26,6 +26,8 @@ interface PlayerLeader {
   team: string;
   value: number;
 }
+
+const FAVORITE_TEAM_STORAGE_KEY = 'liga-mx-hrlv.favorite-team';
 
 @customElement('home-page')
 export class HomePage extends LitElement {
@@ -408,6 +410,39 @@ export class HomePage extends LitElement {
         gap: 10px;
       }
 
+      .my-team-panel {
+        display: grid;
+        gap: 14px;
+        border: 1px solid color-mix(in srgb, var(--md-sys-color-primary) 42%, var(--md-sys-color-outline-variant));
+        background: linear-gradient(115deg, color-mix(in srgb, var(--md-sys-color-primary-container) 70%, var(--md-sys-color-surface)), var(--md-sys-color-surface));
+      }
+
+      .my-team-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .my-team-heading h2 { display: flex; align-items: center; gap: 8px; }
+      .my-team-heading md-icon { color: var(--md-sys-color-primary); }
+      .team-picker { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+      .team-picker label { display: grid; gap: 5px; color: #475569; font-size: .8rem; font-weight: 800; }
+      .team-picker select { min-height: 42px; min-width: min(100%, 260px); padding: 0 12px; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); font: inherit; }
+      .team-picker button, .my-team-actions button { min-height: 40px; padding: 0 14px; border: 1px solid var(--md-sys-color-primary); border-radius: 999px; background: transparent; color: var(--md-sys-color-primary); font: inherit; font-weight: 800; cursor: pointer; }
+      .team-picker button.primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+      .team-picker button:focus-visible, .my-team-actions button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
+      .my-team-overview { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+      .my-team-overview .logo { width: 58px; height: 58px; object-fit: contain; }
+      .my-team-name { color: var(--md-sys-color-on-surface); font-size: 1.25rem; font-weight: 900; }
+      .my-team-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; color: #475569; font-size: .84rem; font-weight: 750; }
+      .my-team-stats strong { color: var(--md-sys-color-primary); }
+      .my-team-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .my-team-match { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px; border-radius: 12px; background: var(--md-sys-color-surface); color: inherit; text-decoration: none; }
+      .my-team-match:hover, .my-team-match:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 2px; }
+      .my-team-match h3 { color: var(--md-sys-color-on-surface); font-size: 1rem; }
+      .my-team-match p { margin-top: 3px; color: #475569; font-size: .84rem; }
+      .my-team-score { color: var(--md-sys-color-primary); font-size: 1.35rem; font-weight: 950; text-align: right; }
+      .my-team-live { color: #b91c1c !important; font-weight: 900; }
+      .my-team-results { display: grid; gap: 7px; }
+      .my-team-result { display: flex; justify-content: space-between; gap: 12px; padding-top: 7px; border-top: 1px solid var(--md-sys-color-outline-variant); color: inherit; font-size: .85rem; text-decoration: none; }
+      .my-team-result strong { color: var(--md-sys-color-on-surface); }
+      .my-team-empty { margin: 0; color: #475569; font-size: .9rem; }
+
       .action-link,
       .panel-link {
         display: inline-flex;
@@ -514,6 +549,18 @@ export class HomePage extends LitElement {
   @property({ type: Array }) stadiums: string[] = [];
   @property({ type: Object }) players: PlayerTeam = new Map();
   @property({ type: Boolean }) isAdmin = false;
+  @state() private favoriteTeam = '';
+  @state() private isPickingFavorite = false;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.favoriteTeam = this._readFavoriteTeam();
+  }
+
+  override updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has('teams')) this._validateFavoriteTeam();
+  }
+
   override render() {
     const focusMatches = this._getFocusMatches();
     const topScorer = this._getLeader('goals');
@@ -571,6 +618,8 @@ export class HomePage extends LitElement {
                 `
           }
         </div>
+
+        ${this._renderMyTeam()}
 
         <div class="quick-grid" aria-label="Accesos rápidos">
           ${this._renderQuickCard(
@@ -706,6 +755,92 @@ export class HomePage extends LitElement {
       </a>
     `;
   }
+
+  private _renderMyTeam() {
+    const team = this.favoriteTeam;
+    const entry = this.table.find(candidate => candidate.equipo === team);
+    const live = team ? this._getLiveTeamMatch(team) : null;
+    const next = team && !live ? this._getNextTeamMatch(team) : null;
+    const results = team ? this._getTeamResults(team) : [];
+    return html`
+      <section class="panel my-team-panel" aria-label="Mi equipo">
+        <div class="my-team-heading">
+          <h2><md-icon aria-hidden="true">favorite</md-icon> Mi equipo</h2>
+          ${team ? html`<div class="my-team-actions"><button @click=${this._openFavoritePicker}>Cambiar</button><button @click=${this._clearFavorite}>Quitar</button></div>` : ''}
+        </div>
+        ${!team || this.isPickingFavorite ? this._renderFavoritePicker() : html`
+          <div class="my-team-overview">
+            ${getTeamImage(team)}
+            <div><div class="my-team-name">${team}</div>
+              ${entry ? html`<div class="my-team-stats"><span><strong>#${this.table.indexOf(entry) + 1}</strong> posición</span><span><strong>${entry.pts}</strong> pts</span><span>DG <strong>${entry.dg}</strong></span></div>` : html`<p class="my-team-empty">La posición aparecerá al cargar la tabla.</p>`}
+            </div>
+          </div>
+          ${live ? this._renderMyTeamMatch(live, 'En vivo', true) : next ? this._renderMyTeamMatch(next, this._getFocusLabel(next), false) : html`<p class="my-team-empty">No hay un próximo partido disponible.</p>`}
+          <div class="my-team-results" aria-label="Últimos resultados">
+            <h3>Últimos resultados</h3>
+            ${results.length ? results.map(match => this._renderMyTeamResult(match, team)) : html`<p class="my-team-empty">Aún no hay resultados finalizados.</p>`}
+          </div>
+        `}
+      </section>`;
+  }
+
+  private _renderFavoritePicker() {
+    return html`<div class="team-picker">
+      <label>Elige tu equipo
+        <select id="favorite-team" .value=${this.favoriteTeam} @change=${this._saveFavorite}>
+          <option value="">Selecciona un equipo</option>
+          ${this.teams.map(team => html`<option value=${team}>${team}</option>`)}
+        </select>
+      </label>
+      ${this.favoriteTeam ? html`<button @click=${this._cancelFavoritePicker}>Cancelar</button>` : ''}
+    </div>`;
+  }
+
+  private _renderMyTeamMatch(match: Match, label: string, live: boolean) {
+    const status = resolveMatchStatus(match);
+    const editorialLabel =
+      status === 'postponed' ? 'Pospuesto' : status === 'cancelled' ? 'Cancelado' : '';
+    return html`<a class="my-team-match" href=${this._matchHref(match)}>
+      <span><h3>${match.local} vs ${match.visitante}</h3><p class=${live ? 'my-team-live' : ''}>${label}${live && getLiveMatchPeriodLabel(match) ? ` · ${getLiveMatchPeriodLabel(match)}` : ''}${!live && editorialLabel && label !== editorialLabel ? ` · ${editorialLabel}` : ''}</p></span>
+      <strong class="my-team-score">${this._formatScore(match)}</strong>
+    </a>`;
+  }
+
+  private _renderMyTeamResult(match: Match, team: string) {
+    const isHome = match.local === team;
+    const opponent = isHome ? match.visitante : match.local;
+    const score = isHome
+      ? `${match.golLocal}–${match.golVisitante}`
+      : `${match.golVisitante}–${match.golLocal}`;
+    const venue = isHome ? 'Local' : 'Visitante';
+    return html`<a class="my-team-result" href=${this._matchHref(match)}><span>${venue} · vs. <strong>${opponent}</strong></span><strong>${score}</strong></a>`;
+  }
+
+  private _getLiveTeamMatch(team: string): Match | null {
+    return this.matchesList.filter(match => (match.local === team || match.visitante === team) && isMatchLive(match)).sort((a, b) => this._matchTime(b) - this._matchTime(a) || b.idMatch - a.idMatch)[0] || null;
+  }
+
+  private _getNextTeamMatch(team: string): Match | null {
+    return this.matchesList.filter(match => (match.local === team || match.visitante === team) && resolveMatchStatus(match) !== 'finished' && this._matchTime(match) >= Date.now()).sort((a, b) => this._matchTime(a) - this._matchTime(b) || a.idMatch - b.idMatch)[0] || null;
+  }
+
+  private _getTeamResults(team: string): Match[] {
+    return this.matchesList.filter(match => (match.local === team || match.visitante === team) && resolveMatchStatus(match) === 'finished').sort((a, b) => this._matchTime(b) - this._matchTime(a) || b.idMatch - a.idMatch).slice(0, 5);
+  }
+
+  private _openFavoritePicker = () => { this.isPickingFavorite = true; };
+  private _cancelFavoritePicker = () => { this.isPickingFavorite = false; };
+  private _clearFavorite = () => { this.favoriteTeam = ''; this.isPickingFavorite = false; this._writeFavoriteTeam(''); };
+  private _saveFavorite = (event: Event) => {
+    const team = (event.target as HTMLSelectElement).value;
+    this.favoriteTeam = team;
+    this.isPickingFavorite = false;
+    this._writeFavoriteTeam(team);
+  };
+
+  private _readFavoriteTeam(): string { try { return localStorage.getItem(FAVORITE_TEAM_STORAGE_KEY) || ''; } catch { return ''; } }
+  private _writeFavoriteTeam(team: string) { try { if (team) localStorage.setItem(FAVORITE_TEAM_STORAGE_KEY, team); else localStorage.removeItem(FAVORITE_TEAM_STORAGE_KEY); } catch { /* Storage may be unavailable. */ } }
+  private _validateFavoriteTeam() { if (this.favoriteTeam && this.teams.length > 0 && !this.teams.includes(this.favoriteTeam)) this._clearFavorite(); }
 
   private _renderTableRow(team: TableEntry, index: number) {
     return html`

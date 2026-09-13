@@ -96,15 +96,13 @@ const LIGUILLA = {
   },
 };
 
-const POSTSEASON_FORMAT = {
-  directQualificationSpots: 8,
-  playInSpots: 0,
-};
-
-const REGULAR_SEASON_LAST_JORNADA = 17;
-
-// Regla de Menores vigente a partir de este torneo.
-const U23_MIN_BIRTH_YEAR = 2004;
+export {
+  EDITORIAL_TOURNAMENT,
+  JORNADA_LIGUILLA,
+  POSTSEASON_FORMAT,
+  REGULAR_SEASON_LAST_JORNADA,
+  U23_MIN_BIRTH_YEAR,
+} from './tournamentRules.js';
 
 const LOGOS = [
   { equipo: 'América', img: 'america' },
@@ -127,20 +125,8 @@ const LOGOS = [
   { equipo: 'Tigres de la U.A.N.L.', img: 'tigresDeLaUanl' },
 ];
 
-const JORNADA_LIGUILLA = [
-  { id: 18, descripcion: 'Playin 1' },
-  { id: 19, descripcion: 'Playin 2' },
-  { id: 20, descripcion: 'Cuartos de final' },
-  { id: 21, descripcion: 'Semifinal' },
-  { id: 22, descripcion: 'Final' },
-];
-
 export {
   FIREBASE_CONFIG,
-  JORNADA_LIGUILLA,
   LIGUILLA,
   LOGOS,
-  POSTSEASON_FORMAT,
-  REGULAR_SEASON_LAST_JORNADA,
-  U23_MIN_BIRTH_YEAR,
 };

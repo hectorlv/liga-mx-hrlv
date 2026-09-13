@@ -34,6 +34,7 @@ import '../pages/bracket-page.js';
 import '../pages/table-page.js';
 import '../pages/stats-page.js';
 import '../pages/social-page.js';
+import '../pages/consistency-page.js';
 import '../pages/match-detail-page.js';
 import '../pages/team-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
@@ -81,6 +82,7 @@ const NAVIGATION_TABS: readonly NavigationTab[] = [
 ];
 
 const ADMIN_NAVIGATION_TABS: readonly NavigationTab[] = [
+  { label: 'Consistencia', icon: 'fact_check' },
   { label: 'Redes', icon: 'campaign' },
 ];
 
@@ -729,6 +731,10 @@ export class LigaMxHrlv extends LitElement {
               ></social-page>
             `
           : html``;
+      case 'Consistencia':
+        return this.isAdmin
+          ? html`<consistency-page .matchesList=${this.matchesList} .players=${this.players}></consistency-page>`
+          : html``;
       default:
         return html``;
     }
@@ -1011,6 +1017,7 @@ export class LigaMxHrlv extends LitElement {
       case 'Liguilla':
       case 'Estadísticas':
       case 'Redes':
+      case 'Consistencia':
         return this.selectedTab;
       default:
         return 'Inicio';
