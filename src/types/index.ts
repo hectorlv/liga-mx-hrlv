@@ -2,6 +2,7 @@
 export type MatchPublicationStatus = 'postponed' | 'cancelled';
 
 export interface Match {
+  /** Clave persistente de Realtime Database; nunca es el índice de un arreglo. */
   idMatch: number;
   estadio: string;
   fecha: string | Date;
@@ -45,6 +46,8 @@ export interface TableEntry {
 }
 
 export interface Player {
+  /** Identidad estable del futbolista, independiente de dorsal o equipo. */
+  id?: string;
   birthDate: string | Date;
   fullName: string;
   /** Conserva los datos y estadísticas previos a un traslado. */
@@ -111,6 +114,36 @@ export type MatchEvent =
   GoalMatchEvent | SubstitutionMatchEvent | CardMatchEvent | PhaseMatchEvent;
 
 export type FirebaseUpdates = Record<string, unknown>;
+
+export type AdminWriteState = 'idle' | 'saving' | 'conflict' | 'error';
+
+export interface AdminWriteRequest {
+  updates: FirebaseUpdates;
+  expectedRevisions: Record<string, number>;
+}
+
+export interface AdminWriteSuccess {
+  ok: true;
+  revisions: Record<string, number>;
+}
+
+export interface AdminWriteConflict {
+  ok: false;
+  code: 'conflict';
+  revisions: Record<string, number>;
+  current: Record<string, unknown>;
+}
+
+export interface AdminWriteFailure {
+  ok: false;
+  code: 'error';
+  message: string;
+}
+
+export type AdminWriteResult =
+  | AdminWriteSuccess
+  | AdminWriteConflict
+  | AdminWriteFailure;
 
 export type GoalType =
   'penal' | 'area' | 'fueraArea' | 'tiroLibre' | 'cabeza' | 'otro';

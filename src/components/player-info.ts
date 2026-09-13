@@ -1,7 +1,7 @@
 import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { Player } from '../types';
 import { getDownloadURL, getStorage, ref } from 'firebase/storage';
+import { Player } from '../types';
 import { U23_MIN_BIRTH_YEAR } from '../utils/constants.js';
 
 @customElement('player-info')
@@ -93,7 +93,6 @@ export class PlayerInfo extends LitElement {
   ];
   @property({ type: Object }) player!: Player;
   @state() private resolvedImageSrc = '';
-
   private readonly storage = getStorage();
 
   override render() {
@@ -135,30 +134,20 @@ export class PlayerInfo extends LitElement {
   private async resolveImageSrc(): Promise<void> {
     const originalSrc = this.player?.imgSrc ?? '';
 
-    if (!originalSrc) {
-      this.resolvedImageSrc = '';
-      return;
-    }
-
-    if (!originalSrc.includes('cldrsrcs.apilmx')) {
+    if (!originalSrc?.includes('cldrsrcs.apilmx')) {
       this.resolvedImageSrc = originalSrc;
       return;
     }
 
-    const sanitizedSrc = originalSrc.split('?rnd=')[0];
-    const fileName = sanitizedSrc.split('/').pop();
-
+    const fileName = originalSrc.split('?rnd=')[0].split('/').pop();
     if (!fileName) {
       this.resolvedImageSrc = originalSrc;
       return;
     }
 
-    // Clear the previous resolved image before fetching the new one to avoid stale-image bleed-through
     this.resolvedImageSrc = '';
-
     try {
       const downloadUrl = await getDownloadURL(ref(this.storage, fileName));
-
       if (this.player?.imgSrc === originalSrc) {
         this.resolvedImageSrc = downloadUrl;
       }

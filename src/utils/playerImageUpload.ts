@@ -1,4 +1,15 @@
+import { getAuth } from 'firebase/auth';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+
+const MAX_PLAYER_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export function validatePlayerImage(blob: Blob) {
+  if (!ALLOWED_IMAGE_TYPES.has(blob.type))
+    throw new Error('La imagen debe ser JPEG, PNG o WebP.');
+  if (blob.size > MAX_PLAYER_IMAGE_BYTES)
+    throw new Error('La imagen supera el límite de 5 MB.');
+}
 
 function sanitizePathSegment(value: string): string {
   const normalized = value
@@ -26,7 +37,7 @@ async function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = () =>
-        reject(new Error('No fue posible leer la imagen pegada.'));
+        reject(new Error('No fue posible leer el archivo de imagen.'));
       img.src = objectUrl;
     });
 
@@ -34,6 +45,48 @@ async function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
+}
+
+/** Valida también que el navegador pueda decodificar el archivo antes de subirlo. */
+export async function validatePlayerImageForPreview(blob: Blob): Promise<void> {
+  validatePlayerImage(blob);
+  await loadImageFromBlob(blob);
+}
+
+/**
+ * Mantiene mensajes accionables sin asumir que todos los fallos vienen de
+ * Storage. El formulario conserva el archivo seleccionado en cualquier caso.
+ */
+export function getPlayerImageErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  const normalized = message.toLowerCase();
+
+  if (
+    message.startsWith('La imagen ') ||
+    message.startsWith('No fue posible leer el archivo') ||
+    message.startsWith('No fue posible preparar') ||
+    message.startsWith('No fue posible convertir')
+  ) {
+    return message;
+  }
+  if (normalized.includes('debes iniciar sesión')) {
+    return 'Debes iniciar sesión como administrador para subir una imagen.';
+  }
+  if (
+    normalized.includes('storage/unauthorized') ||
+    normalized.includes('permission') ||
+    normalized.includes('unauthorized')
+  ) {
+    return 'No tienes permisos para subir imágenes. Verifica tu sesión de administrador.';
+  }
+  if (
+    normalized.includes('network') ||
+    normalized.includes('unavailable') ||
+    normalized.includes('retry-limit')
+  ) {
+    return 'No se pudo subir la imagen por un fallo temporal. Puedes reintentar sin perderla.';
+  }
+  return 'No se pudo subir la imagen. Puedes reintentar sin perderla.';
 }
 
 export async function convertImageBlobToJpeg(blob: Blob): Promise<Blob> {
@@ -71,11 +124,16 @@ export async function uploadPlayerImage(
   teamKey: string,
   playerNumber: number,
 ): Promise<string> {
+  validatePlayerImage(blob);
   const storage = getStorage();
   const convertedBlob = await convertImageBlobToJpeg(blob);
   const safeTeamKey = sanitizePathSegment(teamKey);
   const path = `players/${safeTeamKey}/${playerNumber}-${Date.now()}.jpg`;
   const storageRef = ref(storage, path);
+
+  const user = getAuth().currentUser;
+  if (!user) throw new Error('Debes iniciar sesión como administrador.');
+  await user.getIdToken(true);
 
   await uploadBytes(storageRef, convertedBlob, {
     contentType: 'image/jpeg',

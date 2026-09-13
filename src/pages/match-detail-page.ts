@@ -35,7 +35,7 @@ import {
   getPhaseEvents,
 } from '../utils/functionUtils.js';
 import { LIGUILLA, REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
-import { hasMatchStarted } from '../utils/matchStatus.js';
+import { hasMatchStarted, resolveMatchStatus } from '../utils/matchStatus.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -217,7 +217,7 @@ export class MatchDetailPage extends LitElement {
 
       .aggregate-score {
         margin-top: 8px;
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
         font-size: 0.9rem;
         font-weight: 800;
         line-height: 1;
@@ -226,7 +226,7 @@ export class MatchDetailPage extends LitElement {
 
       .match-resolution-note {
         margin-top: 8px;
-        color: var(--md-sys-color-on-surface-variant);
+        color: #475569;
         font-size: 0.78rem;
         font-weight: 800;
         line-height: 1.2;
@@ -437,6 +437,9 @@ export class MatchDetailPage extends LitElement {
   @state() localPlayers: Player[] = [];
   @state() visitorPlayers: Player[] = [];
   @state() isEditing: boolean = false;
+  @state() private editSaveState: 'idle' | 'saving' | 'error' | 'conflict' =
+    'idle';
+  @state() private editSaveMessage = '';
   @state() selectedTeam: string | null = null;
   @query('#halftimeMinuteInput') halftimeMinuteInput!: MdFilledTextField;
 
@@ -716,6 +719,13 @@ export class MatchDetailPage extends LitElement {
                   ></md-filled-text-field>
                   ${penaltyFieldsTemplate}
                 </div>
+                ${
+                  this.editSaveMessage
+                    ? html`<p role="status" aria-live="polite" class="match-resolution-note">
+                        ${this.editSaveMessage}
+                      </p>`
+                    : null
+                }
               `
             : html`
                 <div class="match-meta">
@@ -724,13 +734,23 @@ export class MatchDetailPage extends LitElement {
                     ${formatDateDDMMYYYY(fecha as Date)}
                   </div>
                   <div class="meta-item">
-                    <md-icon style="font-size: 18px">schedule</md-icon> ${hora}
+                    <md-icon style="font-size: 18px">schedule</md-icon> ${hora} CDMX
                   </div>
                   <div class="meta-item">
                     <md-icon style="font-size: 18px">stadium</md-icon>
                     ${estadio}
                   </div>
                 </div>
+                ${
+                  resolveMatchStatus(this.match) === 'postponed' ||
+                  resolveMatchStatus(this.match) === 'cancelled'
+                    ? html`<p class="match-meta" role="status">${
+                        resolveMatchStatus(this.match) === 'postponed'
+                          ? 'Partido pospuesto'
+                          : 'Partido cancelado'
+                      }</p>`
+                    : ''
+                }
                 ${tableComparisonTemplate}
               `
         }
@@ -898,6 +918,7 @@ export class MatchDetailPage extends LitElement {
   private editMatchInfo() {
     if (!this.isAdmin) return;
     if (!this.match) return;
+    if (this.editSaveState === 'saving') return;
 
     const fechaInput = this.renderRoot.querySelector(
       '#fechaInput',
@@ -914,6 +935,20 @@ export class MatchDetailPage extends LitElement {
     const liveMinuteInput = this.renderRoot.querySelector(
       '#liveMinuteInput',
     ) as MdFilledTextField;
+    const parsedDate = fechaInput.value;
+    const parsedTime = horaInput.value;
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(parsedDate) ||
+      !/^\d{2}:\d{2}$/.test(parsedTime)
+    ) {
+      fechaInput.setCustomValidity(parsedDate ? '' : 'La fecha es obligatoria');
+      horaInput.setCustomValidity(parsedTime ? '' : 'La hora es obligatoria');
+      fechaInput.reportValidity();
+      horaInput.reportValidity();
+      return;
+    }
+    fechaInput.setCustomValidity('');
+    horaInput.setCustomValidity('');
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/fecha`] = replaceDateSeparator(
       fechaInput.value,
@@ -939,8 +974,23 @@ export class MatchDetailPage extends LitElement {
       updates[`/matches/${this.match.idMatch}/penaltyVisitante`] =
         this._getPenaltyInputValue(penaltyVisitanteInput);
     }
-    this.dispatchEvent(dispatchEventMatchUpdated(updates));
-    this.isEditing = false;
+    this.editSaveState = 'saving';
+    this.editSaveMessage = 'Guardando cambios del partido…';
+    this.dispatchEvent(
+      dispatchEventMatchUpdated(updates, result => {
+        if (result.ok) {
+          this.editSaveState = 'idle';
+          this.editSaveMessage = '';
+          this.isEditing = false;
+          return;
+        }
+        this.editSaveState = result.code === 'conflict' ? 'conflict' : 'error';
+        this.editSaveMessage =
+          result.code === 'conflict'
+            ? 'Hay cambios remotos. Revisa antes de volver a guardar.'
+            : result.message || 'No se pudieron guardar los cambios del partido.';
+      }),
+    );
   }
 
   private _getPenaltyInputValue(
@@ -964,11 +1014,19 @@ export class MatchDetailPage extends LitElement {
 
     if (this.isEditing) {
       return html`
-        <md-icon-button @click=${this.editMatchInfo} title="Guardar"
+        <md-icon-button
+          @click=${this.editMatchInfo}
+          ?disabled=${this.editSaveState === 'saving'}
+          title=${this.editSaveState === 'saving' ? 'Guardando…' : 'Guardar'}
           ><md-icon>save</md-icon></md-icon-button
         >
         <md-icon-button
-          @click=${() => (this.isEditing = false)}
+          @click=${() => {
+            this.isEditing = false;
+            this.editSaveState = 'idle';
+            this.editSaveMessage = '';
+          }}
+          ?disabled=${this.editSaveState === 'saving'}
           title="Cancelar"
           ><md-icon>cancel</md-icon></md-icon-button
         >

@@ -1,5 +1,6 @@
 packages:
   - "."
+  - "functions"
 
 strictDepBuilds: true
 minimumReleaseAge: 1440

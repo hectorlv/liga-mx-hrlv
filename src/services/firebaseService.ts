@@ -2,18 +2,57 @@ import {
   getDatabase,
   ref,
   onValue,
-  update,
   type Unsubscribe,
 } from 'firebase/database';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { formatDate } from '../utils/dateUtils';
 import {
   FirebaseUpdates,
+  AdminWriteRequest,
+  AdminWriteResult,
   Match,
   PlayerTeam,
   U23NationalTeamCallups,
 } from '../types';
 
 type SimpleCallback<T> = (data: T) => void;
+type ErrorCallback = (error: Error) => void;
+
+export type AdminRevisions = {
+  [key: string]: number | AdminRevisions;
+};
+
+function resourceForPath(path: string): string {
+  const [root, key] = path.split('/').filter(Boolean);
+  if (!root) throw new Error('La actualización no tiene una ruta válida.');
+  return key && (root === 'matches' || root === 'players')
+    ? `${root}/${key}`
+    : root;
+}
+
+function revisionForResource(
+  revisions: AdminRevisions,
+  resource: string,
+): number {
+  const value = resource.split('/').reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== 'object') return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, revisions);
+  return typeof value === 'number' ? value : 0;
+}
+
+function buildAdminWriteRequest(
+  updates: FirebaseUpdates,
+  revisions: AdminRevisions,
+): AdminWriteRequest {
+  const resources = [...new Set(Object.keys(updates).map(resourceForPath))];
+  return {
+    updates,
+    expectedRevisions: Object.fromEntries(
+      resources.map(resource => [resource, revisionForResource(revisions, resource)]),
+    ),
+  };
+}
 
 function snapshotToArray<T>(snapshotData: Record<string, unknown>): T {
   if (!snapshotData) return [] as T;
@@ -37,6 +76,7 @@ function subscribeToFirebasePath<T>(
   path: string,
   callback: SimpleCallback<T>,
   isArray: boolean = true,
+  onError?: ErrorCallback,
 ): Unsubscribe {
   const db = getDatabase();
   const dbRef = ref(db, path);
@@ -57,20 +97,30 @@ function subscribeToFirebasePath<T>(
     },
     error => {
       console.error('Firebase subscription error at path:', path, error);
-      callback(isArray ? ([] as unknown as T) : (new Map() as unknown as T));
+      onError?.(new Error(`No se pudieron leer los datos de ${path}.`));
     },
   );
   return unsubscribe;
 }
 
-export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
-  const callbackWrapper = (matches: Match[]) => {
-    const formattedMatches = matches.map((match, index) => ({
+export function fetchMatches(
+  callback: SimpleCallback<Match[]>,
+  onError?: ErrorCallback,
+): Unsubscribe {
+  const db = getDatabase();
+  return onValue(ref(db, '/matches'), snapshot => {
+    const raw = snapshot.val() as Record<string, Match> | Match[] | null;
+    const entries = Array.isArray(raw)
+      ? raw.map((match, index) => [String(index), match] as const)
+      : Object.entries(raw || {});
+    const formattedMatches = entries.map(([key, match]) => ({
       ...match,
       golLocal: typeof match.golLocal === 'number' ? match.golLocal : null,
       golVisitante:
         typeof match.golVisitante === 'number' ? match.golVisitante : null,
-      idMatch: index,
+      // Firebase keys are the canonical identity; sparse keys must not be
+      // replaced by their position after sorting.
+      idMatch: Number.isFinite(Number(key)) ? Number(key) : Number(match.idMatch),
       fecha: formatDate(match.fecha, match.hora),
       jornada: Number(match.jornada),
     }));
@@ -84,20 +134,29 @@ export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
       return a.jornada - b.jornada;
     });
     callback(formattedMatches as Match[]);
-  };
-  return subscribeToFirebasePath<Match[]>('/matches', callbackWrapper);
+  }, error => {
+    console.error('Firebase subscription error at path: /matches', error);
+    onError?.(new Error('No se pudieron leer los partidos.'));
+  });
 }
 
-export function fetchTeams(callback: SimpleCallback<string[]>): Unsubscribe {
-  return subscribeToFirebasePath<string[]>('/teams', callback);
+export function fetchTeams(
+  callback: SimpleCallback<string[]>,
+  onError?: ErrorCallback,
+): Unsubscribe {
+  return subscribeToFirebasePath<string[]>('/teams', callback, true, onError);
 }
 
-export function fetchStadiums(callback: SimpleCallback<string[]>): Unsubscribe {
-  return subscribeToFirebasePath<string[]>('/stadiums', callback);
+export function fetchStadiums(
+  callback: SimpleCallback<string[]>,
+  onError?: ErrorCallback,
+): Unsubscribe {
+  return subscribeToFirebasePath<string[]>('/stadiums', callback, true, onError);
 }
 
 export function fetchPlayers(
   callback: SimpleCallback<PlayerTeam>,
+  onError?: ErrorCallback,
 ): Unsubscribe {
   const callbackWrapper = (teamsMap: PlayerTeam) => {
     const orderPosition = ['Portero', 'Defensa', 'Medio', 'Delantero'];
@@ -117,25 +176,42 @@ export function fetchPlayers(
     '/players',
     callbackWrapper,
     false,
+    onError,
   );
 }
 
 export function fetchU23NationalTeamCallups(
   callback: SimpleCallback<U23NationalTeamCallups>,
+  onError?: ErrorCallback,
 ): Unsubscribe {
   return subscribeToFirebasePath<U23NationalTeamCallups>(
     '/u23NationalTeamCallups',
     callback,
     false,
+    onError,
   );
 }
 
-export async function saveUpdates(updates: FirebaseUpdates): Promise<void> {
-  const db = getDatabase();
-  return update(ref(db), updates)
-    .then(() => {})
-    .catch(error => {
-      console.error('Error saving updates:', error);
-      throw error;
-    });
+export function fetchAdminRevisions(
+  callback: SimpleCallback<AdminRevisions>,
+): Unsubscribe {
+  return onValue(
+    ref(getDatabase(), '/adminRevisions'),
+    snapshot => callback((snapshot.val() || {}) as AdminRevisions),
+    error => {
+      console.error('Firebase subscription error at path: /adminRevisions', error);
+      callback({});
+    },
+  );
+}
+
+export async function saveUpdates(
+  updates: FirebaseUpdates,
+  revisions: AdminRevisions,
+): Promise<AdminWriteResult> {
+  const write = httpsCallable<AdminWriteRequest, AdminWriteResult>(
+    getFunctions(undefined, 'us-central1'),
+    'applyAdminUpdates',
+  );
+  return (await write(buildAdminWriteRequest(updates, revisions))).data;
 }

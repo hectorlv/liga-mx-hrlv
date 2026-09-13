@@ -2,6 +2,20 @@ import { Match, PhaseMatchEvent } from '../types/index.js';
 import { getPhaseEvents, sortMatchEvents } from './functionUtils.js';
 
 const END_PHASES = new Set<PhaseMatchEvent['phase']>(['fulltime']);
+export type ResolvedMatchStatus =
+  | 'scheduled'
+  | 'live'
+  | 'finished'
+  | 'postponed'
+  | 'cancelled';
+
+export function resolveMatchStatus(match: Match): ResolvedMatchStatus {
+  if (match.status === 'postponed' || match.status === 'cancelled')
+    return match.status;
+  if (hasMatchEnded(match)) return 'finished';
+  if (hasMatchStarted(match)) return 'live';
+  return 'scheduled';
+}
 
 export function hasMatchStarted(match: Match): boolean {
   return getPhaseEvents(match.events || []).some(
@@ -16,7 +30,7 @@ export function hasMatchEnded(match: Match): boolean {
 }
 
 export function isMatchLive(match: Match): boolean {
-  return hasMatchStarted(match) && !hasMatchEnded(match);
+  return resolveMatchStatus(match) === 'live';
 }
 
 export function getLiveMatchPeriodLabel(match: Match): string | null {

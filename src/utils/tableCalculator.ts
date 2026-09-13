@@ -60,6 +60,7 @@ export function calculateTable(
         (match.local === team || match.visitante === team) &&
         match.golLocal != null &&
         match.golVisitante != null &&
+        match.status !== 'cancelled' &&
         match.jornada <= REGULAR_SEASON_LAST_JORNADA,
     );
     const teamStats = calculateTeamStats(team, teamMatches);

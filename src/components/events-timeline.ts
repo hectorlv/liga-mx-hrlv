@@ -172,6 +172,17 @@ export class EventsTimeline extends LitElement {
         color: var(--md-sys-color-on-primary-container);
       }
 
+      .team-badge {
+        display: none;
+      }
+
+      .score-badge {
+        display: inline-flex;
+        background: var(--md-sys-color-inverse-surface);
+        color: var(--md-sys-color-inverse-on-surface);
+        font-variant-numeric: tabular-nums;
+      }
+
       /* TEXTOS DEL EVENTO */
       .event-text {
         font-size: 0.95rem;
@@ -184,6 +195,23 @@ export class EventsTimeline extends LitElement {
         font-size: 0.8rem;
         color: var(--md-sys-color-on-surface-variant);
         margin-top: 4px;
+      }
+
+      @media (max-width: 699px) {
+        .team-badge {
+          display: inline-flex;
+        }
+
+        .team-badge.team-local {
+          background: var(--md-sys-color-primary-container);
+          color: var(--md-sys-color-on-primary-container);
+        }
+
+        .team-badge.team-visitor {
+          background: var(--md-sys-color-secondary-container);
+          color: var(--md-sys-color-on-secondary-container);
+        }
+
       }
 
       /* EVENTO DE FASE (Medio tiempo, Fin, etc.) */
@@ -270,6 +298,7 @@ export class EventsTimeline extends LitElement {
   override render() {
     if (!this.match) return html``;
     const items = this._buildTimelineItems();
+    const goalScores = this._buildGoalScores(items);
 
     return html`
       <div class="card">
@@ -285,7 +314,7 @@ export class EventsTimeline extends LitElement {
                 </div>`
               : html`
                   <div class="timeline">
-                    ${items.map(item => this._renderItem(item))}
+                    ${items.map(item => this._renderItem(item, goalScores))}
                   </div>
                 `
           }
@@ -294,10 +323,10 @@ export class EventsTimeline extends LitElement {
     `;
   }
 
-  private _renderItem(item: MatchEvent) {
+  private _renderItem(item: MatchEvent, goalScores: Map<string, string>) {
     switch (item.type) {
       case 'goal':
-        return this._renderGoalItem(item as GoalMatchEvent);
+        return this._renderGoalItem(item as GoalMatchEvent, goalScores);
       case 'card':
         return this._renderCardItem(item as CardMatchEvent);
       case 'substitution':
@@ -309,7 +338,10 @@ export class EventsTimeline extends LitElement {
     }
   }
 
-  private _renderGoalItem(item: GoalMatchEvent) {
+  private _renderGoalItem(
+    item: GoalMatchEvent,
+    goalScores: Map<string, string>,
+  ) {
     const isLocal = item.team === 'local';
     const ownGoalTeam = isLocal ? 'visitor' : 'local';
     const playerTeam = item.ownGoal ? ownGoalTeam : item.team;
@@ -326,6 +358,8 @@ export class EventsTimeline extends LitElement {
               <md-icon>sports_soccer</md-icon>
               ${item.ownGoal ? 'Autogol' : 'Gol'}
             </span>
+            ${this._renderTeamBadge(item.team)}
+            ${this._renderScoreBadge(goalScores.get(item.id) || '0–0')}
             ${
               item.goalType
                 ? html`<span
@@ -369,6 +403,7 @@ export class EventsTimeline extends LitElement {
               >
               ${isYellow ? 'Amarilla' : 'Roja'}
             </span>
+            ${this._renderTeamBadge(item.team)}
             ${
               item.foulType
                 ? html`<span
@@ -401,6 +436,7 @@ export class EventsTimeline extends LitElement {
             <span class="badge sub">
               <md-icon>swap_horiz</md-icon> Cambio
             </span>
+            ${this._renderTeamBadge(item.team)}
           </div>
           <div class="event-text" style="color: var(--md-sys-color-primary)">
             + ${this._playerName(item.team, item.playerIn)}
@@ -438,6 +474,41 @@ export class EventsTimeline extends LitElement {
 
     const events = Array.isArray(this.match.events) ? this.match.events : [];
     return sortMatchEvents(events);
+  }
+
+  private _buildGoalScores(items: MatchEvent[]): Map<string, string> {
+    let localScore = 0;
+    let visitorScore = 0;
+    const scores = new Map<string, string>();
+
+    for (const item of items) {
+      if (item.type !== 'goal') continue;
+
+      if (item.team === 'local') localScore += 1;
+      else visitorScore += 1;
+
+      scores.set(item.id, `${localScore}–${visitorScore}`);
+    }
+
+    return scores;
+  }
+
+  private _renderTeamBadge(team: TeamSideOptional) {
+    if (!this.match || !team) return null;
+    const teamName = team === 'local' ? this.match.local : this.match.visitante;
+    const sideLabel = team === 'local' ? 'Local' : 'Visitante';
+
+    return html`<span class="badge team-badge team-${team}">
+      ${teamName} · ${sideLabel}
+    </span>`;
+  }
+
+  private _renderScoreBadge(score: string) {
+    return html`<span
+      class="badge score-badge"
+      aria-label="Marcador tras el gol: ${score.replace('–', ' a ')}"
+      >${score}</span
+    >`;
   }
 
   private _phaseLabel(phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime') {

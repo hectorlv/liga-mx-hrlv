@@ -16,12 +16,13 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import { getDatabase, onValue, ref, Unsubscribe } from 'firebase/database';
+import { Unsubscribe } from 'firebase/database';
 
 // Material Web imports
 import '@material/web/icon/icon.js';
 import '@material/web/button/outlined-button.js';
 import '@material/web/button/text-button.js';
+import '@material/web/iconbutton/icon-button.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
 // Styles and components
@@ -33,6 +34,7 @@ import '../pages/bracket-page.js';
 import '../pages/table-page.js';
 import '../pages/stats-page.js';
 import '../pages/social-page.js';
+import '../pages/consistency-page.js';
 import '../pages/match-detail-page.js';
 import '../pages/team-page.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
@@ -40,11 +42,13 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 // Utility imports
 import {
   fetchMatches,
+  fetchAdminRevisions,
   fetchPlayers,
   fetchStadiums,
   fetchTeams,
   fetchU23NationalTeamCallups,
   saveUpdates,
+  type AdminRevisions,
 } from '../services/firebaseService.js';
 import {
   Match,
@@ -59,6 +63,8 @@ import {
 } from '../utils/playoffCalculator.js';
 import { calculateTable } from '../utils/tableCalculator.js';
 import { APP_BUILD_DATE, APP_VERSION_LABEL } from '../utils/version.js';
+import { registerServiceWorker } from '../utils/serviceWorker.js';
+import type { AdminUpdateEventDetail } from '../utils/functionUtils.js';
 import '../utils/material.js';
 
 interface NavigationTab {
@@ -76,6 +82,7 @@ const NAVIGATION_TABS: readonly NavigationTab[] = [
 ];
 
 const ADMIN_NAVIGATION_TABS: readonly NavigationTab[] = [
+  { label: 'Consistencia', icon: 'fact_check' },
   { label: 'Redes', icon: 'campaign' },
 ];
 
@@ -116,14 +123,15 @@ export class LigaMxHrlv extends LitElement {
       }
 
       .main-navigation {
+        position: relative;
         display: flex;
         align-items: stretch;
         max-width: 800px;
         min-width: 0;
-        overflow-x: auto;
       }
 
-      .main-navigation a {
+      .main-navigation a,
+      .mobile-menu-trigger {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -138,8 +146,18 @@ export class LigaMxHrlv extends LitElement {
         white-space: nowrap;
       }
 
+      .mobile-menu-trigger {
+        display: none;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        background: transparent;
+        cursor: pointer;
+      }
+
       .main-navigation a:hover,
-      .main-navigation a:focus-visible {
+      .main-navigation a:focus-visible,
+      .mobile-menu-trigger:hover,
+      .mobile-menu-trigger:focus-visible {
         background: var(--md-sys-color-surface-container);
         color: var(--md-sys-color-primary);
         outline: none;
@@ -149,6 +167,16 @@ export class LigaMxHrlv extends LitElement {
         border-bottom-color: var(--md-sys-color-primary);
         color: var(--md-sys-color-primary);
         font-weight: 800;
+      }
+
+      .mobile-menu-trigger.is-current {
+        border-bottom-color: var(--md-sys-color-primary);
+        color: var(--md-sys-color-primary);
+        font-weight: 800;
+      }
+
+      .mobile-overflow-menu {
+        display: none;
       }
 
       .admin-actions {
@@ -207,6 +235,85 @@ export class LigaMxHrlv extends LitElement {
         }
       }
 
+      @media (max-width: 600px) {
+        .header-content {
+          padding-right: 96px;
+        }
+
+        .main-navigation {
+          overflow: visible;
+        }
+
+        .main-navigation a,
+        .mobile-menu-trigger {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 0 4px;
+          font-size: 0.72rem;
+        }
+
+        .main-navigation > a md-icon {
+          display: none;
+        }
+
+        .main-navigation .nav-overflow-link {
+          display: none;
+        }
+
+        .mobile-menu-trigger {
+          display: inline-flex;
+          gap: 3px;
+        }
+
+        .mobile-menu-trigger md-icon {
+          font-size: 18px;
+        }
+
+        .mobile-overflow-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          right: 0;
+          z-index: 10;
+          display: grid;
+          min-width: 206px;
+          padding: 8px;
+          border: 1px solid var(--md-sys-color-outline-variant);
+          border-radius: 12px;
+          background: var(--md-sys-color-surface);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+        }
+
+        .mobile-overflow-menu[hidden] {
+          display: none;
+        }
+
+        .mobile-overflow-menu a {
+          justify-content: flex-start;
+          min-height: 42px;
+          padding: 0 12px;
+          border-bottom: 0;
+          border-radius: 8px;
+          color: var(--md-sys-color-on-surface);
+          font-size: 0.88rem;
+        }
+
+        .mobile-menu-group-label {
+          margin: 5px 12px 3px;
+          color: var(--md-sys-color-on-surface-variant);
+          font-size: 0.7rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .mobile-menu-divider {
+          height: 1px;
+          margin: 6px 4px;
+          background: var(--md-sys-color-outline-variant);
+        }
+
+      }
+
       /* ÁREA DE CONTENIDO */
       main {
         flex: 1;
@@ -253,7 +360,44 @@ export class LigaMxHrlv extends LitElement {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
       }
-
+      @media (max-width: 600px) {
+        .scrollTopButton {
+          top: 8px;
+          right: 52px;
+          bottom: auto;
+          z-index: 101;
+          padding: 8px;
+          box-shadow: none;
+        }
+      }
+      .skip-link {
+        position: absolute;
+        top: -56px;
+        left: 12px;
+        z-index: 200;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        font-weight: 700;
+      }
+      .skip-link:focus { top: 12px; }
+      .content-message {
+        max-width: 680px;
+        margin: 32px auto;
+        padding: 24px;
+        text-align: center;
+      }
+      .data-warning {
+        margin: 12px auto 0;
+        max-width: 960px;
+        padding: 10px 16px;
+        border: 1px solid #a16207;
+        border-radius: 8px;
+        background: #fef3c7;
+        color: #713f12;
+        font-weight: 700;
+      }
       /* FOOTER */
       .app-footer {
         display: flex;
@@ -371,13 +515,19 @@ export class LigaMxHrlv extends LitElement {
   @state() stadiums: string[] = [];
   @state() players: PlayerTeam = new Map();
   @state() u23NationalTeamCallups: U23NationalTeamCallups = new Map();
+  @state() adminRevisions: AdminRevisions = {};
   @state() table: TableEntry[] = [];
   @state() selectedTab: string = 'Inicio';
   @state() titleError: string = '';
   @state() contentError: string = '';
+  @state() private publicDataError = '';
+  @state() private publicDataStale = '';
+  @state() private publicDataLoaded = false;
+  @state() private showScrollTop = false;
+  @state() private mobileMenuOpen = false;
   @state() user: User | null = null;
   @state() isAdmin: boolean = false;
-  @state() routedMatchId: number | null = null;
+  @state() routedMatchId: string | null = null;
   @state() routedTeamName: string | null = null;
 
   @query('#dialogLiga') dialog!: MdDialog;
@@ -388,36 +538,64 @@ export class LigaMxHrlv extends LitElement {
   private _unsubscribeStadiums?: Unsubscribe;
   private _unsubscribePlayers?: Unsubscribe;
   private _unsubscribeU23NationalTeamCallups?: Unsubscribe;
+  private _unsubscribeAdminRevisions?: Unsubscribe;
   private _unsubscribeAuth?: Unsubscribe;
-  private _unsubscribeAllowedWriter?: Unsubscribe;
   private readonly _boundRouteChange = () => this._syncRouteFromUrl();
+  private readonly _boundScroll = () => {
+    this.showScrollTop = window.scrollY > (window.innerWidth <= 600 ? 120 : 320);
+  };
 
   constructor() {
     super();
     this.app = initializeApp(FIREBASE_CONFIG);
     this.auth = getAuth(this.app);
+    registerServiceWorker();
     this._initializeAnalytics();
   }
 
   override render() {
     const adminStatus = this.isAdmin ? 'Admin' : 'Sin permisos';
     return html`
+      <a class="skip-link" href="#main-content">Saltar al contenido</a>
       <header>
         <div class="header-content">
           <nav class="main-navigation" aria-label="Navegación principal">
-            ${this._navigationTabs.map(
-              tab => html`
-                <a
-                  href=${this._tabHref(tab.label)}
-                  aria-current=${
-                    this.selectedTab === tab.label ? 'page' : 'false'
-                  }
-                >
-                  <md-icon>${tab.icon}</md-icon>
-                  ${tab.shortLabel || tab.label}
-                </a>
-              `,
-            )}
+            ${this._navigationTabs.map((tab, index) => html`
+              <a
+                class=${index > 2 ? 'nav-overflow-link' : ''}
+                href=${this._tabHref(tab.label)}
+                aria-current=${this.selectedTab === tab.label ? 'page' : 'false'}
+              >
+                <md-icon>${tab.icon}</md-icon>
+                ${tab.shortLabel || tab.label}
+              </a>
+            `)}
+            <button
+              class="mobile-menu-trigger ${this._isOverflowTabSelected() ? 'is-current' : ''}"
+              type="button"
+              aria-label="Más secciones"
+              aria-haspopup="menu"
+              aria-expanded=${this.mobileMenuOpen ? 'true' : 'false'}
+              @click=${this._toggleMobileMenu}
+              @keydown=${this._handleMobileMenuKeydown}
+            >
+              <md-icon>more_horiz</md-icon>
+              Más
+            </button>
+            <div
+              class="mobile-overflow-menu"
+              role="menu"
+              aria-label="Más secciones"
+              ?hidden=${!this.mobileMenuOpen}
+              @keydown=${this._handleMobileMenuKeydown}
+            >
+              ${NAVIGATION_TABS.slice(3).map(tab => this._renderMobileMenuLink(tab))}
+              ${this.isAdmin ? html`
+                <div class="mobile-menu-divider" role="separator"></div>
+                <div class="mobile-menu-group-label">Administración</div>
+                ${ADMIN_NAVIGATION_TABS.map(tab => this._renderMobileMenuLink(tab))}
+              ` : ''}
+            </div>
           </nav>
           <div class="admin-actions">
             ${
@@ -448,16 +626,18 @@ export class LigaMxHrlv extends LitElement {
         </div>
       </header>
 
-      <main>${this._getTab()}</main>
+      ${this.publicDataStale ? html`<p class="data-warning" role="status">${this.publicDataStale} Se muestra el último dato disponible.</p>` : ''}
+      <main id="main-content" tabindex="-1">${this._getTab()}</main>
 
-      <md-icon
+      <md-icon-button
         id="scrollTopButton"
-        class="scrollTopButton material-icons-outlined"
-        title="Volver arriba"
+        class="scrollTopButton"
+        aria-label="Volver arriba"
+        ?hidden=${!this.showScrollTop}
         @click=${() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       >
-        arrow_upward
-      </md-icon>
+        <md-icon>arrow_upward</md-icon>
+      </md-icon-button>
 
       <footer class="app-footer">
         <p class="footer-credit">
@@ -541,27 +721,32 @@ export class LigaMxHrlv extends LitElement {
       if (this.matchesList.length > 0 && this.teams.length > 0) {
         this.table = calculateTable(this.teams, this.matchesList);
         if (!this.isAdmin) return;
-        if (POSTSEASON_FORMAT.playInSpots > 0) {
-          calculatePlayIn(this.table, this.matchesList);
-        } else {
-          calculateQuarterFinal(this.table, this.matchesList);
-        }
+        const updates = POSTSEASON_FORMAT.playInSpots > 0
+          ? calculatePlayIn(this.table, this.matchesList)
+          : calculateQuarterFinal(this.table, this.matchesList);
+        if (Object.keys(updates).length) void this._savePlayoffUpdates(updates);
       }
     }
     this._syncDocumentTitle();
   }
 
   private _getTab() {
+    if (this.publicDataError) {
+      return html`<section class="content-message" role="alert">
+        <h1>No se pudieron actualizar los datos</h1>
+        <p>${this.publicDataError}</p>
+        <md-filled-button @click=${this._retryPublicData}>Reintentar</md-filled-button>
+      </section>`;
+    }
     if (this.routedMatchId !== null) {
+      if (!/^\d+$/.test(this.routedMatchId)) return this._notFound('Partido');
       const routedMatch = this.matchesList.find(
-        match => match.idMatch === this.routedMatchId,
+        match => String(match.idMatch) === this.routedMatchId,
       );
 
-      if (!routedMatch) {
-        return html`<p style="padding: 40px; text-align: center;">
-          Cargando detalles del partido...
-        </p>`;
-      }
+      if (!routedMatch) return this.publicDataLoaded
+        ? this._notFound('Partido')
+        : html`<p class="content-message" aria-live="polite">Cargando detalles del partido…</p>`;
 
       return html`
         <match-detail-page
@@ -579,16 +764,15 @@ export class LigaMxHrlv extends LitElement {
     }
 
     const routedTeamName = this.routedTeamName;
-    if (routedTeamName) {
+    if (routedTeamName !== null) {
+      if (!routedTeamName) return this._notFound('Equipo');
       const team = this.table.find(entry => entry.equipo === routedTeamName);
       const teamPosition =
         this.table.findIndex(entry => entry.equipo === routedTeamName) + 1;
 
-      if (!team) {
-        return html`<p style="padding: 40px; text-align: center;">
-          Cargando detalles del equipo...
-        </p>`;
-      }
+      if (!team) return this.publicDataLoaded
+        ? this._notFound('Equipo')
+        : html`<p class="content-message" aria-live="polite">Cargando detalles del equipo…</p>`;
 
       return html`
         <team-page
@@ -677,6 +861,10 @@ export class LigaMxHrlv extends LitElement {
               ></social-page>
             `
           : html``;
+      case 'Consistencia':
+        return this.isAdmin
+          ? html`<consistency-page .matchesList=${this.matchesList} .players=${this.players}></consistency-page>`
+          : html``;
       default:
         return html``;
     }
@@ -686,24 +874,28 @@ export class LigaMxHrlv extends LitElement {
     super.connectedCallback();
     this._syncRouteFromUrl();
     window.addEventListener('popstate', this._boundRouteChange);
+    window.addEventListener('scroll', this._boundScroll, { passive: true });
+    this._boundScroll();
     this._subscribePublicData();
-    this._unsubscribeAuth = onAuthStateChanged(this.auth, user => {
+    this._unsubscribeAuth = onAuthStateChanged(this.auth, async user => {
       this.user = user;
-      this._unsubscribeAllowedWriter?.();
-      this._unsubscribeAllowedWriter = undefined;
       this.isAdmin = false;
       this._syncRouteFromUrl();
 
+      this._unsubscribeAdminRevisions?.();
+      this._unsubscribeAdminRevisions = undefined;
+      this.adminRevisions = {};
+
       if (!user) return;
 
-      const allowedWriterRef = ref(
-        getDatabase(this.app),
-        `/allowedWriters/${user.uid}`,
-      );
-      this._unsubscribeAllowedWriter = onValue(allowedWriterRef, snapshot => {
-        this.isAdmin = snapshot.exists();
-        this._syncRouteFromUrl();
-      });
+      const token = await user.getIdTokenResult(true);
+      this.isAdmin = token.claims.admin === true;
+      if (this.isAdmin) {
+        this._unsubscribeAdminRevisions = fetchAdminRevisions(revisions => {
+          this.adminRevisions = revisions;
+        });
+      }
+      this._syncRouteFromUrl();
     });
   }
 
@@ -716,45 +908,99 @@ export class LigaMxHrlv extends LitElement {
     if (this._unsubscribeMatches) return;
     this._unsubscribeMatches = fetchMatches((matches: Match[]) => {
       this.matchesList = matches;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribeTeams = fetchTeams((teams: string[]) => {
       this.teams = teams;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribeStadiums = fetchStadiums((stadiums: string[]) => {
       this.stadiums = stadiums;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribePlayers = fetchPlayers((players: PlayerTeam) => {
       this.players = players;
-    });
+      this._markPublicDataLoaded();
+    }, this._handlePublicDataError);
     this._unsubscribeU23NationalTeamCallups = fetchU23NationalTeamCallups(
       (callups: U23NationalTeamCallups) => {
         this.u23NationalTeamCallups = callups;
       },
+      this._handlePublicDataError,
     );
   }
 
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    window.removeEventListener('popstate', this._boundRouteChange);
-    this._unsubscribeAuth?.();
-    this._unsubscribeAllowedWriter?.();
+  private _markPublicDataLoaded() {
+    this.publicDataLoaded = true;
+    this.publicDataError = '';
+    this.publicDataStale = '';
+  }
+
+  private _handlePublicDataError = (error: Error) => {
+    if (this.publicDataLoaded) {
+      this.publicDataStale = error.message;
+      return;
+    }
+    this.publicDataError = error.message;
+  };
+
+  private _retryPublicData = () => {
+    this.publicDataError = '';
+    this.publicDataStale = '';
     this._unsubscribeMatches?.();
     this._unsubscribeTeams?.();
     this._unsubscribeStadiums?.();
     this._unsubscribePlayers?.();
     this._unsubscribeU23NationalTeamCallups?.();
+    this._unsubscribeMatches = undefined;
+    this._subscribePublicData();
+  };
+
+  private _notFound(entity: 'Partido' | 'Equipo') {
+    return html`<section class="content-message" role="status">
+      <h1>${entity} no encontrado</h1>
+      <p>La dirección no corresponde a un registro disponible.</p>
+      <md-filled-button @click=${entity === 'Partido' ? this._closeRoutedMatch : this._closeRoutedTeam}>Volver</md-filled-button>
+    </section>`;
   }
 
-  private async _editMatch(e: CustomEvent<Record<string, unknown>>) {
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('popstate', this._boundRouteChange);
+    window.removeEventListener('scroll', this._boundScroll);
+    this._unsubscribeAuth?.();
+    this._unsubscribeMatches?.();
+    this._unsubscribeTeams?.();
+    this._unsubscribeStadiums?.();
+    this._unsubscribePlayers?.();
+    this._unsubscribeU23NationalTeamCallups?.();
+    this._unsubscribeAdminRevisions?.();
+  }
+
+  private async _editMatch(e: CustomEvent<AdminUpdateEventDetail>) {
     if (!this.isAdmin) {
       this.titleError = 'Permiso requerido';
       this.contentError =
         'Debes iniciar sesión con un usuario admin para guardar cambios.';
       this.dialog?.show();
+      e.detail.onResult?.({
+        ok: false,
+        code: 'error',
+        message: this.contentError,
+      });
       return;
     }
     try {
-      await saveUpdates(e.detail);
+      const result = await saveUpdates(e.detail.updates, this.adminRevisions);
+      if (!result.ok) {
+        this.titleError = 'Cambios por revisar';
+        this.contentError =
+          result.code === 'conflict'
+            ? `Otro administrador modificó ${Object.keys(result.current).join(', ')}. Recarga la página antes de volver a guardar.`
+            : result.message;
+        this.dialog?.show();
+      }
+      e.detail.onResult?.(result);
     } catch (error) {
       this.titleError = 'No se guardaron los cambios';
       this.contentError =
@@ -762,6 +1008,19 @@ export class LigaMxHrlv extends LitElement {
           ? error.message
           : 'Firebase rechazó la actualización del partido.';
       this.dialog?.show();
+      e.detail.onResult?.({
+        ok: false,
+        code: 'error',
+        message: this.contentError,
+      });
+    }
+  }
+
+  private async _savePlayoffUpdates(updates: Record<string, unknown>) {
+    try {
+      await saveUpdates(updates, this.adminRevisions);
+    } catch (error) {
+      console.error('No se pudieron guardar los cruces de liguilla:', error);
     }
   }
 
@@ -779,9 +1038,8 @@ export class LigaMxHrlv extends LitElement {
   private _syncRouteFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const matchParam = params.get('match');
-    const matchId = matchParam === null ? Number.NaN : Number(matchParam);
-    this.routedMatchId = Number.isFinite(matchId) ? matchId : null;
-    this.routedTeamName = params.get('team');
+    this.routedMatchId = params.has('match') ? (matchParam?.trim() ?? '') : null;
+    this.routedTeamName = params.has('team') ? (params.get('team')?.trim() ?? '') : null;
 
     const tab = params.get('tab');
     this.selectedTab = this._navigationTabs.some(item => item.label === tab)
@@ -817,6 +1075,40 @@ export class LigaMxHrlv extends LitElement {
   private _tabHref(tab: string): string {
     return `?tab=${encodeURIComponent(tab)}`;
   }
+
+  private _renderMobileMenuLink(tab: NavigationTab) {
+    return html`
+      <a
+        href=${this._tabHref(tab.label)}
+        role="menuitem"
+        aria-current=${this.selectedTab === tab.label ? 'page' : 'false'}
+        @click=${this._closeMobileMenu}
+      >
+        <md-icon>${tab.icon}</md-icon>
+        ${tab.shortLabel || tab.label}
+      </a>
+    `;
+  }
+
+  private _isOverflowTabSelected(): boolean {
+    return this._navigationTabs.slice(3).some(tab => tab.label === this.selectedTab);
+  }
+
+  private _toggleMobileMenu = () => {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  };
+
+  private _closeMobileMenu = () => {
+    this.mobileMenuOpen = false;
+  };
+
+  private _handleMobileMenuKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    this.mobileMenuOpen = false;
+    const trigger = this.renderRoot.querySelector<HTMLButtonElement>('.mobile-menu-trigger');
+    trigger?.focus();
+  };
 
   private get _navigationTabs(): readonly NavigationTab[] {
     return this.isAdmin
@@ -876,7 +1168,7 @@ export class LigaMxHrlv extends LitElement {
 
     if (this.routedMatchId !== null) {
       const match = this.matchesList.find(
-        candidate => candidate.idMatch === this.routedMatchId,
+        candidate => String(candidate.idMatch) === this.routedMatchId,
       );
       if (match) return `${match.local} vs ${match.visitante}`;
     }
@@ -889,6 +1181,7 @@ export class LigaMxHrlv extends LitElement {
       case 'Liguilla':
       case 'Estadísticas':
       case 'Redes':
+      case 'Consistencia':
         return this.selectedTab;
       default:
         return 'Inicio';
