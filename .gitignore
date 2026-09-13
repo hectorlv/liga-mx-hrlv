@@ -25,3 +25,5 @@ custom-elements.json
 .firebase/
 .pnpm-store/
 docs/
+database-debug.log
+firebase-debug.log
