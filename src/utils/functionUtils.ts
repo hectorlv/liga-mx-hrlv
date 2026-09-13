@@ -2,6 +2,7 @@ import {
   CardMatchEvent,
   CardType,
   FirebaseUpdates,
+  AdminWriteResult,
   FoulType,
   GoalMatchEvent,
   GoalType,
@@ -202,11 +203,17 @@ function getBestSeededTeam(
   return firstIndex <= secondIndex ? firstTeam : secondTeam;
 }
 
+export interface AdminUpdateEventDetail {
+  updates: FirebaseUpdates;
+  onResult?: (result: AdminWriteResult) => void;
+}
+
 export function dispatchEventMatchUpdated(
-  detail: FirebaseUpdates,
-): CustomEvent {
+  updates: FirebaseUpdates,
+  onResult?: (result: AdminWriteResult) => void,
+): CustomEvent<AdminUpdateEventDetail> {
   const event = new CustomEvent('edit-match', {
-    detail,
+    detail: { updates, onResult },
     bubbles: true,
     composed: true,
   });

@@ -16,7 +16,7 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import { getDatabase, onValue, ref, Unsubscribe } from 'firebase/database';
+import { Unsubscribe } from 'firebase/database';
 
 // Material Web imports
 import '@material/web/icon/icon.js';
@@ -40,11 +40,13 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 // Utility imports
 import {
   fetchMatches,
+  fetchAdminRevisions,
   fetchPlayers,
   fetchStadiums,
   fetchTeams,
   fetchU23NationalTeamCallups,
   saveUpdates,
+  type AdminRevisions,
 } from '../services/firebaseService.js';
 import {
   Match,
@@ -59,6 +61,7 @@ import {
 } from '../utils/playoffCalculator.js';
 import { calculateTable } from '../utils/tableCalculator.js';
 import { APP_BUILD_DATE, APP_VERSION_LABEL } from '../utils/version.js';
+import type { AdminUpdateEventDetail } from '../utils/functionUtils.js';
 import '../utils/material.js';
 
 interface NavigationTab {
@@ -371,13 +374,14 @@ export class LigaMxHrlv extends LitElement {
   @state() stadiums: string[] = [];
   @state() players: PlayerTeam = new Map();
   @state() u23NationalTeamCallups: U23NationalTeamCallups = new Map();
+  @state() adminRevisions: AdminRevisions = {};
   @state() table: TableEntry[] = [];
   @state() selectedTab: string = 'Inicio';
   @state() titleError: string = '';
   @state() contentError: string = '';
   @state() user: User | null = null;
   @state() isAdmin: boolean = false;
-  @state() routedMatchId: number | null = null;
+  @state() routedMatchId: string | null = null;
   @state() routedTeamName: string | null = null;
 
   @query('#dialogLiga') dialog!: MdDialog;
@@ -388,8 +392,8 @@ export class LigaMxHrlv extends LitElement {
   private _unsubscribeStadiums?: Unsubscribe;
   private _unsubscribePlayers?: Unsubscribe;
   private _unsubscribeU23NationalTeamCallups?: Unsubscribe;
+  private _unsubscribeAdminRevisions?: Unsubscribe;
   private _unsubscribeAuth?: Unsubscribe;
-  private _unsubscribeAllowedWriter?: Unsubscribe;
   private readonly _boundRouteChange = () => this._syncRouteFromUrl();
 
   constructor() {
@@ -541,11 +545,10 @@ export class LigaMxHrlv extends LitElement {
       if (this.matchesList.length > 0 && this.teams.length > 0) {
         this.table = calculateTable(this.teams, this.matchesList);
         if (!this.isAdmin) return;
-        if (POSTSEASON_FORMAT.playInSpots > 0) {
-          calculatePlayIn(this.table, this.matchesList);
-        } else {
-          calculateQuarterFinal(this.table, this.matchesList);
-        }
+        const updates = POSTSEASON_FORMAT.playInSpots > 0
+          ? calculatePlayIn(this.table, this.matchesList)
+          : calculateQuarterFinal(this.table, this.matchesList);
+        if (Object.keys(updates).length) void this._savePlayoffUpdates(updates);
       }
     }
     this._syncDocumentTitle();
@@ -554,7 +557,7 @@ export class LigaMxHrlv extends LitElement {
   private _getTab() {
     if (this.routedMatchId !== null) {
       const routedMatch = this.matchesList.find(
-        match => match.idMatch === this.routedMatchId,
+        match => String(match.idMatch) === this.routedMatchId,
       );
 
       if (!routedMatch) {
@@ -687,23 +690,16 @@ export class LigaMxHrlv extends LitElement {
     this._syncRouteFromUrl();
     window.addEventListener('popstate', this._boundRouteChange);
     this._subscribePublicData();
-    this._unsubscribeAuth = onAuthStateChanged(this.auth, user => {
+    this._unsubscribeAuth = onAuthStateChanged(this.auth, async user => {
       this.user = user;
-      this._unsubscribeAllowedWriter?.();
-      this._unsubscribeAllowedWriter = undefined;
       this.isAdmin = false;
       this._syncRouteFromUrl();
 
       if (!user) return;
 
-      const allowedWriterRef = ref(
-        getDatabase(this.app),
-        `/allowedWriters/${user.uid}`,
-      );
-      this._unsubscribeAllowedWriter = onValue(allowedWriterRef, snapshot => {
-        this.isAdmin = snapshot.exists();
-        this._syncRouteFromUrl();
-      });
+      const token = await user.getIdTokenResult();
+      this.isAdmin = token.claims.admin === true;
+      this._syncRouteFromUrl();
     });
   }
 
@@ -731,30 +727,47 @@ export class LigaMxHrlv extends LitElement {
         this.u23NationalTeamCallups = callups;
       },
     );
+    this._unsubscribeAdminRevisions = fetchAdminRevisions(revisions => {
+      this.adminRevisions = revisions;
+    });
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener('popstate', this._boundRouteChange);
     this._unsubscribeAuth?.();
-    this._unsubscribeAllowedWriter?.();
     this._unsubscribeMatches?.();
     this._unsubscribeTeams?.();
     this._unsubscribeStadiums?.();
     this._unsubscribePlayers?.();
     this._unsubscribeU23NationalTeamCallups?.();
+    this._unsubscribeAdminRevisions?.();
   }
 
-  private async _editMatch(e: CustomEvent<Record<string, unknown>>) {
+  private async _editMatch(e: CustomEvent<AdminUpdateEventDetail>) {
     if (!this.isAdmin) {
       this.titleError = 'Permiso requerido';
       this.contentError =
         'Debes iniciar sesión con un usuario admin para guardar cambios.';
       this.dialog?.show();
+      e.detail.onResult?.({
+        ok: false,
+        code: 'error',
+        message: this.contentError,
+      });
       return;
     }
     try {
-      await saveUpdates(e.detail);
+      const result = await saveUpdates(e.detail.updates, this.adminRevisions);
+      if (!result.ok) {
+        this.titleError = 'Cambios por revisar';
+        this.contentError =
+          result.code === 'conflict'
+            ? `Otro administrador modificó ${Object.keys(result.current).join(', ')}. Recarga la página antes de volver a guardar.`
+            : result.message;
+        this.dialog?.show();
+      }
+      e.detail.onResult?.(result);
     } catch (error) {
       this.titleError = 'No se guardaron los cambios';
       this.contentError =
@@ -762,6 +775,19 @@ export class LigaMxHrlv extends LitElement {
           ? error.message
           : 'Firebase rechazó la actualización del partido.';
       this.dialog?.show();
+      e.detail.onResult?.({
+        ok: false,
+        code: 'error',
+        message: this.contentError,
+      });
+    }
+  }
+
+  private async _savePlayoffUpdates(updates: Record<string, unknown>) {
+    try {
+      await saveUpdates(updates, this.adminRevisions);
+    } catch (error) {
+      console.error('No se pudieron guardar los cruces de liguilla:', error);
     }
   }
 
@@ -779,8 +805,7 @@ export class LigaMxHrlv extends LitElement {
   private _syncRouteFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const matchParam = params.get('match');
-    const matchId = matchParam === null ? Number.NaN : Number(matchParam);
-    this.routedMatchId = Number.isFinite(matchId) ? matchId : null;
+    this.routedMatchId = matchParam?.trim() ? matchParam : null;
     this.routedTeamName = params.get('team');
 
     const tab = params.get('tab');
@@ -876,7 +901,7 @@ export class LigaMxHrlv extends LitElement {
 
     if (this.routedMatchId !== null) {
       const match = this.matchesList.find(
-        candidate => candidate.idMatch === this.routedMatchId,
+        candidate => String(candidate.idMatch) === this.routedMatchId,
       );
       if (match) return `${match.local} vs ${match.visitante}`;
     }

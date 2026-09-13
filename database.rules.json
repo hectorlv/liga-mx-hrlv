@@ -4,23 +4,27 @@
     ".write": false,
     "matches": {
       ".read": true,
-      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+      ".write": false
     },
     "teams": {
       ".read": true,
-      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+      ".write": false
     },
     "stadiums": {
       ".read": true,
-      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+      ".write": false
     },
     "players": {
       ".read": true,
-      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+      ".write": false
     },
     "u23NationalTeamCallups": {
       ".read": true,
-      ".write": "auth != null && root.child('allowedWriters').child(auth.uid).exists()"
+      ".write": false
+    },
+    "adminRevisions": {
+      ".read": true,
+      ".write": false
     },
     "allowedWriters": {
       "$uid": {

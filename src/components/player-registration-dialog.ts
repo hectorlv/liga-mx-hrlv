@@ -308,6 +308,7 @@ export class PlayerRegistrationDialog extends LitElement {
 
   private async _save() {
     if (!this.isAdmin || !this.match || !this.side) return;
+    const side = this.side;
 
     const name = this.newPlayerNameField?.value?.trim();
     const position = this.newPlayerPositionField?.value?.trim();
@@ -319,9 +320,11 @@ export class PlayerRegistrationDialog extends LitElement {
     const fullName = this.newPlayerFullNameField?.value?.trim() || '';
     const nationality = this.newPlayerNationalityField?.value?.trim() || '';
 
-    if (!name || !position || Number.isNaN(number)) {
+    if (!name || !position || !Number.isInteger(number) || number < 1) {
       this.newPlayerNumberField?.setCustomValidity(
-        Number.isNaN(number) ? 'Número inválido' : '',
+        !Number.isInteger(number) || number < 1
+          ? 'Indica un número de jersey entero mayor que cero'
+          : '',
       );
       this.newPlayerNumberField?.reportValidity();
       return;
@@ -355,6 +358,7 @@ export class PlayerRegistrationDialog extends LitElement {
     }
 
     const player: Player = {
+      id: crypto.randomUUID(),
       name,
       position,
       number,
@@ -367,19 +371,24 @@ export class PlayerRegistrationDialog extends LitElement {
       (a, b) => a.number - b.number,
     );
     this.dispatchEvent(
-      dispatchEventMatchUpdated({
-        ...this.additionalUpdates,
-        [`/players/${this._teamKey()}`]: players,
-      }),
+      dispatchEventMatchUpdated(
+        {
+          ...this.additionalUpdates,
+          [`/players/${this._teamKey()}`]: players,
+        },
+        result => {
+          if (!result.ok) return;
+          this.dispatchEvent(
+            new CustomEvent<PlayerCreatedDetail>('player-created', {
+              detail: { side, player, players },
+              bubbles: true,
+              composed: true,
+            }),
+          );
+          this._cancel();
+        },
+      ),
     );
-    this.dispatchEvent(
-      new CustomEvent<PlayerCreatedDetail>('player-created', {
-        detail: { side: this.side, player, players },
-        bubbles: true,
-        composed: true,
-      }),
-    );
-    this._cancel();
   }
 
   private _handleImagePaste(event: ClipboardEvent) {

@@ -1,6 +1,11 @@
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { formatMatchMinute, getGoalEvents } from '../utils/functionUtils.js';
-import { hasMatchEnded, hasMatchStarted } from '../utils/matchStatus.js';
+import {
+  hasMatchEnded,
+  hasMatchStarted,
+  resolveMatchStatus,
+  type ResolvedMatchStatus,
+} from '../utils/matchStatus.js';
 import {
   DailyMatchesVariant,
   SOCIAL_CONFIG,
@@ -13,8 +18,7 @@ export { type JourneyResultsVariant } from './social-config.js';
 export type { DailyMatchesVariant, SocialPresentationOptions, StandingsRange };
 
 export type SocialPlatform = 'instagram' | 'x';
-export type ResolvedMatchStatus =
-  'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled';
+export type { ResolvedMatchStatus } from '../utils/matchStatus.js';
 
 export interface SocialImageInput {
   template: TemplateId;
@@ -50,12 +54,7 @@ export interface FittedText {
   accessibleText: string;
 }
 
-export function resolveMatchStatus(match: Match): ResolvedMatchStatus {
-  if (match.status) return match.status;
-  if (hasMatchEnded(match)) return 'finished';
-  if (hasMatchStarted(match)) return 'live';
-  return 'scheduled';
-}
+export { resolveMatchStatus } from '../utils/matchStatus.js';
 
 /** Última jornada con actividad real; conserva el contexto editorial de la tabla. */
 export function latestPlayedJornada(matches: Match[]): number | undefined {

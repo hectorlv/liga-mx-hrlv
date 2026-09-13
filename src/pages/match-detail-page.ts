@@ -35,7 +35,7 @@ import {
   getPhaseEvents,
 } from '../utils/functionUtils.js';
 import { LIGUILLA, REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
-import { hasMatchStarted } from '../utils/matchStatus.js';
+import { hasMatchStarted, resolveMatchStatus } from '../utils/matchStatus.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -724,13 +724,23 @@ export class MatchDetailPage extends LitElement {
                     ${formatDateDDMMYYYY(fecha as Date)}
                   </div>
                   <div class="meta-item">
-                    <md-icon style="font-size: 18px">schedule</md-icon> ${hora}
+                    <md-icon style="font-size: 18px">schedule</md-icon> ${hora} CDMX
                   </div>
                   <div class="meta-item">
                     <md-icon style="font-size: 18px">stadium</md-icon>
                     ${estadio}
                   </div>
                 </div>
+                ${
+                  resolveMatchStatus(this.match) === 'postponed' ||
+                  resolveMatchStatus(this.match) === 'cancelled'
+                    ? html`<p class="match-meta" role="status">${
+                        resolveMatchStatus(this.match) === 'postponed'
+                          ? 'Partido pospuesto'
+                          : 'Partido cancelado'
+                      }</p>`
+                    : ''
+                }
                 ${tableComparisonTemplate}
               `
         }
@@ -914,6 +924,20 @@ export class MatchDetailPage extends LitElement {
     const liveMinuteInput = this.renderRoot.querySelector(
       '#liveMinuteInput',
     ) as MdFilledTextField;
+    const parsedDate = fechaInput.value;
+    const parsedTime = horaInput.value;
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(parsedDate) ||
+      !/^\d{2}:\d{2}$/.test(parsedTime)
+    ) {
+      fechaInput.setCustomValidity(parsedDate ? '' : 'La fecha es obligatoria');
+      horaInput.setCustomValidity(parsedTime ? '' : 'La hora es obligatoria');
+      fechaInput.reportValidity();
+      horaInput.reportValidity();
+      return;
+    }
+    fechaInput.setCustomValidity('');
+    horaInput.setCustomValidity('');
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/fecha`] = replaceDateSeparator(
       fechaInput.value,
@@ -939,8 +963,11 @@ export class MatchDetailPage extends LitElement {
       updates[`/matches/${this.match.idMatch}/penaltyVisitante`] =
         this._getPenaltyInputValue(penaltyVisitanteInput);
     }
-    this.dispatchEvent(dispatchEventMatchUpdated(updates));
-    this.isEditing = false;
+    this.dispatchEvent(
+      dispatchEventMatchUpdated(updates, result => {
+        if (result.ok) this.isEditing = false;
+      }),
+    );
   }
 
   private _getPenaltyInputValue(

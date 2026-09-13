@@ -1,5 +1,15 @@
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 
+const MAX_PLAYER_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function validatePlayerImage(blob: Blob) {
+  if (!ALLOWED_IMAGE_TYPES.has(blob.type))
+    throw new Error('La imagen debe ser JPEG, PNG o WebP.');
+  if (blob.size > MAX_PLAYER_IMAGE_BYTES)
+    throw new Error('La imagen supera el límite de 5 MB.');
+}
+
 function sanitizePathSegment(value: string): string {
   const normalized = value
     .normalize('NFD')
@@ -71,6 +81,7 @@ export async function uploadPlayerImage(
   teamKey: string,
   playerNumber: number,
 ): Promise<string> {
+  validatePlayerImage(blob);
   const storage = getStorage();
   const convertedBlob = await convertImageBlobToJpeg(blob);
   const safeTeamKey = sanitizePathSegment(teamKey);

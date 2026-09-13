@@ -1,234 +1,120 @@
 import { FirebaseUpdates, Match, TableEntry } from '../types/index.js';
 import { LIGUILLA } from './constants.js';
-import { saveUpdates } from '../services/firebaseService.js';
+import { hasMatchEnded } from './matchStatus.js';
 
-function createPlayInMatches(
+type Series = typeof LIGUILLA.quarter1;
+
+const sameId = (left: string | number, right: string | number) =>
+  String(left) === String(right);
+
+function matchById(matches: Match[], id: number): Match | undefined {
+  return matches.find(match => sameId(match.idMatch, id));
+}
+
+function hasFinalScore(match: Match | undefined): match is Match {
+  return (
+    !!match &&
+    hasMatchEnded(match) &&
+    match.golLocal != null &&
+    match.golVisitante != null
+  );
+}
+
+function stadiumFor(team: string, matches: Match[]): string {
+  return matches.find(match => match.local === team)?.estadio || '';
+}
+
+function setIfChanged(
+  updates: FirebaseUpdates,
+  match: Match | undefined,
+  id: number,
+  field: 'local' | 'visitante' | 'estadio',
+  value: string,
+) {
+  if (match?.[field] !== value) updates[`/matches/${id}/${field}`] = value;
+}
+
+function assignSeries(
+  updates: FirebaseUpdates,
+  series: Series,
+  orderedTeams: string[],
+  matches: Match[],
+) {
+  const local = orderedTeams[series.local];
+  const visitor = orderedTeams[series.visitante];
+  if (!local || !visitor) return;
+  const ida = matchById(matches, series.ida.id);
+  const vuelta = matchById(matches, series.vuelta.id);
+  setIfChanged(updates, ida, series.ida.id, 'local', visitor);
+  setIfChanged(updates, ida, series.ida.id, 'visitante', local);
+  setIfChanged(updates, ida, series.ida.id, 'estadio', stadiumFor(visitor, matches));
+  setIfChanged(updates, vuelta, series.vuelta.id, 'local', local);
+  setIfChanged(updates, vuelta, series.vuelta.id, 'visitante', visitor);
+  setIfChanged(updates, vuelta, series.vuelta.id, 'estadio', stadiumFor(local, matches));
+}
+
+/** Returns a winner only after both legs are complete. */
+function seriesWinner(
+  series: Series,
+  matches: Match[],
+  rank: Map<string, number>,
+): string | null {
+  const ida = matchById(matches, series.ida.id);
+  const vuelta = matchById(matches, series.vuelta.id);
+  if (!hasFinalScore(ida) || !hasFinalScore(vuelta)) return null;
+  if (!ida.local || !ida.visitante || !vuelta.local || !vuelta.visitante)
+    return null;
+  const totals = new Map<string, number>([
+    [ida.local, ida.golLocal],
+    [ida.visitante, ida.golVisitante],
+  ]);
+  totals.set(vuelta.local, (totals.get(vuelta.local) || 0) + vuelta.golLocal);
+  totals.set(
+    vuelta.visitante,
+    (totals.get(vuelta.visitante) || 0) + vuelta.golVisitante,
+  );
+  const [first, second] = [...totals.entries()];
+  if (!first || !second) return null;
+  if (first[1] !== second[1]) return first[1] > second[1] ? first[0] : second[0];
+  return (rank.get(first[0]) ?? Infinity) < (rank.get(second[0]) ?? Infinity)
+    ? first[0]
+    : second[0];
+}
+
+/**
+ * Pure calculation. It does not persist or mutate the table, and it never
+ * promotes an incomplete series. The caller saves the one batch of changes.
+ */
+export function calculateQuarterFinal(
   table: TableEntry[],
   matches: Match[],
-  playInConfig: typeof LIGUILLA.playIn1,
 ): FirebaseUpdates {
   const updates: FirebaseUpdates = {};
-  updates[`/matches/${playInConfig.id}/local`] =
-    table[playInConfig.local].equipo;
-  updates[`/matches/${playInConfig.id}/visitante`] =
-    table[playInConfig.visitante].equipo;
-  updates[`/matches/${playInConfig.id}/estadio`] = getEstadio(
-    table[playInConfig.local].equipo,
-    matches,
-  );
+  const ranked = table.filter(team => !team.eliminado).map(team => team.equipo);
+  if (ranked.length < 8) return updates;
+  const rank = new Map(table.map((team, index) => [team.equipo, index]));
+  const quarters = [
+    LIGUILLA.quarter1,
+    LIGUILLA.quarter2,
+    LIGUILLA.quarter3,
+    LIGUILLA.quarter4,
+  ];
+  quarters.forEach(series => assignSeries(updates, series, ranked, matches));
+
+  const semiTeams = quarters.map(series => seriesWinner(series, matches, rank));
+  if (semiTeams.every((team): team is string => !!team)) {
+    assignSeries(updates, LIGUILLA.semi1, semiTeams, matches);
+    assignSeries(updates, LIGUILLA.semi2, semiTeams, matches);
+    const finalTeams = [
+      seriesWinner(LIGUILLA.semi1, matches, rank),
+      seriesWinner(LIGUILLA.semi2, matches, rank),
+    ];
+    if (finalTeams.every((team): team is string => !!team))
+      assignSeries(updates, LIGUILLA.final, finalTeams, matches);
+  }
   return updates;
 }
 
-function handlePlayInMatch(
-  match: Match | undefined,
-  playInConfig: typeof LIGUILLA.playIn1,
-  playOff3Id: number,
-  table: TableEntry[],
-  matches: Match[],
-  playIn3: FirebaseUpdates,
-  isFirstMatch: boolean,
-): void {
-  if (match?.golLocal == null || match?.golVisitante == null) return;
-
-  const winner =
-    match.golLocal >= match.golVisitante ? match.local : match.visitante;
-  const loser =
-    match.golLocal >= match.golVisitante ? match.visitante : match.local;
-
-  if (isFirstMatch) {
-    playIn3[`/matches/${playOff3Id}/local`] = loser;
-    const estadio = getEstadio(loser, matches);
-    playIn3[`/matches/${playOff3Id}/estadio`] = estadio;
-    if (winner === match.visitante) {
-      [table[playInConfig.local], table[playInConfig.visitante]] = [
-        table[playInConfig.visitante],
-        table[playInConfig.local],
-      ];
-    }
-  } else {
-    playIn3[`/matches/${playOff3Id}/visitante`] = winner;
-    if (loser === match.local) {
-      table[playInConfig.local].eliminado = true;
-    } else {
-      table[playInConfig.visitante].eliminado = true;
-    }
-  }
-}
-
-function handlePlayOff3Match(match: Match, table: TableEntry[]): void {
-  if (match.golLocal < 0 || match.golVisitante < 0) return;
-
-  const loserTeam =
-    match.golLocal > match.golVisitante ? match.visitante : match.local;
-  const team = table.find(t => t.equipo === loserTeam);
-  if (team) team.eliminado = true;
-}
-
 export function calculatePlayIn(table: TableEntry[], matches: Match[]) {
-  const playIn1 = createPlayInMatches(table, matches, LIGUILLA.playIn1);
-  const playIn2 = createPlayInMatches(table, matches, LIGUILLA.playIn2);
-  const playIn3: FirebaseUpdates = {};
-
-  const playIn1Match = matches.find(x => x.idMatch === LIGUILLA.playIn1.id);
-  const playIn2Match = matches.find(x => x.idMatch === LIGUILLA.playIn2.id);
-
-  // Solo se calcula el play-in si ambos partidos tienen resultado, para evitar marcar equipos como eliminados antes de tiempo
-  if (!playIn1Match || !playIn2Match) return;
-  if (playIn1Match.golLocal == null || playIn1Match.golVisitante == null)
-    return;
-  if (playIn2Match.golLocal == null || playIn2Match.golVisitante == null)
-    return;
-
-  handlePlayInMatch(
-    playIn1Match,
-    LIGUILLA.playIn1,
-    LIGUILLA.playOff3.id,
-    table,
-    matches,
-    playIn3,
-    true,
-  );
-  handlePlayInMatch(
-    playIn2Match,
-    LIGUILLA.playIn2,
-    LIGUILLA.playOff3.id,
-    table,
-    matches,
-    playIn3,
-    false,
-  );
-
-  const playOff3Match = matches.find(x => x.idMatch === LIGUILLA.playOff3.id);
-  if (playOff3Match) {
-    handlePlayOff3Match(playOff3Match, table);
-  }
-
-  const updates = { ...playIn1, ...playIn2, ...playIn3 };
-  saveUpdates(updates);
-  calculateQuarterFinal(table, matches);
-}
-
-function createPlayoffMatches(
-  playoffMatch: typeof LIGUILLA.quarter1,
-  quarters: TableEntry[],
-  matches: Match[],
-): FirebaseUpdates {
-  const update: FirebaseUpdates = {};
-  const idaMatch = matches.find(x => x.idMatch === playoffMatch.ida.id);
-  const vueltaMatch = matches.find(x => x.idMatch === playoffMatch.vuelta.id);
-  const idaDefaultStadium = getEstadio(
-    quarters[playoffMatch.visitante].equipo,
-    matches,
-  );
-  const vueltaDefaultStadium = getEstadio(
-    quarters[playoffMatch.local].equipo,
-    matches,
-  );
-
-  update[`/matches/${playoffMatch.ida.id}/local`] =
-    quarters[playoffMatch.visitante].equipo;
-  update[`/matches/${playoffMatch.ida.id}/visitante`] =
-    quarters[playoffMatch.local].equipo;
-  update[`/matches/${playoffMatch.vuelta.id}/local`] =
-    quarters[playoffMatch.local].equipo;
-  update[`/matches/${playoffMatch.vuelta.id}/visitante`] =
-    quarters[playoffMatch.visitante].equipo;
-  update[`/matches/${playoffMatch.ida.id}/estadio`] =
-    idaMatch?.estadio || idaDefaultStadium;
-  update[`/matches/${playoffMatch.vuelta.id}/estadio`] =
-    vueltaMatch?.estadio || vueltaDefaultStadium;
-  return update;
-}
-
-export function calculateQuarterFinal(table: TableEntry[], matches: Match[]) {
-  const quarters = table.filter(team => !team.eliminado);
-  const quarter1: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.quarter1,
-    quarters,
-    matches,
-  );
-  const quarter2: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.quarter2,
-    quarters,
-    matches,
-  );
-  const quarter3: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.quarter3,
-    quarters,
-    matches,
-  );
-  const quarter4: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.quarter4,
-    quarters,
-    matches,
-  );
-  const updates = { ...quarter1, ...quarter2, ...quarter3, ...quarter4 };
-  saveUpdates(updates);
-
-  calculateSemiFinal(table, matches);
-}
-
-function handlePlayOffMatch(
-  playoffMatch: typeof LIGUILLA.quarter1,
-  table: TableEntry[],
-  matches: Match[],
-): void {
-  const idaMatch = matches.find(x => x.idMatch === playoffMatch.ida.id);
-  const vueltaMatch = matches.find(x => x.idMatch === playoffMatch.vuelta.id);
-  if (
-    idaMatch?.golLocal == null ||
-    idaMatch?.golVisitante == null ||
-    vueltaMatch?.golLocal == null ||
-    vueltaMatch?.golVisitante == null
-  )
-    return;
-  const match = {
-    local: idaMatch.visitante || '',
-    visitante: idaMatch.local || '',
-    golLocal: (idaMatch.golVisitante || 0) + (vueltaMatch.golLocal || 0),
-    golVisitante: (idaMatch.golLocal || 0) + (vueltaMatch.golVisitante || 0),
-  };
-  const loser =
-    match.golLocal >= match.golVisitante ? match.visitante : match.local;
-  const team = table.find(t => t.equipo === loser);
-  if (team) team.eliminado = true;
-}
-
-function calculateSemiFinal(table: TableEntry[], matches: Match[]) {
-  handlePlayOffMatch(LIGUILLA.quarter1, table, matches);
-  handlePlayOffMatch(LIGUILLA.quarter2, table, matches);
-  handlePlayOffMatch(LIGUILLA.quarter3, table, matches);
-  handlePlayOffMatch(LIGUILLA.quarter4, table, matches);
-  const semis = table.filter(team => !team.eliminado);
-  const semis1: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.semi1,
-    semis,
-    matches,
-  );
-  const semis2: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.semi2,
-    semis,
-    matches,
-  );
-  const updates = { ...semis1, ...semis2 };
-  saveUpdates(updates);
-  calculateFinal(table, matches);
-}
-
-function calculateFinal(table: TableEntry[], matches: Match[]) {
-  handlePlayOffMatch(LIGUILLA.semi1, table, matches);
-  handlePlayOffMatch(LIGUILLA.semi2, table, matches);
-  const teams = table.filter(team => !team.eliminado);
-  const final: FirebaseUpdates = createPlayoffMatches(
-    LIGUILLA.final,
-    teams,
-    matches,
-  );
-
-  const updates = { ...final };
-  saveUpdates(updates);
-}
-
-function getEstadio(team: string, matches: Match[]) {
-  return matches.find(x => x.local === team)?.estadio || '';
+  return calculateQuarterFinal(table, matches);
 }

@@ -29,6 +29,7 @@ import {
   hasMatchStarted,
   isMatchLive,
   lineupsReadyBeforeKickoff,
+  resolveMatchStatus,
 } from '../utils/matchStatus.js';
 
 export interface MatchFilters {
@@ -609,6 +610,7 @@ export class MatchesPage extends LitElement {
 
   private renderMatchItem(match: Match) {
     const isLive = isMatchLive(match);
+    const status = resolveMatchStatus(match);
     const periodLabel = getLiveMatchPeriodLabel(match);
     const hasLineupsReady = lineupsReadyBeforeKickoff(match);
     const aggregateScore = getAggregateScoreForSecondLeg(
@@ -624,6 +626,12 @@ export class MatchesPage extends LitElement {
     const lineupsStatusChip = hasLineupsReady
       ? html`<span class="status-chip lineups">Alineaciones listas</span>`
       : '';
+    const editorialStatusChip =
+      status === 'postponed' || status === 'cancelled'
+        ? html`<span class="status-chip">${
+            status === 'postponed' ? 'Pospuesto' : 'Cancelado'
+          }</span>`
+        : '';
 
     return html`
       <a
@@ -651,16 +659,18 @@ export class MatchesPage extends LitElement {
         <div class="cell-score">
           <div class="match-score-primary">
             ${
-              hasMatchStarted(match)
+              status === 'postponed' || status === 'cancelled'
+                ? '—'
+                : hasMatchStarted(match)
                 ? `${match.golLocal} - ${match.golVisitante}`
                 : 'VS'
             }
           </div>
           ${
-            isLive || periodLabel || hasLineupsReady
+            isLive || periodLabel || hasLineupsReady || editorialStatusChip
               ? html`
                   <div class="status-chips" aria-label="Estado del partido">
-                    ${liveStatusChip} ${periodStatusChip} ${lineupsStatusChip}
+                    ${editorialStatusChip} ${liveStatusChip} ${periodStatusChip} ${lineupsStatusChip}
                   </div>
                 `
               : ''

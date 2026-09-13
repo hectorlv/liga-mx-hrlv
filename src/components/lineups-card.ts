@@ -487,6 +487,13 @@ export class LineupsCard extends LitElement {
     if (!this.match) return;
     const lineupLocal = this.match.lineupLocal || [];
     const lineupVisitor = this.match.lineupVisitor || [];
+    if (
+      lineupLocal.filter(player => player.titular).length > 11 ||
+      lineupVisitor.filter(player => player.titular).length > 11
+    ) {
+      this.dialogLineups.show();
+      return;
+    }
     const updatedMatch: FirebaseUpdates = {};
     updatedMatch[`/matches/${this.match.idMatch}/lineupLocal`] = lineupLocal;
     updatedMatch[`/matches/${this.match.idMatch}/lineupVisitor`] =
@@ -505,6 +512,6 @@ export class LineupsCard extends LitElement {
     const visitorCount = (this.match.lineupVisitor || []).filter(
       p => p.titular,
     ).length;
-    return localCount >= 11 && visitorCount >= 11;
+    return localCount === 11 && visitorCount === 11;
   }
 }

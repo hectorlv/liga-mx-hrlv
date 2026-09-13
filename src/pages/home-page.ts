@@ -3,7 +3,10 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import { Match, Player, PlayerTeam, TableEntry } from '../types/index.js';
-import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
+import {
+  formatDateDDMMYYYY,
+  formatDateYYYYMMDD,
+} from '../utils/dateUtils.js';
 import { getGoalEvents } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import {
@@ -12,6 +15,7 @@ import {
   hasMatchStarted,
   isMatchLive,
   lineupsReadyBeforeKickoff,
+  resolveMatchStatus,
 } from '../utils/matchStatus.js';
 
 type NavigationTab =
@@ -803,6 +807,9 @@ export class HomePage extends LitElement {
   }
 
   private _getFocusLabel(match: Match): string {
+    const status = resolveMatchStatus(match);
+    if (status === 'postponed') return 'Pospuesto';
+    if (status === 'cancelled') return 'Cancelado';
     if (isMatchLive(match)) return 'En vivo';
     if (this._isSameDay(match.fecha, new Date())) return 'Hoy';
     if (this._matchTime(match) >= Date.now()) return 'Próximo partido';
@@ -869,12 +876,7 @@ export class HomePage extends LitElement {
   }
 
   private _isSameDay(date: string | Date, target: Date): boolean {
-    return (
-      date instanceof Date &&
-      date.getFullYear() === target.getFullYear() &&
-      date.getMonth() === target.getMonth() &&
-      date.getDate() === target.getDate()
-    );
+    return date instanceof Date && formatDateYYYYMMDD(date) === formatDateYYYYMMDD(target);
   }
 
   private _matchHref(match: Match): string {
@@ -886,13 +888,21 @@ export class HomePage extends LitElement {
   }
 
   private _renderStatusChips(match: Match) {
+    const status = resolveMatchStatus(match);
     const periodLabel = getLiveMatchPeriodLabel(match);
     const hasLineupsReady = lineupsReadyBeforeKickoff(match);
 
-    if (!periodLabel && !hasLineupsReady) return '';
+    if (!periodLabel && !hasLineupsReady && status === 'scheduled') return '';
 
     return html`
       <div class="status-chips" aria-label="Estado del partido">
+        ${
+          status === 'postponed' || status === 'cancelled'
+            ? html`<span class="status-chip">${
+                status === 'postponed' ? 'Pospuesto' : 'Cancelado'
+              }</span>`
+            : ''
+        }
         ${
           periodLabel
             ? html`<span class="status-chip live">${periodLabel}</span>`

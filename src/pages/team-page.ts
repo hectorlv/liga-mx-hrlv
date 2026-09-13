@@ -37,6 +37,7 @@ import { MdFilledSelect } from '@material/web/select/filled-select.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 
 interface PlayerStats {
+  id?: string;
   number: number;
   name: string;
   position: string;
@@ -993,6 +994,14 @@ export class TeamPage extends LitElement {
       this.editFormError = 'Indica un número de jersey entero mayor que cero.';
       return;
     }
+    if (
+      destinationTeam === this.team.equipo &&
+      destinationNumber !== this.editingPlayer.number
+    ) {
+      this.editFormError =
+        'El dorsal solo puede cambiarse como parte de una transferencia a otro equipo.';
+      return;
+    }
 
     const teamKey = this.team.equipo.replaceAll('.', '');
     if (isLeavingLeague) {
@@ -1067,6 +1076,8 @@ export class TeamPage extends LitElement {
 
     // Buscamos al jugador original en el array global
     const updatedPlayer: Player = {
+      id: this.players.find(player => player.number === this.editingPlayer?.number)
+        ?.id ?? crypto.randomUUID(),
       number: destinationNumber,
       name,
       position,
@@ -1101,7 +1112,7 @@ export class TeamPage extends LitElement {
       )
         ? sourcePlayers.map(player =>
             player.number === sourcePlayer.number
-              ? { ...player, historical: true }
+              ? { ...player, id: updatedPlayer.id, historical: true }
               : player,
           )
         : sourcePlayers.filter(player => player.number !== sourcePlayer.number);
@@ -1213,6 +1224,7 @@ export class TeamPage extends LitElement {
     const statsMap: Map<number, PlayerStats> = new Map();
     for (const player of players) {
       statsMap.set(player.number, {
+        id: player.id,
         number: player.number,
         name: player.name,
         position: player.position,

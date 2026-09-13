@@ -2,18 +2,43 @@ import {
   getDatabase,
   ref,
   onValue,
-  update,
   type Unsubscribe,
 } from 'firebase/database';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { formatDate } from '../utils/dateUtils';
 import {
   FirebaseUpdates,
+  AdminWriteRequest,
+  AdminWriteResult,
   Match,
   PlayerTeam,
   U23NationalTeamCallups,
 } from '../types';
 
 type SimpleCallback<T> = (data: T) => void;
+
+export type AdminRevisions = Record<string, number>;
+
+function resourceForPath(path: string): string {
+  const [root, key] = path.split('/').filter(Boolean);
+  if (!root) throw new Error('La actualización no tiene una ruta válida.');
+  return key && (root === 'matches' || root === 'players')
+    ? `${root}/${key}`
+    : root;
+}
+
+function buildAdminWriteRequest(
+  updates: FirebaseUpdates,
+  revisions: AdminRevisions,
+): AdminWriteRequest {
+  const resources = [...new Set(Object.keys(updates).map(resourceForPath))];
+  return {
+    updates,
+    expectedRevisions: Object.fromEntries(
+      resources.map(resource => [resource, revisions[resource] ?? 0]),
+    ),
+  };
+}
 
 function snapshotToArray<T>(snapshotData: Record<string, unknown>): T {
   if (!snapshotData) return [] as T;
@@ -64,13 +89,20 @@ function subscribeToFirebasePath<T>(
 }
 
 export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
-  const callbackWrapper = (matches: Match[]) => {
-    const formattedMatches = matches.map((match, index) => ({
+  const db = getDatabase();
+  return onValue(ref(db, '/matches'), snapshot => {
+    const raw = snapshot.val() as Record<string, Match> | Match[] | null;
+    const entries = Array.isArray(raw)
+      ? raw.map((match, index) => [String(index), match] as const)
+      : Object.entries(raw || {});
+    const formattedMatches = entries.map(([key, match]) => ({
       ...match,
       golLocal: typeof match.golLocal === 'number' ? match.golLocal : null,
       golVisitante:
         typeof match.golVisitante === 'number' ? match.golVisitante : null,
-      idMatch: index,
+      // Firebase keys are the canonical identity; sparse keys must not be
+      // replaced by their position after sorting.
+      idMatch: Number.isFinite(Number(key)) ? Number(key) : Number(match.idMatch),
       fecha: formatDate(match.fecha, match.hora),
       jornada: Number(match.jornada),
     }));
@@ -84,8 +116,10 @@ export function fetchMatches(callback: SimpleCallback<Match[]>): Unsubscribe {
       return a.jornada - b.jornada;
     });
     callback(formattedMatches as Match[]);
-  };
-  return subscribeToFirebasePath<Match[]>('/matches', callbackWrapper);
+  }, error => {
+    console.error('Firebase subscription error at path: /matches', error);
+    callback([]);
+  });
 }
 
 export function fetchTeams(callback: SimpleCallback<string[]>): Unsubscribe {
@@ -130,12 +164,26 @@ export function fetchU23NationalTeamCallups(
   );
 }
 
-export async function saveUpdates(updates: FirebaseUpdates): Promise<void> {
-  const db = getDatabase();
-  return update(ref(db), updates)
-    .then(() => {})
-    .catch(error => {
-      console.error('Error saving updates:', error);
-      throw error;
-    });
+export function fetchAdminRevisions(
+  callback: SimpleCallback<AdminRevisions>,
+): Unsubscribe {
+  return onValue(
+    ref(getDatabase(), '/adminRevisions'),
+    snapshot => callback((snapshot.val() || {}) as AdminRevisions),
+    error => {
+      console.error('Firebase subscription error at path: /adminRevisions', error);
+      callback({});
+    },
+  );
+}
+
+export async function saveUpdates(
+  updates: FirebaseUpdates,
+  revisions: AdminRevisions,
+): Promise<AdminWriteResult> {
+  const write = httpsCallable<AdminWriteRequest, AdminWriteResult>(
+    getFunctions(undefined, 'us-central1'),
+    'applyAdminUpdates',
+  );
+  return (await write(buildAdminWriteRequest(updates, revisions))).data;
 }
