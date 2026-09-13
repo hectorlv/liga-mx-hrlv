@@ -186,6 +186,10 @@ export class LigaMxHrlv extends LitElement {
         white-space: nowrap;
       }
 
+      .header-scroll-top {
+        display: none;
+      }
+
       .admin-status {
         color: var(--md-sys-color-on-surface-variant);
         font-size: 0.8rem;
@@ -222,7 +226,8 @@ export class LigaMxHrlv extends LitElement {
         }
 
         .admin-actions md-text-button,
-        .admin-actions md-outlined-button {
+        .admin-actions md-outlined-button,
+        .admin-actions .header-scroll-top {
           width: 40px;
           min-width: 40px;
           height: 40px;
@@ -236,8 +241,14 @@ export class LigaMxHrlv extends LitElement {
       }
 
       @media (max-width: 600px) {
-        .header-content {
+        .header-content.has-scroll-top {
           padding-right: 96px;
+        }
+
+        .header-scroll-top {
+          display: inline-flex;
+          --md-icon-button-state-layer-width: 40px;
+          --md-icon-button-state-layer-height: 40px;
         }
 
         .main-navigation {
@@ -248,8 +259,12 @@ export class LigaMxHrlv extends LitElement {
         .mobile-menu-trigger {
           flex: 1 1 0;
           min-width: 0;
+          height: 48px;
+          min-height: 48px;
           padding: 0 4px;
+          box-sizing: border-box;
           font-size: 0.72rem;
+          line-height: 1;
         }
 
         .main-navigation > a md-icon {
@@ -262,11 +277,21 @@ export class LigaMxHrlv extends LitElement {
 
         .mobile-menu-trigger {
           display: inline-flex;
+          align-items: center;
+          justify-content: center;
           gap: 3px;
         }
 
         .mobile-menu-trigger md-icon {
+          display: block;
+          flex: 0 0 auto;
           font-size: 18px;
+          line-height: 1;
+        }
+
+        .mobile-menu-label {
+          display: block;
+          line-height: 1;
         }
 
         .mobile-overflow-menu {
@@ -362,12 +387,7 @@ export class LigaMxHrlv extends LitElement {
       }
       @media (max-width: 600px) {
         .scrollTopButton {
-          top: 8px;
-          right: 52px;
-          bottom: auto;
-          z-index: 101;
-          padding: 8px;
-          box-shadow: none;
+          display: none !important;
         }
       }
       .skip-link {
@@ -558,7 +578,7 @@ export class LigaMxHrlv extends LitElement {
     return html`
       <a class="skip-link" href="#main-content">Saltar al contenido</a>
       <header>
-        <div class="header-content">
+        <div class="header-content ${this.showScrollTop ? 'has-scroll-top' : ''}">
           <nav class="main-navigation" aria-label="Navegación principal">
             ${this._navigationTabs.map((tab, index) => html`
               <a
@@ -580,7 +600,7 @@ export class LigaMxHrlv extends LitElement {
               @keydown=${this._handleMobileMenuKeydown}
             >
               <md-icon>more_horiz</md-icon>
-              Más
+              <span class="mobile-menu-label">Más</span>
             </button>
             <div
               class="mobile-overflow-menu"
@@ -598,6 +618,21 @@ export class LigaMxHrlv extends LitElement {
             </div>
           </nav>
           <div class="admin-actions">
+            ${
+              this.showScrollTop
+                ? html`
+                    <md-icon-button
+                      id="headerScrollTopButton"
+                      class="header-scroll-top"
+                      aria-label="Volver arriba"
+                      @click=${() =>
+                        window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
+                      <md-icon>arrow_upward</md-icon>
+                    </md-icon-button>
+                  `
+                : ''
+            }
             ${
               this.user
                 ? html`

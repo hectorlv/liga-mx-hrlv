@@ -122,7 +122,7 @@ test('guarda Mi equipo localmente y prioriza su partido en vivo', async ({
     table: [{ equipo: 'América', pts: 14, dg: 6 }],
   });
 
-  const myTeam = page.getByLabel('Mi equipo');
+  const myTeam = page.getByRole('region', { name: 'Mi equipo' });
   await expect(myTeam).toContainText('América');
   await expect(myTeam).toContainText('En vivo');
   await expect(myTeam).toContainText('América vs Atlas');
@@ -135,20 +135,43 @@ test('guarda Mi equipo localmente y prioriza su partido en vivo', async ({
 
 test('permite elegir y quitar Mi equipo sin cuenta', async ({ page }) => {
   await mountHomeFixture(page, []);
-  const myTeam = page.getByLabel('Mi equipo');
+  const myTeam = page.getByRole('region', { name: 'Mi equipo' });
   await myTeam.locator('#favorite-team').selectOption('Atlas');
   await expect(myTeam).toContainText('Atlas');
   await expect.poll(() => page.evaluate(() => localStorage.getItem('liga-mx-hrlv.favorite-team'))).toBe('Atlas');
-  await myTeam.getByRole('button', { name: 'Quitar' }).click();
+  await myTeam.getByRole('button', { name: 'Quitar Mi equipo' }).click();
   await expect(myTeam.locator('#favorite-team')).toBeVisible();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('liga-mx-hrlv.favorite-team'))).toBeNull();
+});
+
+test('mantiene las acciones de Mi equipo compactas y accesibles en móvil', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await mountHomeFixture(page, [], { favorite: 'Atlas' });
+
+  const myTeam = page.getByRole('region', { name: 'Mi equipo' });
+  const change = myTeam.getByRole('button', { name: 'Cambiar' });
+  const remove = myTeam.getByRole('button', { name: 'Quitar Mi equipo' });
+
+  await expect(change).toBeVisible();
+  await expect(remove).toHaveAttribute('title', 'Quitar Mi equipo');
+  await expect(remove).toHaveCSS('width', '40px');
+  await expect(remove).toHaveCSS('height', '40px');
+  await change.focus();
+  await expect(change).toBeFocused();
+
+  const headingFits = await myTeam.locator('.my-team-heading').evaluate(
+    element => element.scrollWidth <= element.clientWidth,
+  );
+  expect(headingFits).toBe(true);
 });
 
 test('explica cuando Mi equipo no tiene próximo partido ni resultados', async ({
   page,
 }) => {
   await mountHomeFixture(page, [], { favorite: 'Atlas' });
-  const myTeam = page.getByLabel('Mi equipo');
+  const myTeam = page.getByRole('region', { name: 'Mi equipo' });
   await expect(myTeam).toContainText('No hay un próximo partido disponible.');
   await expect(myTeam).toContainText('Aún no hay resultados finalizados.');
 });
@@ -180,7 +203,7 @@ test('muestra un pospuesto como próximo encuentro sin marcarlo en vivo', async 
   postponed.fecha = new Date('2026-08-10T20:00:00-06:00');
   postponed.status = 'postponed';
   await mountHomeFixture(page, [postponed], { favorite: 'Atlas' });
-  const myTeam = page.getByLabel('Mi equipo');
+  const myTeam = page.getByRole('region', { name: 'Mi equipo' });
   await expect(myTeam).toContainText('Pospuesto');
   await expect(myTeam).not.toContainText('En vivo');
 });
@@ -190,7 +213,7 @@ test('elimina una preferencia cuyo equipo ya no existe', async ({ page }) => {
     favorite: 'Atlas',
     teams: ['América'],
   });
-  await expect(page.getByLabel('Mi equipo').locator('#favorite-team')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Mi equipo' }).locator('#favorite-team')).toBeVisible();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('liga-mx-hrlv.favorite-team'))).toBeNull();
 });
 

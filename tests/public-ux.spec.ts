@@ -126,7 +126,7 @@ test('Más conserva la ruta elegida y agrupa accesos administrativos', async ({ 
   await expect(page).toHaveURL(/tab=Liguilla/);
 });
 
-test('a 320 px la barra móvil no desborda y Volver arriba no tapa la tabla', async ({ page }) => {
+test('a 320 px Más se alinea y Volver arriba vive en la cabecera', async ({ page }) => {
   await blockRemoteServices(page);
   await page.setViewportSize({ width: 320, height: 640 });
   await page.goto('/');
@@ -141,28 +141,70 @@ test('a 320 px la barra móvil no desborda y Volver arriba no tapa la tabla', as
     await app.updateComplete;
   });
 
+  const initialHeader = await page.evaluate(() => {
+    const root = document.querySelector('liga-mx-hrlv')?.shadowRoot;
+    const navigation = root?.querySelector('.main-navigation');
+    const access = root?.querySelector('.admin-actions > *:last-child');
+    const navigationRect = navigation?.getBoundingClientRect();
+    const accessRect = access?.getBoundingClientRect();
+    return navigationRect && accessRect
+      ? { gap: accessRect.left - navigationRect.right }
+      : null;
+  });
+  expect(initialHeader).not.toBeNull();
+  expect(initialHeader!.gap).toBeLessThanOrEqual(8);
+  await expect(page.locator('liga-mx-hrlv').locator('#headerScrollTopButton')).toHaveCount(0);
+
   await page.evaluate(() => window.scrollTo(0, 420));
-  await expect(page.locator('liga-mx-hrlv').locator('#scrollTopButton')).toBeVisible();
+  const headerScrollTop = page.locator('liga-mx-hrlv').locator('#headerScrollTopButton');
+  await expect(headerScrollTop).toBeVisible();
+  await expect(page.locator('liga-mx-hrlv').locator('#scrollTopButton')).toBeHidden();
   const viewport = await page.evaluate(() => ({
     viewportWidth: window.innerWidth,
     documentWidth: document.documentElement.scrollWidth,
+    navigation: (() => {
+      const navigation = document.querySelector('liga-mx-hrlv')?.shadowRoot?.querySelector('.main-navigation');
+      const more = navigation?.querySelector('.mobile-menu-trigger');
+      const firstLink = navigation?.querySelector('a');
+      const navigationRect = navigation?.getBoundingClientRect();
+      const moreRect = more?.getBoundingClientRect();
+      const firstLinkRect = firstLink?.getBoundingClientRect();
+      return navigationRect && moreRect && firstLinkRect
+        ? {
+            right: navigationRect.right,
+            moreCenterY: moreRect.top + moreRect.height / 2,
+            firstLinkCenterY: firstLinkRect.top + firstLinkRect.height / 2,
+          }
+        : null;
+    })(),
     scrollButton: (() => {
-      const button = document.querySelector('liga-mx-hrlv')?.shadowRoot?.querySelector('#scrollTopButton');
+      const button = document.querySelector('liga-mx-hrlv')?.shadowRoot?.querySelector('#headerScrollTopButton');
       const rect = button?.getBoundingClientRect();
-      return rect ? { top: rect.top, bottom: rect.bottom } : null;
+      return rect ? { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right } : null;
+    })(),
+    access: (() => {
+      const access = document.querySelector('liga-mx-hrlv')?.shadowRoot?.querySelector('.admin-actions > *:last-child');
+      const rect = access?.getBoundingClientRect();
+      return rect ? { left: rect.left } : null;
     })(),
     headerBottom: document.querySelector('liga-mx-hrlv')?.shadowRoot?.querySelector('header')?.getBoundingClientRect().bottom || 0,
-    pointRows: Array.from(document.querySelector('liga-mx-hrlv')?.shadowRoot?.querySelector('table-page')?.shadowRoot?.querySelectorAll('.cell-pts') || [])
-      .map(cell => cell.getBoundingClientRect())
-      .filter(rect => rect.top >= 0 && rect.bottom <= window.innerHeight)
-      .map(rect => ({ top: rect.top, bottom: rect.bottom })),
   }));
 
   expect(viewport.documentWidth).toBeLessThanOrEqual(viewport.viewportWidth);
   expect(viewport.scrollButton).not.toBeNull();
-  const exposedRows = viewport.pointRows.filter(row => row.top >= viewport.headerBottom);
-  expect(exposedRows.length).toBeGreaterThan(0);
-  expect(exposedRows.every(row => row.bottom <= viewport.scrollButton!.top || row.top >= viewport.scrollButton!.bottom)).toBe(true);
+  expect(viewport.navigation).not.toBeNull();
+  expect(viewport.access).not.toBeNull();
+  expect(viewport.scrollButton!.left).toBeGreaterThanOrEqual(viewport.navigation!.right);
+  expect(viewport.scrollButton!.right).toBeLessThanOrEqual(viewport.access!.left);
+  expect(viewport.scrollButton!.bottom).toBeLessThanOrEqual(viewport.headerBottom);
+  expect(Math.abs(viewport.navigation!.moreCenterY - viewport.navigation!.firstLinkCenterY)).toBeLessThanOrEqual(1);
+  await page.setViewportSize({ width: 393, height: 852 });
+  await expect(headerScrollTop).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(393);
+  await headerScrollTop.click();
+  await page.waitForFunction(() => window.scrollY === 0);
 });
 
 test('Tabla explica abreviaturas y conserva el aviso provisional', async ({ page }) => {
