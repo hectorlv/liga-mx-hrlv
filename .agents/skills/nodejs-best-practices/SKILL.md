@@ -20,7 +20,7 @@ Use this skill when making Node.js architecture decisions, choosing frameworks, 
 
 This skill teaches **decision-making principles**, not fixed code to copy.
 
-- ASK user for preferences when unclear
+- Reuse the existing stack and conventions; ask about technology preferences only when a consequential stack choice or change is required and unresolved by context.
 - Choose framework/pattern based on CONTEXT
 - Don't default to same solution every time
 
@@ -314,7 +314,7 @@ node --test src/**/*.test.ts
 
 ### ✅ DO:
 - Choose framework based on context
-- Ask user for preferences when unclear
+- Reuse the existing stack and conventions; ask about technology preferences only when a consequential stack choice or change is required and unresolved by context.
 - Use layered architecture for growing projects
 - Validate all inputs
 - Use environment variables for secrets
@@ -326,7 +326,7 @@ node --test src/**/*.test.ts
 
 Before implementing:
 
-- [ ] **Asked user about stack preference?**
+- [ ] **Existing stack identified, or necessary new stack choice resolved?**
 - [ ] **Chosen framework for THIS context?** (not just default)
 - [ ] **Considered deployment target?**
 - [ ] **Planned error handling strategy?**
@@ -340,4 +340,4 @@ Before implementing:
 ## Limitations
 - Use this skill only when the task clearly matches the scope described above.
 - Do not treat the output as a substitute for environment-specific validation, testing, or expert review.
-- Stop and ask for clarification if required inputs, permissions, safety boundaries, or success criteria are missing.
+- Derive verifiable success criteria from the request where possible. If indispensable information is missing, pause only dependent work and continue independent authorized work. Do not infer permissions or replace explicit approvals with assumptions.
