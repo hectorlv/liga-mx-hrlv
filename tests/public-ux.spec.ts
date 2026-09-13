@@ -191,7 +191,7 @@ test('Estadísticas describe datos faltantes y enlaza al calendario', async ({ p
   await expect(page.getByRole('link', { name: 'Ver calendario' }).first()).toHaveAttribute('href', '?tab=Calendario');
 });
 
-test('Liguilla comunica Por definir sin cruces y campeón con final resuelta', async ({ page }) => {
+test('Liguilla comunica cruces provisionales, confirmados y campeón', async ({ page }) => {
   await mountPage(
     page,
     'bracket-page',
@@ -199,7 +199,38 @@ test('Liguilla comunica Por definir sin cruces y campeón con final resuelta', a
   );
 
   await expect(page.getByText('Por definir', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('Los cruces aparecerán al cerrar la fase regular.')).toBeVisible();
+
+  await page.evaluate(() => {
+    const component = document.querySelector('bracket-page') as HTMLElement & Record<string, unknown>;
+    component.matchesList = [{
+      idMatch: 1, estadio: 'Estadio HRLV', fecha: new Date('2026-09-13T19:00:00-06:00'), hora: '19:00', jornada: 17,
+      local: 'América', visitante: 'Atlas', golLocal: 0, golVisitante: 0,
+      lineupLocal: [], lineupVisitor: [], events: [],
+    }];
+  });
+
+  await expect(page.getByText('CRUCES PROVISIONALES · Se actualizan en vivo')).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByText('CRUCES PROVISIONALES · Se actualizan en vivo')).toBeVisible();
+
+  await page.evaluate(() => {
+    const component = document.querySelector('bracket-page') as HTMLElement & Record<string, unknown>;
+    component.matchesList = [{
+      idMatch: 1, estadio: 'Estadio HRLV', fecha: new Date('2026-09-13T19:00:00-06:00'), hora: '19:00', jornada: 17,
+      local: 'América', visitante: 'Atlas', golLocal: 1, golVisitante: 0,
+      lineupLocal: [], lineupVisitor: [], events: [{ id: 'fulltime', type: 'phase', team: '', minute: 90, period: '2T', sequence: 1, phase: 'fulltime' }],
+    }, {
+      idMatch: 2, estadio: 'Estadio HRLV', fecha: new Date('2026-09-13T19:00:00-06:00'), hora: '19:00', jornada: 17,
+      local: 'Pachuca', visitante: 'Toluca', golLocal: 0, golVisitante: 0,
+      status: 'postponed', lineupLocal: [], lineupVisitor: [], events: [],
+    }, {
+      idMatch: 3, estadio: 'Estadio HRLV', fecha: new Date('2026-09-13T19:00:00-06:00'), hora: '19:00', jornada: 17,
+      local: 'León', visitante: 'Tigres', golLocal: 0, golVisitante: 0,
+      status: 'cancelled', lineupLocal: [], lineupVisitor: [], events: [],
+    }];
+  });
+
+  await expect(page.getByText('CRUCES CONFIRMADOS')).toBeVisible();
 
   await page.evaluate(() => {
     const component = document.querySelector('bracket-page') as HTMLElement & Record<string, unknown>;

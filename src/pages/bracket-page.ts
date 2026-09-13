@@ -5,7 +5,7 @@ import styles from '../styles/liga-mx-hrlv-styles.js';
 import './match-detail-page.js';
 
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
-import { LIGUILLA } from '../utils/constants.js';
+import { LIGUILLA, REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
 import { formatDateDDMMYYYY } from '../utils/dateUtils.js';
 import {
   getPlayoffSeriesMatches,
@@ -13,7 +13,7 @@ import {
   PlayoffSeriesConfig,
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
-import { isMatchLive } from '../utils/matchStatus.js';
+import { hasMatchEnded, isMatchLive } from '../utils/matchStatus.js';
 
 interface BracketSeries {
   key: string;
@@ -25,6 +25,18 @@ interface BracketRound {
   title: string;
   className: string;
   series: BracketSeries[];
+}
+
+type BracketStatusTone =
+  | 'pending'
+  | 'provisional'
+  | 'confirmed'
+  | 'champion';
+
+interface BracketStatus {
+  label: string;
+  tone: BracketStatusTone;
+  isLive?: boolean;
 }
 
 const BRACKET_ROUNDS: BracketRound[] = [
@@ -94,19 +106,45 @@ export class BracketPage extends LitElement {
       }
 
       .bracket-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 10px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: 999px;
+        background: var(--md-sys-color-surface-container);
         color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.78rem;
         font-weight: 700;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
       }
 
-      .bracket-pending-note {
-        margin: 0 0 18px;
-        padding: 12px 14px;
-        border-left: 4px solid var(--md-sys-color-primary);
-        border-radius: 0 8px 8px 0;
-        background: var(--md-sys-color-surface-container-low);
-        color: var(--md-sys-color-on-surface-variant);
-        font-size: 0.9rem;
-        line-height: 1.45;
+      .bracket-status.provisional {
+        border-color: color-mix(
+          in srgb,
+          var(--md-sys-color-tertiary) 45%,
+          var(--md-sys-color-outline-variant)
+        );
+        background: var(--md-sys-color-tertiary-container);
+        color: var(--md-sys-color-on-tertiary-container);
+      }
+
+      .bracket-status.confirmed,
+      .bracket-status.champion {
+        border-color: color-mix(
+          in srgb,
+          var(--md-sys-color-primary) 45%,
+          var(--md-sys-color-outline-variant)
+        );
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+      }
+
+      .bracket-status .live-dot {
+        width: 7px;
+        height: 7px;
+        margin: 0;
       }
 
       .bracket-grid {
@@ -383,6 +421,10 @@ export class BracketPage extends LitElement {
           gap: 8px;
         }
 
+        .bracket-status {
+          max-width: 100%;
+        }
+
         .leg-content {
           grid-template-columns: 38px minmax(0, 1fr) 44px minmax(0, 1fr);
           gap: 6px;
@@ -455,12 +497,8 @@ export class BracketPage extends LitElement {
             <md-icon>account_tree</md-icon>
             <h2>Llaves de Liguilla</h2>
           </div>
-          <div class="bracket-status">${this._getBracketStatus()}</div>
+          ${this._renderBracketStatus()}
         </div>
-
-        ${!this._hasConfirmedBracketMatch()
-          ? html`<p class="bracket-pending-note" role="note">Los cruces aparecerán al cerrar la fase regular. Semifinales y final se confirmarán cuando concluya cada ronda previa.</p>`
-          : ''}
 
         <section class="bracket-grid" aria-label="Llaves de liguilla">
           ${BRACKET_ROUNDS.map(round => this._renderRound(round))}
@@ -643,26 +681,56 @@ export class BracketPage extends LitElement {
     return [date, time, stadium].filter(Boolean).join(' - ') || 'Por definir';
   }
 
-  private _getBracketStatus(): string {
+  private _renderBracketStatus() {
+    const status = this._getBracketStatus();
+    return html`<div
+      class="bracket-status ${status.tone}"
+      role="status"
+      aria-live="polite"
+    >
+      ${status.isLive ? html`<span class="live-dot" aria-hidden="true"></span>` : ''}
+      <span>${status.label}</span>
+    </div>`;
+  }
+
+  private _getBracketStatus(): BracketStatus {
     const result = getPlayoffSeriesResult(
       LIGUILLA.final,
       this.matchesList,
       this.table,
     );
-    if (result?.winner) return `Campeón: ${result.winner}`;
-    return this._hasConfirmedBracketMatch() ? 'En curso' : 'Por definir';
+    if (result?.winner) {
+      return { label: `Campeón: ${result.winner}`, tone: 'champion' };
+    }
+    if (!this._hasRegularSeasonMatches()) {
+      return { label: 'Por definir', tone: 'pending' };
+    }
+    if (this._isRegularSeasonComplete()) {
+      return { label: 'CRUCES CONFIRMADOS', tone: 'confirmed' };
+    }
+    return {
+      label: 'CRUCES PROVISIONALES · Se actualizan en vivo',
+      tone: 'provisional',
+      isLive: true,
+    };
   }
 
-  private _hasConfirmedBracketMatch(): boolean {
-    return BRACKET_ROUNDS.some(round =>
-      round.series.some(series => {
-        const { ida, vuelta } = getPlayoffSeriesMatches(
-          series.config,
-          this.matchesList,
-        );
-        return Boolean(ida || vuelta);
-      }),
+  private _regularSeasonMatches(): Match[] {
+    return this.matchesList.filter(
+      match =>
+        match.jornada <= REGULAR_SEASON_LAST_JORNADA &&
+        match.status !== 'cancelled' &&
+        match.status !== 'postponed',
     );
+  }
+
+  private _hasRegularSeasonMatches(): boolean {
+    return this._regularSeasonMatches().length > 0;
+  }
+
+  private _isRegularSeasonComplete(): boolean {
+    const matches = this._regularSeasonMatches();
+    return matches.length > 0 && matches.every(hasMatchEnded);
   }
 
   private _showMatchDetails(match: Match) {
