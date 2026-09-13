@@ -444,7 +444,7 @@ export class HomePage extends LitElement {
       .team-picker { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
       .team-picker label { display: grid; gap: 5px; color: #475569; font-size: .8rem; font-weight: 800; }
       .team-picker select { min-height: 42px; min-width: min(100%, 260px); padding: 0 12px; border: 1px solid var(--md-sys-color-outline); border-radius: 8px; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); font: inherit; }
-      .team-picker button, .my-team-actions button { min-height: 40px; padding: 0 14px; border: 1px solid var(--md-sys-color-primary); border-radius: 999px; background: transparent; color: var(--md-sys-color-primary); font: inherit; font-weight: 800; cursor: pointer; }
+      .team-picker button { min-height: 40px; padding: 0 14px; border: 1px solid var(--md-sys-color-primary); border-radius: 999px; background: transparent; color: var(--md-sys-color-primary); font: inherit; font-weight: 800; cursor: pointer; }
       .team-picker button.primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
       .team-picker button:focus-visible, .my-team-actions button:focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
       .my-team-overview { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
@@ -452,7 +452,13 @@ export class HomePage extends LitElement {
       .my-team-name { color: var(--md-sys-color-on-surface); font-size: 1.25rem; font-weight: 900; }
       .my-team-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; color: #475569; font-size: .84rem; font-weight: 750; }
       .my-team-stats strong { color: var(--md-sys-color-primary); }
-      .my-team-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .my-team-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; margin-left: auto; }
+      .my-team-actions button { box-sizing: border-box; border: 0; background: transparent; color: var(--md-sys-color-primary); font: inherit; font-weight: 800; cursor: pointer; }
+      .my-team-change { min-height: 40px; padding: 0 6px; }
+      .my-team-change:hover { text-decoration: underline; text-underline-offset: 3px; }
+      .my-team-remove { display: inline-grid; width: 40px; min-width: 40px; height: 40px; padding: 0; place-items: center; border-radius: 50%; color: var(--md-sys-color-outline) !important; }
+      .my-team-remove md-icon { color: currentColor; font-size: 20px; }
+      .my-team-remove:hover { background: color-mix(in srgb, var(--md-sys-color-error) 10%, transparent); color: var(--md-sys-color-error) !important; }
       .my-team-match { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px; border-radius: 12px; background: var(--md-sys-color-surface); color: inherit; text-decoration: none; }
       .my-team-match:hover, .my-team-match:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 2px; }
       .my-team-match h3 { color: var(--md-sys-color-on-surface); font-size: 1rem; }
@@ -559,6 +565,10 @@ export class HomePage extends LitElement {
 
         .quick-card > md-icon:last-child {
           display: none;
+        }
+
+        .my-team-heading {
+          flex-wrap: wrap;
         }
       }
     `,
@@ -787,7 +797,10 @@ export class HomePage extends LitElement {
       <section class="panel my-team-panel" aria-label="Mi equipo">
         <div class="my-team-heading">
           <h2><md-icon aria-hidden="true">favorite</md-icon> Mi equipo</h2>
-          ${team ? html`<div class="my-team-actions"><button @click=${this._openFavoritePicker}>Cambiar</button><button @click=${this._clearFavorite}>Quitar</button></div>` : ''}
+          ${team ? html`<div class="my-team-actions">
+            <button class="my-team-change" @click=${this._openFavoritePicker}>Cambiar</button>
+            <button class="my-team-remove" @click=${this._clearFavorite} aria-label="Quitar Mi equipo" title="Quitar Mi equipo"><md-icon aria-hidden="true">close</md-icon></button>
+          </div>` : ''}
         </div>
         ${!team || this.isPickingFavorite ? this._renderFavoritePicker() : html`
           <div class="my-team-overview">
