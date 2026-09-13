@@ -1,3 +1,4 @@
+import { getAuth } from 'firebase/auth';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 
 const MAX_PLAYER_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -87,6 +88,10 @@ export async function uploadPlayerImage(
   const safeTeamKey = sanitizePathSegment(teamKey);
   const path = `players/${safeTeamKey}/${playerNumber}-${Date.now()}.jpg`;
   const storageRef = ref(storage, path);
+
+  const user = getAuth().currentUser;
+  if (!user) throw new Error('Debes iniciar sesión como administrador.');
+  await user.getIdToken(true);
 
   await uploadBytes(storageRef, convertedBlob, {
     contentType: 'image/jpeg',

@@ -9,5 +9,10 @@ service firebase.storage {
         && request.resource.size <= 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
+
+    match /{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }

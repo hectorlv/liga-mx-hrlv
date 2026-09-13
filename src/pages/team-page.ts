@@ -465,8 +465,8 @@ export class TeamPage extends LitElement {
   @property({ type: Boolean }) isAdmin = false;
 
   @state() private playersList: PlayerStats[] = [];
-  @state() private editingPlayer: PlayerStats | null = null;
   @state() private imageSrcCache: Record<string, string> = {};
+  @state() private editingPlayer: PlayerStats | null = null;
 
   @query('#dialogEditPlayer') dialogEditPlayer!: MdDialog;
   @query('#dialogDeletePlayer') dialogDeletePlayer!: MdDialog;
@@ -1247,11 +1247,45 @@ export class TeamPage extends LitElement {
   }
 
   private _getResolvedPlayerImage(imgSrc?: string): string {
-    if (!imgSrc) {
-      return '';
-    }
+    return imgSrc ? this.imageSrcCache[imgSrc] ?? imgSrc : '';
+  }
 
-    return this.imageSrcCache[imgSrc] ?? imgSrc;
+  private async _resolvePlayerImages(): Promise<void> {
+    const pendingImages = this.playersList
+      .map(player => player.image)
+      .filter(
+        (imgSrc): imgSrc is string =>
+          Boolean(
+            imgSrc &&
+              imgSrc.includes('cldrsrcs.apilmx') &&
+              !this.imageSrcCache[imgSrc],
+          ),
+      );
+
+    if (pendingImages.length === 0) return;
+
+    const resolvedEntries = await Promise.all(
+      [...new Set(pendingImages)].map(async originalSrc => {
+        const fileName = originalSrc.split('?rnd=')[0].split('/').pop();
+        if (!fileName) return [originalSrc, originalSrc] as const;
+
+        try {
+          const downloadUrl = await getDownloadURL(ref(this.storage, fileName));
+          return [originalSrc, downloadUrl] as const;
+        } catch (error) {
+          console.error(
+            `Error fetching download URL for player image ${fileName}:`,
+            error,
+          );
+          return [originalSrc, originalSrc] as const;
+        }
+      }),
+    );
+
+    this.imageSrcCache = {
+      ...this.imageSrcCache,
+      ...Object.fromEntries(resolvedEntries),
+    };
   }
 
   private _getEditImagePreview(): string {
@@ -1353,49 +1387,6 @@ export class TeamPage extends LitElement {
 
     URL.revokeObjectURL(this.editPastedImagePreviewUrl);
     this.editPastedImagePreviewUrl = '';
-  }
-
-  private async _resolvePlayerImages(): Promise<void> {
-    const pendingImages = this.playersList
-      .map(player => player.image)
-      .filter((imgSrc): imgSrc is string => {
-        return Boolean(
-          imgSrc &&
-          imgSrc.includes('cldrsrcs.apilmx') &&
-          !this.imageSrcCache[imgSrc],
-        );
-      });
-
-    if (pendingImages.length === 0) {
-      return;
-    }
-
-    const resolvedEntries = await Promise.all(
-      [...new Set(pendingImages)].map(async originalSrc => {
-        const sanitizedSrc = originalSrc.split('?rnd=')[0];
-        const fileName = sanitizedSrc.split('/').pop();
-
-        if (!fileName) {
-          return [originalSrc, originalSrc] as const;
-        }
-
-        try {
-          const downloadUrl = await getDownloadURL(ref(this.storage, fileName));
-          return [originalSrc, downloadUrl] as const;
-        } catch (error) {
-          console.error(
-            `Error fetching download URL for player image ${fileName}:`,
-            error,
-          );
-          return [originalSrc, originalSrc] as const;
-        }
-      }),
-    );
-
-    this.imageSrcCache = {
-      ...this.imageSrcCache,
-      ...Object.fromEntries(resolvedEntries),
-    };
   }
 
   private getAgeFromBirthDate(birthDate: string | Date): string {

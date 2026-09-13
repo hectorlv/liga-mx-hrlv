@@ -17,7 +17,9 @@ import {
 
 type SimpleCallback<T> = (data: T) => void;
 
-export type AdminRevisions = Record<string, number>;
+export type AdminRevisions = {
+  [key: string]: number | AdminRevisions;
+};
 
 function resourceForPath(path: string): string {
   const [root, key] = path.split('/').filter(Boolean);
@@ -25,6 +27,17 @@ function resourceForPath(path: string): string {
   return key && (root === 'matches' || root === 'players')
     ? `${root}/${key}`
     : root;
+}
+
+function revisionForResource(
+  revisions: AdminRevisions,
+  resource: string,
+): number {
+  const value = resource.split('/').reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== 'object') return undefined;
+    return (current as Record<string, unknown>)[segment];
+  }, revisions);
+  return typeof value === 'number' ? value : 0;
 }
 
 function buildAdminWriteRequest(
@@ -35,7 +48,7 @@ function buildAdminWriteRequest(
   return {
     updates,
     expectedRevisions: Object.fromEntries(
-      resources.map(resource => [resource, revisions[resource] ?? 0]),
+      resources.map(resource => [resource, revisionForResource(revisions, resource)]),
     ),
   };
 }

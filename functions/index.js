@@ -90,9 +90,15 @@ export const applyAdminUpdates = onCall(
     let conflict = null;
     const transaction = await getDatabase().ref().transaction(current => {
       const root = current && typeof current === 'object' ? structuredClone(current) : {};
-      const revisions = root.adminRevisions || {};
+      const revisions =
+        root.adminRevisions && typeof root.adminRevisions === 'object'
+          ? root.adminRevisions
+          : {};
       const actual = Object.fromEntries(
-        resources.map(resource => [resource, Number(revisions[resource] || 0)]),
+        resources.map(resource => [
+          resource,
+          Number(getAtPath(revisions, `/${resource}`) || 0),
+        ]),
       );
       const mismatched = resources.filter(
         resource => actual[resource] !== expectedRevisions[resource],
@@ -110,7 +116,7 @@ export const applyAdminUpdates = onCall(
       Object.entries(updates).forEach(([path, value]) => setAtPath(root, path, value));
       root.adminRevisions = revisions;
       resources.forEach(resource => {
-        root.adminRevisions[resource] = actual[resource] + 1;
+        setAtPath(root.adminRevisions, `/${resource}`, actual[resource] + 1);
       });
       return root;
     });

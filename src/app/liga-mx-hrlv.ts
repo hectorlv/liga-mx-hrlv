@@ -695,10 +695,19 @@ export class LigaMxHrlv extends LitElement {
       this.isAdmin = false;
       this._syncRouteFromUrl();
 
+      this._unsubscribeAdminRevisions?.();
+      this._unsubscribeAdminRevisions = undefined;
+      this.adminRevisions = {};
+
       if (!user) return;
 
-      const token = await user.getIdTokenResult();
+      const token = await user.getIdTokenResult(true);
       this.isAdmin = token.claims.admin === true;
+      if (this.isAdmin) {
+        this._unsubscribeAdminRevisions = fetchAdminRevisions(revisions => {
+          this.adminRevisions = revisions;
+        });
+      }
       this._syncRouteFromUrl();
     });
   }
@@ -727,9 +736,6 @@ export class LigaMxHrlv extends LitElement {
         this.u23NationalTeamCallups = callups;
       },
     );
-    this._unsubscribeAdminRevisions = fetchAdminRevisions(revisions => {
-      this.adminRevisions = revisions;
-    });
   }
 
   override disconnectedCallback() {

@@ -23,7 +23,7 @@
       ".write": false
     },
     "adminRevisions": {
-      ".read": true,
+      ".read": "auth != null && auth.token.admin == true",
       ".write": false
     },
     "allowedWriters": {
