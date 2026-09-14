@@ -14,6 +14,8 @@ import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
+const POSITION_ORDER = ['Portero', 'Defensa', 'Medio', 'Delantero'];
+
 @customElement('lineups-card')
 export class LineupsCard extends LitElement {
   static override readonly styles = [
@@ -235,7 +237,7 @@ export class LineupsCard extends LitElement {
                       </md-icon-button>
                     </div>
 
-                    ${this.localPlayers
+                    ${this._sortPlayersByPositionAndNumber(this.localPlayers)
                       .filter(player => !player.historical)
                       .map(player => {
                         const isTitular = lineupLocal?.some(
@@ -276,7 +278,7 @@ export class LineupsCard extends LitElement {
                       </md-icon-button>
                     </div>
 
-                    ${this.visitorPlayers
+                    ${this._sortPlayersByPositionAndNumber(this.visitorPlayers)
                       .filter(player => !player.historical)
                       .map(player => {
                         const isTitular = lineupVisitor?.some(
@@ -423,12 +425,28 @@ export class LineupsCard extends LitElement {
   }
 
   private _playersFromLineup(players: Player[], lineup: Match['lineupLocal']) {
-    return lineup
-      .filter(playerGame => playerGame.titular)
-      .map(playerGame =>
-        players.find(player => player.number === playerGame.number),
-      )
-      .filter((player): player is Player => Boolean(player));
+    return this._sortPlayersByPositionAndNumber(
+      lineup
+        .filter(playerGame => playerGame.titular)
+        .map(playerGame =>
+          players.find(player => player.number === playerGame.number),
+        )
+        .filter((player): player is Player => Boolean(player)),
+    );
+  }
+
+  private _sortPlayersByPositionAndNumber(players: Player[]) {
+    return [...players].sort((a, b) => {
+      const positionDifference =
+        this._positionIndex(a.position) - this._positionIndex(b.position);
+      if (positionDifference !== 0) return positionDifference;
+      return a.number - b.number;
+    });
+  }
+
+  private _positionIndex(position: string) {
+    const index = POSITION_ORDER.indexOf(position);
+    return index === -1 ? POSITION_ORDER.length : index;
   }
 
   override updated(changedProps: Map<string, unknown>) {
