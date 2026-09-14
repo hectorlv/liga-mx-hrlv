@@ -15,6 +15,8 @@ import {
   validatePlayerImageForPreview,
 } from '../utils/playerImageUpload';
 
+const POSITION_ORDER = ['Portero', 'Defensa', 'Medio', 'Delantero'];
+
 export interface PlayerCreatedDetail {
   side: TeamSide;
   player: Player;
@@ -342,6 +344,11 @@ export class PlayerRegistrationDialog extends LitElement {
     return teamName.replaceAll('.', '');
   }
 
+  private _positionIndex(position: string) {
+    const index = POSITION_ORDER.indexOf(position);
+    return index === -1 ? POSITION_ORDER.length : index;
+  }
+
   private async _save() {
     if (!this.isAdmin || !this.match || !this.side) return;
     const side = this.side;
@@ -407,9 +414,12 @@ export class PlayerRegistrationDialog extends LitElement {
       fullName,
       nationality,
     };
-    const players = [...this.players, player].sort(
-      (a, b) => a.number - b.number,
-    );
+    const players = [...this.players, player].sort((a, b) => {
+      const positionDifference =
+        this._positionIndex(a.position) - this._positionIndex(b.position);
+      if (positionDifference !== 0) return positionDifference;
+      return a.number - b.number;
+    });
     this.dispatchEvent(
       dispatchEventMatchUpdated(
         {
