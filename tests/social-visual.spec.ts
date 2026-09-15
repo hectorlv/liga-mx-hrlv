@@ -167,14 +167,20 @@ test('divide la tabla entre zona de liguilla y fuera de liguilla', async ({
   ]);
 
   const altText = generator.locator('#alt-text');
-  await expect(altText).toHaveValue(/1\. América.*18\. Gallos Blancos de Querétaro/);
+  await expect(altText).toHaveValue(
+    /1\. América.*18\. Gallos Blancos de Querétaro/,
+  );
 
   await generator.locator('#standings-range').selectOption('top');
-  await expect(altText).toHaveValue(/1\. América.*8\. Tigres de la U\.A\.N\.L\./);
+  await expect(altText).toHaveValue(
+    /1\. América.*8\. Tigres de la U\.A\.N\.L\./,
+  );
   await expect(altText).not.toHaveValue(/9\. León/);
 
   await generator.locator('#standings-range').selectOption('bottom');
-  await expect(altText).toHaveValue(/9\. León.*18\. Gallos Blancos de Querétaro/);
+  await expect(altText).toHaveValue(
+    /9\. León.*18\. Gallos Blancos de Querétaro/,
+  );
   await expect(altText).not.toHaveValue(/8\. Tigres de la U\.A\.N\.L\./);
 });
 
@@ -330,6 +336,9 @@ test('ofrece cuatro enfoques editoriales y restablece el borrador al cambiarlo',
   await copy.fill('Borrador editorial manual');
   await tone.selectOption('informative');
   await expect(copy).not.toHaveValue('Borrador editorial manual');
+
+  await copy.fill('');
+  await expect(copy).toHaveValue('');
 });
 
 test('comparte el PNG y el copy de Instagram cuando el dispositivo lo admite', async ({

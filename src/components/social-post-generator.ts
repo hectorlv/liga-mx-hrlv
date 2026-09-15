@@ -312,7 +312,7 @@ export class SocialPostGenerator extends LitElement {
   @state() private matchId?: number;
   @state() private copyStatus = '';
   @state() private copyTone: SocialCopyTone = 'informative';
-  @state() private copyDraft = '';
+  @state() private copyDraft?: string;
   @state() private isDrawing = true;
   @state() private presentation: SocialPresentationOptions = {
     ...DEFAULT_SOCIAL_PRESENTATION,
@@ -368,7 +368,7 @@ export class SocialPostGenerator extends LitElement {
       this.platform === 'x'
         ? xThread.post
         : buildSocialCopy(input, this.platform, { tone: this.copyTone });
-    const copy = this.copyDraft || generatedCopy;
+    const copy = this.copyDraft ?? generatedCopy;
     const isDay = DAY_TEMPLATES.has(this.template);
     const isMatchSummary = this.template === 'match-summary';
     const dates = this._datesForJornada();
@@ -1552,10 +1552,7 @@ export class SocialPostGenerator extends LitElement {
     const compact = entries.length > 10;
     const rowHeight = compact ? 48 : 75;
     const gap = compact ? 4 : 7;
-    await this._drawHeader(
-      context,
-      'TABLA GENERAL',
-    );
+    await this._drawHeader(context, 'TABLA GENERAL');
     const top = 224;
     context.fillStyle = SOCIAL_COLORS.primary;
     this._roundedRect(context, 58, 184, 964, 30, 8);
