@@ -18,7 +18,6 @@ export interface SocialPresentationOptions {
   showDomain: boolean;
   showHandle: boolean;
   showGrid: boolean;
-  showUpdatedAt: boolean;
   standingsRange: StandingsRange;
 }
 
@@ -52,7 +51,6 @@ export const DEFAULT_SOCIAL_PRESENTATION: SocialPresentationOptions = {
   showDomain: true,
   showHandle: true,
   showGrid: true,
-  showUpdatedAt: true,
   standingsRange: 'all',
 };
 

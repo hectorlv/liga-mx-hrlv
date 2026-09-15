@@ -18,6 +18,7 @@ export { type JourneyResultsVariant } from './social-config.js';
 export type { DailyMatchesVariant, SocialPresentationOptions, StandingsRange };
 
 export type SocialPlatform = 'instagram' | 'x';
+export type SocialCopyTone = 'informative' | 'rhythm' | 'data' | 'conversation';
 export type { ResolvedMatchStatus } from '../utils/matchStatus.js';
 
 export interface SocialImageInput {
@@ -33,6 +34,11 @@ export interface SocialImageInput {
 export interface SocialXThreadCopy {
   post: string;
   reply: string;
+}
+
+export interface SocialCopyOptions {
+  includeLink?: boolean;
+  tone?: SocialCopyTone;
 }
 
 export interface SocialScorer {
@@ -236,8 +242,8 @@ export function selectStandingsRange(
         second.pts - first.pts || second.dg - first.dg || second.gf - first.gf,
     )
     .map((entry, index) => ({ entry, position: index + 1 }));
-  if (range === 'top') return ordered.slice(0, 10);
-  if (range === 'bottom') return ordered.slice(10, 18);
+  if (range === 'top') return ordered.slice(0, 8);
+  if (range === 'bottom') return ordered.slice(8, 18);
   return ordered.slice(0, 18);
 }
 
@@ -321,12 +327,16 @@ export function templateLabel(template: TemplateId): string {
 export function buildSocialCopy(
   input: SocialImageInput,
   platform: SocialPlatform,
+  options: SocialCopyOptions = {},
 ): string {
+  const { includeLink = true, tone = 'informative' } = options;
   const isInstagram = platform === 'instagram';
   const url = buildTrackingUrl(input, platform);
-  const callToAction = isInstagram
-    ? 'Consulta los detalles en el enlace de la bio.'
-    : `Consulta los detalles en: ${url}`;
+  const callToAction = !includeLink
+    ? ''
+    : isInstagram
+      ? 'Consulta los detalles en el enlace de la bio.'
+      : `Consulta los detalles en: ${url}`;
   const round = input.jornada ? ` Jornada ${input.jornada}` : '';
   const matches = selectTemplateMatches(input);
   const summary = matches
@@ -339,15 +349,121 @@ export function buildSocialCopy(
         : `${socialTeamMention(match.local, platform)} vs ${socialTeamMention(match.visitante, platform)}`;
     })
     .join('\n');
-  const copies: Record<TemplateId, string> = {
-    'round-preview': `⚽ Todo listo para la${round} de Liga MX HRLV.\n\nPartidos, fechas y horarios para no perderte nada.\n\n${callToAction}\n\n#LigaMX #FutbolMexicano #LigaMXHRLV`,
-    'day-preview': `⚽ Partidos de hoy${input.dateKey ? `, ${formatSocialDate(`${input.dateKey}T12:00:00`)}` : ''}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #FutbolMexicano`,
-    'day-results': `📊 Resultados del día${round}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #Resultados`,
-    standings: `📈 Así marcha la tabla general${round ? ` después de la${round}` : ''}.\n\n${callToAction}\n\n#LigaMX #TablaGeneral`,
-    'round-results': `🏁 Resultados completos de la${round}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #Resultados`,
-    'match-summary': `🏁 Marcador final${round}.\n\n${summary}\n\n${callToAction}\n\n#LigaMX #Resultados`,
+  const withCallToAction = (body: string, hashtags: string) =>
+    [body, callToAction, hashtags].filter(Boolean).join('\n\n');
+  const informative: Record<TemplateId, string> = {
+    'round-preview': withCallToAction(
+      `⚽ Todo listo para la${round} de Liga MX HRLV.\n\nPartidos, fechas y horarios para no perderte nada.`,
+      '#LigaMX #FutbolMexicano #LigaMXHRLV',
+    ),
+    'day-preview': withCallToAction(
+      `⚽ Partidos de hoy${input.dateKey ? `, ${formatSocialDate(`${input.dateKey}T12:00:00`)}` : ''}.\n\n${summary}`,
+      '#LigaMX #FutbolMexicano',
+    ),
+    'day-results': withCallToAction(
+      `📊 Resultados del día${round}.\n\n${summary}`,
+      '#LigaMX #Resultados',
+    ),
+    standings: withCallToAction(
+      `📈 Así marcha la tabla general${round ? ` después de la${round}` : ''}.`,
+      '#LigaMX #TablaGeneral',
+    ),
+    'round-results': withCallToAction(
+      `🏁 Resultados completos de la${round}.\n\n${summary}`,
+      '#LigaMX #Resultados',
+    ),
+    'match-summary': withCallToAction(
+      `🏁 Marcador final${round}.\n\n${summary}`,
+      '#LigaMX #Resultados',
+    ),
   };
-  return copies[input.template];
+  const count = matches.length;
+  const leader = input.standings.reduce<TableEntry | undefined>(
+    (current, entry) => (!current || entry.pts > current.pts ? entry : current),
+    undefined,
+  );
+  const copies: Record<SocialCopyTone, Record<TemplateId, string>> = {
+    informative,
+    rhythm: {
+      'round-preview': withCallToAction(
+        `⚽ La${round} se acerca. Revisa los cruces, fechas y horarios antes del silbatazo inicial.`,
+        '#LigaMX #FutbolMexicano #LigaMXHRLV',
+      ),
+      'day-preview': withCallToAction(
+        `⚽ Hoy hay actividad${input.dateKey ? `, ${formatSocialDate(`${input.dateKey}T12:00:00`)}` : ''}. Estos son los partidos en el calendario.\n\n${summary}`,
+        '#LigaMX #FutbolMexicano',
+      ),
+      'day-results': withCallToAction(
+        `🏁 Así cerró la actividad de${round}.\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+      standings: withCallToAction(
+        `📈 Este es el corte actual de la tabla${round ? ` tras la${round}` : ''}.`,
+        '#LigaMX #TablaGeneral',
+      ),
+      'round-results': withCallToAction(
+        `🏁 La${round} cerró con estos marcadores.\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+      'match-summary': withCallToAction(
+        `🏁 El partido quedó definido con este marcador${round}.\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+    },
+    data: {
+      'round-preview': withCallToAction(
+        `📅${round} en números: ${count} ${count === 1 ? 'partido programado' : 'partidos programados'}.`,
+        '#LigaMX #FutbolMexicano #LigaMXHRLV',
+      ),
+      'day-preview': withCallToAction(
+        `📅 ${count} ${count === 1 ? 'partido programado' : 'partidos programados'} para hoy${input.dateKey ? `, ${formatSocialDate(`${input.dateKey}T12:00:00`)}` : ''}.\n\n${summary}`,
+        '#LigaMX #FutbolMexicano',
+      ),
+      'day-results': withCallToAction(
+        `📊 ${count} ${count === 1 ? 'resultado registrado' : 'resultados registrados'}${round}.\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+      standings: withCallToAction(
+        `📈 Corte de tabla${round ? ` después de la${round}` : ''}${leader ? `: ${socialTeamMention(leader.equipo, platform)} suma ${leader.pts} puntos` : ''}.`,
+        '#LigaMX #TablaGeneral',
+      ),
+      'round-results': withCallToAction(
+        `📊 ${count} ${count === 1 ? 'marcador final' : 'marcadores finales'} de la${round}.\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+      'match-summary': withCallToAction(
+        `📊 Marcador final${round}.\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+    },
+    conversation: {
+      'round-preview': withCallToAction(
+        `⚽ ¿Qué partido de la${round} tienes marcado en el calendario?`,
+        '#LigaMX #FutbolMexicano #LigaMXHRLV',
+      ),
+      'day-preview': withCallToAction(
+        `⚽ ¿Qué partido seguirás hoy${input.dateKey ? `, ${formatSocialDate(`${input.dateKey}T12:00:00`)}` : ''}?\n\n${summary}`,
+        '#LigaMX #FutbolMexicano',
+      ),
+      'day-results': withCallToAction(
+        `🏁 ¿Qué resultado del día te llamó más la atención?\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+      standings: withCallToAction(
+        `📈 ¿Cómo lees este corte de la tabla${round ? ` después de la${round}` : ''}?`,
+        '#LigaMX #TablaGeneral',
+      ),
+      'round-results': withCallToAction(
+        `🏁 ¿Qué marcador de la${round} te llamó más la atención?\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+      'match-summary': withCallToAction(
+        `🏁 ¿Qué lectura haces de este marcador final${round}?\n\n${summary}`,
+        '#LigaMX #Resultados',
+      ),
+    },
+  };
+  return copies[tone][input.template];
 }
 
 const CLASSIC_PAIRS = [
@@ -372,6 +488,7 @@ function resultLine(match: Match): string {
 /** Copy listo para publicar manualmente como un hilo de dos posts en X. */
 export function buildXRoundResultsThread(
   input: SocialImageInput,
+  tone: SocialCopyTone = 'informative',
 ): SocialXThreadCopy {
   const matches = selectTemplateMatches({
     ...input,
@@ -401,7 +518,13 @@ export function buildXRoundResultsThread(
       );
       return secondDifference - firstDifference || first.index - second.index;
     });
-  const header = `🏁 Resultados J${input.jornada || ''}`.trim();
+  const headers: Record<SocialCopyTone, string> = {
+    informative: `🏁 Resultados J${input.jornada || ''}`,
+    rhythm: `🏁 Así cerró la J${input.jornada || ''}`,
+    data: `📊 Marcadores J${input.jornada || ''}`,
+    conversation: `🏁 Lo que dejó J${input.jornada || ''}`,
+  };
+  const header = headers[tone].trim();
   const suffix = '#LigaMX #Resultados';
   const lines: string[] = [];
   for (const { match } of ranked) {
@@ -412,6 +535,22 @@ export function buildXRoundResultsThread(
   return {
     post: `${header}\n\n${lines.join('\n')}\n\n${suffix}`,
     reply: `Consulta marcadores, fichas y detalles de la Jornada ${input.jornada || ''}:\n${buildTrackingUrl(input, 'x')}`,
+  };
+}
+
+/**
+ * Hilo manual de X: la publicación principal lleva sólo copy e imagen, y el
+ * enlace siempre queda reservado para la respuesta que se pega después.
+ */
+export function buildXThreadCopy(
+  input: SocialImageInput,
+  tone: SocialCopyTone = 'informative',
+): SocialXThreadCopy {
+  if (input.template === 'round-results')
+    return buildXRoundResultsThread(input, tone);
+  return {
+    post: buildSocialCopy(input, 'x', { includeLink: false, tone }),
+    reply: `Consulta los detalles de${input.jornada ? ` la Jornada ${input.jornada}` : ' Liga MX HRLV'}:\n${buildTrackingUrl(input, 'x')}`,
   };
 }
 
