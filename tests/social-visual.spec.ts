@@ -152,6 +152,32 @@ for (const template of [
   });
 }
 
+test('divide la tabla entre zona de liguilla y fuera de liguilla', async ({
+  page,
+}) => {
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  await generator.locator('#template').selectOption('standings');
+
+  await expect(generator.getByText('Hora de corte')).toHaveCount(0);
+  await expect(generator.locator('#standings-range option')).toHaveText([
+    'Completa · 1–18',
+    'Parte alta · 1–8 (zona de liguilla)',
+    'Parte baja · 9–18 (fuera de liguilla)',
+  ]);
+
+  const altText = generator.locator('#alt-text');
+  await expect(altText).toHaveValue(/1\. América.*18\. Gallos Blancos de Querétaro/);
+
+  await generator.locator('#standings-range').selectOption('top');
+  await expect(altText).toHaveValue(/1\. América.*8\. Tigres de la U\.A\.N\.L\./);
+  await expect(altText).not.toHaveValue(/9\. León/);
+
+  await generator.locator('#standings-range').selectOption('bottom');
+  await expect(altText).toHaveValue(/9\. León.*18\. Gallos Blancos de Querétaro/);
+  await expect(altText).not.toHaveValue(/8\. Tigres de la U\.A\.N\.L\./);
+});
+
 test('bloquea la descarga hasta confirmar el render actual', async ({
   page,
 }) => {
@@ -249,6 +275,131 @@ test('prepara resultados de jornada como hilo de X sin rebasar 280 caracteres', 
   await expect(generator.locator('#x-reply')).toHaveValue(/utm_source=x/);
 });
 
+test('reserva el enlace para la respuesta en cualquier hilo de X', async ({
+  page,
+}) => {
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  await generator.evaluate(element => {
+    const platform = element.shadowRoot?.querySelector(
+      '#platform',
+    ) as HTMLSelectElement;
+    platform.value = 'x';
+    platform.dispatchEvent(
+      new Event('change', { bubbles: true, composed: true }),
+    );
+  });
+  await expect(generator.locator('#x-post')).not.toHaveValue(/https?:\/\//);
+  await expect(generator.locator('#x-reply')).toHaveValue(/utm_source=x/);
+  await expect(
+    generator.getByRole('button', { name: 'Preparar publicación en X' }),
+  ).toBeVisible();
+});
+
+test('ofrece cuatro enfoques editoriales y restablece el borrador al cambiarlo', async ({
+  page,
+}) => {
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  const copy = generator.getByLabel('Texto listo para publicar');
+  const tone = generator.locator('#copy-tone');
+  const template = generator.locator('#template');
+  for (const templateValue of [
+    'round-preview',
+    'day-preview',
+    'day-results',
+    'standings',
+    'round-results',
+    'match-summary',
+  ]) {
+    await template.selectOption(templateValue);
+    const copies: string[] = [];
+    for (const value of ['informative', 'rhythm', 'data', 'conversation']) {
+      await tone.selectOption(value);
+      copies.push(await copy.inputValue());
+    }
+    expect(new Set(copies).size).toBe(4);
+  }
+
+  await template.selectOption('round-preview');
+  await tone.selectOption('data');
+  await expect(copy).toHaveValue(/Jornada 1 en números/);
+  await tone.selectOption('conversation');
+  await expect(copy).toHaveValue(/¿Qué partido/);
+
+  await copy.fill('Borrador editorial manual');
+  await tone.selectOption('informative');
+  await expect(copy).not.toHaveValue('Borrador editorial manual');
+});
+
+test('comparte el PNG y el copy de Instagram cuando el dispositivo lo admite', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: (data: ShareData) => Boolean(data.files?.length),
+    });
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data: ShareData) => {
+        (
+          window as typeof window & { sharedInstagramData?: ShareData }
+        ).sharedInstagramData = data;
+      },
+    });
+  });
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  const share = generator.getByRole('button', {
+    name: 'Compartir para Instagram',
+  });
+  await expect(share).toBeEnabled();
+  await share.click();
+  await expect(
+    generator.getByText('Se abrió el menú para compartir.'),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const data = (
+          window as typeof window & { sharedInstagramData?: ShareData }
+        ).sharedInstagramData;
+        return {
+          hasCopy: Boolean(data?.text),
+          fileType: data?.files?.[0]?.type,
+        };
+      }),
+    )
+    .toEqual({ hasCopy: true, fileType: 'image/png' });
+});
+
+test('conserva el fallback manual cuando el navegador no puede compartir archivos', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: undefined,
+    });
+  });
+  await mountSocialFixture(page, createFixtures());
+  const generator = page.locator('social-post-generator');
+  await expect(
+    generator.getByText('Para compartir la imagen desde Instagram'),
+  ).toBeVisible();
+  await expect(
+    generator.getByRole('button', { name: 'Descargar PNG' }),
+  ).toBeVisible();
+  await expect(
+    generator.getByRole('button', { name: 'Copiar texto' }),
+  ).toBeVisible();
+});
+
 test('prioriza un clásico cuando los resultados no caben en el post de X', async ({
   page,
 }) => {
@@ -306,7 +457,9 @@ test('permite descargar el resumen final de un partido', async ({ page }) => {
   await generator.locator('#match').selectOption({ index: 1 });
   await expect
     .poll(() =>
-      generator.locator('canvas').evaluate(canvas => (canvas as HTMLCanvasElement).toDataURL()),
+      generator
+        .locator('canvas')
+        .evaluate(canvas => (canvas as HTMLCanvasElement).toDataURL()),
     )
     .not.toBe(firstPreview);
 });

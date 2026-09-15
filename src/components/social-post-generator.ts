@@ -17,7 +17,7 @@ import {
   buildRenderResult,
   buildSocialCopy,
   buildTrackingUrl,
-  buildXRoundResultsThread,
+  buildXThreadCopy,
   dateKey,
   defaultSocialJornada,
   dailyMatchesVariant,
@@ -31,6 +31,7 @@ import {
   selectStandingsRange,
   selectTemplateMatches,
   SocialImageInput,
+  SocialCopyTone,
   SocialPlatform,
   templateLabel,
 } from '../social/social-utils.js';
@@ -152,6 +153,68 @@ export class SocialPostGenerator extends LitElement {
       color: #86efac !important;
       font-weight: 700;
     }
+    .copy-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin: 16px 0 4px;
+    }
+    .copy-toolbar label {
+      margin: 0 0 7px;
+    }
+    .copy-toolbar md-outlined-button {
+      width: auto;
+      margin: 0;
+    }
+    .instagram-workflow {
+      margin: 16px 0;
+      padding: 14px;
+      border: 1px solid rgba(244, 114, 182, 0.42);
+      border-radius: 12px;
+      background: linear-gradient(
+        135deg,
+        rgba(190, 24, 93, 0.2),
+        rgba(88, 28, 135, 0.18)
+      );
+    }
+    .instagram-workflow h4 {
+      margin: 0 0 6px;
+      color: #fce7f3;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+    }
+    .instagram-workflow p {
+      margin-bottom: 0;
+    }
+    .instagram-workflow md-filled-button {
+      --md-filled-button-container-color: #fce7f3;
+      --md-filled-button-label-text-color: #500724;
+    }
+    .x-workflow {
+      margin: 16px 0;
+      padding: 14px;
+      border: 1px solid rgba(96, 165, 250, 0.38);
+      border-radius: 12px;
+      background: linear-gradient(
+        135deg,
+        rgba(30, 64, 175, 0.2),
+        rgba(2, 6, 23, 0.28)
+      );
+    }
+    .x-workflow h4 {
+      margin: 0 0 6px;
+      color: #dbeafe;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+    }
+    .x-workflow p {
+      margin-bottom: 0;
+    }
+    .x-workflow md-filled-button {
+      --md-filled-button-container-color: #dbeafe;
+      --md-filled-button-label-text-color: #0f172a;
+    }
     .presentation-options {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -230,6 +293,12 @@ export class SocialPostGenerator extends LitElement {
         border-right: 0;
         border-bottom: 1px solid rgba(203, 213, 225, 0.14);
       }
+      .copy-toolbar {
+        grid-template-columns: 1fr;
+      }
+      .copy-toolbar md-outlined-button {
+        width: 100%;
+      }
     }
   `;
 
@@ -242,6 +311,8 @@ export class SocialPostGenerator extends LitElement {
   @state() private dateSelection?: string;
   @state() private matchId?: number;
   @state() private copyStatus = '';
+  @state() private copyTone: SocialCopyTone = 'informative';
+  @state() private copyDraft = '';
   @state() private isDrawing = true;
   @state() private presentation: SocialPresentationOptions = {
     ...DEFAULT_SOCIAL_PRESENTATION,
@@ -257,6 +328,7 @@ export class SocialPostGenerator extends LitElement {
 
   override firstUpdated() {
     this._syncSelection();
+    this._resetCopyDraft();
     this._requestDraw();
   }
 
@@ -274,12 +346,29 @@ export class SocialPostGenerator extends LitElement {
     ) {
       this._requestDraw();
     }
+    if (
+      changed.has('matchesList') ||
+      changed.has('table') ||
+      changed.has('template') ||
+      changed.has('platform') ||
+      changed.has('jornada') ||
+      changed.has('dateSelection') ||
+      changed.has('matchId') ||
+      changed.has('copyTone')
+    ) {
+      this._resetCopyDraft();
+    }
   }
 
   override render() {
     const input = this._input();
     const result = buildRenderResult(input);
-    const xThread = buildXRoundResultsThread(input);
+    const xThread = buildXThreadCopy(input, this.copyTone);
+    const generatedCopy =
+      this.platform === 'x'
+        ? xThread.post
+        : buildSocialCopy(input, this.platform, { tone: this.copyTone });
+    const copy = this.copyDraft || generatedCopy;
     const isDay = DAY_TEMPLATES.has(this.template);
     const isMatchSummary = this.template === 'match-summary';
     const dates = this._datesForJornada();
@@ -401,13 +490,13 @@ export class SocialPostGenerator extends LitElement {
                         value="top"
                         ?selected=${this.presentation.standingsRange === 'top'}
                       >
-                        Parte alta · 1–10
+                        Parte alta · 1–8 (zona de liguilla)
                       </option>
                       <option
                         value="bottom"
                         ?selected=${this.presentation.standingsRange === 'bottom'}
                       >
-                        Parte baja · 11–18
+                        Parte baja · 9–18 (fuera de liguilla)
                       </option>
                     </select>`
                 : ''
@@ -436,18 +525,6 @@ export class SocialPostGenerator extends LitElement {
                 @change=${this._onPresentationToggle}
               />Cuadrícula</label
             >
-            ${
-              this.template === 'standings'
-                ? html`<label
-                    ><input
-                      data-presentation="showUpdatedAt"
-                      type="checkbox"
-                      .checked=${this.presentation.showUpdatedAt}
-                      @change=${this._onPresentationToggle}
-                    />Hora de corte</label
-                  >`
-                : ''
-            }
             <p class="theme-label">Tema: ${SOCIAL_CONFIG.theme}</p>
           </div>
           <md-filled-button
@@ -462,26 +539,79 @@ export class SocialPostGenerator extends LitElement {
           </md-filled-button>
           ${result.errors.length ? html`<p class="validation">${result.errors[0]}</p>` : ''}
           <div class="copy-panel">
+            <div class="copy-toolbar">
+              <div>
+                <label for="copy-tone">Enfoque del copy</label>
+                <select id="copy-tone" @change=${this._onCopyToneChange}>
+                  <option
+                    value="informative"
+                    ?selected=${this.copyTone === 'informative'}
+                  >
+                    Informativo
+                  </option>
+                  <option
+                    value="rhythm"
+                    ?selected=${this.copyTone === 'rhythm'}
+                  >
+                    Ritmo
+                  </option>
+                  <option value="data" ?selected=${this.copyTone === 'data'}>
+                    Datos
+                  </option>
+                  <option
+                    value="conversation"
+                    ?selected=${this.copyTone === 'conversation'}
+                  >
+                    Conversación
+                  </option>
+                </select>
+              </div>
+              <md-outlined-button @click=${this._resetCopyDraft}
+                ><md-icon slot="icon">refresh</md-icon
+                >Restablecer</md-outlined-button
+              >
+            </div>
             ${
-              this.platform === 'x' && this.template === 'round-results'
+              this.platform === 'x'
                 ? html`
                     <h3>Hilo para X</h3>
-                    <p>Publica el primer texto y responde con el segundo.</p>
+                    <p>
+                      La imagen y el copy van primero; el enlace queda siempre
+                      como respuesta.
+                    </p>
                     <label for="x-post"
-                      >Post 1 · Resultados (${xThread.post.length}/280)</label
+                      >Post 1 · Imagen y copy (${copy.length}/280)</label
                     >
                     <textarea
                       id="x-post"
                       aria-label="Primer post para X"
-                      readonly
-                      .value=${xThread.post}
+                      .value=${copy}
+                      @input=${this._onCopyDraftInput}
                     ></textarea>
                     <md-outlined-button
-                      @click=${() => this._copy(xThread.post, 'Primer post copiado.')}
+                      @click=${() => this._copy(copy, 'Primer post copiado.')}
                       ><md-icon slot="icon">content_copy</md-icon>Copiar post
                       1</md-outlined-button
                     >
-                    <label for="x-reply">Post 2 · Enlace</label>
+                    <div class="x-workflow">
+                      <h4>Publicación asistida</h4>
+                      <p>
+                        Abre X con el copy, descarga el PNG y deja el enlace
+                        listo para responder después de publicar.
+                      </p>
+                      <md-filled-button
+                        ?disabled=${
+                          result.errors.length > 0 ||
+                          this.isDrawing ||
+                          this.committedDrawVersion !== this.drawVersion ||
+                          copy.length > 280
+                        }
+                        @click=${() => this._prepareXThread(copy, xThread.reply)}
+                        ><md-icon slot="icon">open_in_new</md-icon>Preparar
+                        publicación en X</md-filled-button
+                      >
+                    </div>
+                    <label for="x-reply">Respuesta · Enlace</label>
                     <textarea
                       id="x-reply"
                       aria-label="Segundo post para X"
@@ -489,23 +619,59 @@ export class SocialPostGenerator extends LitElement {
                       .value=${xThread.reply}
                     ></textarea>
                     <md-outlined-button
-                      @click=${() => this._copy(xThread.reply, 'Segundo post copiado.')}
-                      ><md-icon slot="icon">content_copy</md-icon>Copiar post
-                      2</md-outlined-button
+                      @click=${() => this._copy(xThread.reply, 'Respuesta con enlace copiada.')}
+                      ><md-icon slot="icon">content_copy</md-icon>Copiar
+                      respuesta</md-outlined-button
                     >
+                    ${
+                      copy.length > 280
+                        ? html`<p class="validation">
+                            El copy principal rebasa 280 caracteres. Edita o
+                            reduce el contenido antes de abrir X.
+                          </p>`
+                        : ''
+                    }
                   `
                 : html`
                     <h3>Texto para publicar</h3>
                     <textarea
                       aria-label="Texto listo para publicar"
-                      readonly
-                      .value=${buildSocialCopy(input, this.platform)}
+                      .value=${copy}
+                      @input=${this._onCopyDraftInput}
                     ></textarea>
                     <md-outlined-button
-                      @click=${() => this._copy(buildSocialCopy(input, this.platform), 'Texto copiado.')}
+                      @click=${() => this._copy(copy, 'Texto copiado.')}
                       ><md-icon slot="icon">content_copy</md-icon>Copiar
                       texto</md-outlined-button
                     >
+                    ${
+                      this._supportsInstagramShare()
+                        ? html`
+                            <div class="instagram-workflow">
+                              <h4>Compartir para Instagram</h4>
+                              <p>
+                                Abre el menú de compartir del dispositivo con el
+                                PNG y este copy. Instagram decide si conserva el
+                                texto.
+                              </p>
+                              <md-filled-button
+                                ?disabled=${
+                                  result.errors.length > 0 ||
+                                  this.isDrawing ||
+                                  this.committedDrawVersion !== this.drawVersion
+                                }
+                                @click=${() => this._shareInstagram(copy)}
+                                ><md-icon slot="icon">ios_share</md-icon
+                                >Compartir para Instagram</md-filled-button
+                              >
+                            </div>
+                          `
+                        : html`<p class="hint">
+                            Para compartir la imagen desde Instagram, usa un
+                            navegador móvil compatible. Puedes descargar el PNG
+                            y copiar este texto como alternativa.
+                          </p>`
+                    }
                   `
             }
             <label for="alt-text">Descripción alternativa</label>
@@ -618,6 +784,34 @@ export class SocialPostGenerator extends LitElement {
   private _onPlatformChange(event: Event) {
     this.platform = (event.target as HTMLSelectElement).value as SocialPlatform;
   }
+  private _onCopyToneChange(event: Event) {
+    this.copyTone = (event.target as HTMLSelectElement).value as SocialCopyTone;
+  }
+  private _onCopyDraftInput(event: Event) {
+    this.copyDraft = (event.target as HTMLTextAreaElement).value;
+  }
+  private _generatedCopy(input = this._input()) {
+    const xThread = buildXThreadCopy(input, this.copyTone);
+    return this.platform === 'x'
+      ? xThread.post
+      : buildSocialCopy(input, this.platform, { tone: this.copyTone });
+  }
+  private _resetCopyDraft = () => {
+    this.copyDraft = this._generatedCopy();
+  };
+  private _supportsInstagramShare() {
+    if (
+      this.platform !== 'instagram' ||
+      !navigator.share ||
+      !navigator.canShare ||
+      typeof File === 'undefined'
+    ) {
+      return false;
+    }
+    return navigator.canShare({
+      files: [new File([''], 'liga-mx-hrlv.png', { type: 'image/png' })],
+    });
+  }
   private _onStandingsRangeChange(event: Event) {
     this.presentation = {
       ...this.presentation,
@@ -630,7 +824,7 @@ export class SocialPostGenerator extends LitElement {
     const presentationKey = input.dataset.presentation as
       | keyof Pick<
           SocialPresentationOptions,
-          'showDomain' | 'showHandle' | 'showGrid' | 'showUpdatedAt'
+          'showDomain' | 'showHandle' | 'showGrid'
         >
       | undefined;
     if (!presentationKey) return;
@@ -719,7 +913,7 @@ export class SocialPostGenerator extends LitElement {
   private async _drawHeader(
     context: CanvasRenderingContext2D,
     title: string,
-    subtitle: string,
+    subtitle?: string,
   ) {
     const { safeInset, width } = SOCIAL_CONFIG;
     context.fillStyle = SOCIAL_COLORS.primary;
@@ -732,13 +926,15 @@ export class SocialPostGenerator extends LitElement {
       context.font = `800 ${titleSize}px system-ui, sans-serif`;
     }
     context.fillText(title, safeInset + 30, 122);
-    context.fillStyle = SOCIAL_COLORS.muted;
-    context.font = '700 23px system-ui, sans-serif';
-    context.fillText(
-      subtitle.toLocaleUpperCase(SOCIAL_CONFIG.locale),
-      safeInset + 30,
-      158,
-    );
+    if (subtitle) {
+      context.fillStyle = SOCIAL_COLORS.muted;
+      context.font = '700 23px system-ui, sans-serif';
+      context.fillText(
+        subtitle.toLocaleUpperCase(SOCIAL_CONFIG.locale),
+        safeInset + 30,
+        158,
+      );
+    }
     const logo = await this._loadImage(SOCIAL_CONFIG.logoPath);
     if (logo) context.drawImage(logo, width - safeInset - 54, 72, 54, 54);
     context.textAlign = 'right';
@@ -1359,9 +1555,6 @@ export class SocialPostGenerator extends LitElement {
     await this._drawHeader(
       context,
       'TABLA GENERAL',
-      presentation.showUpdatedAt
-        ? `ACTUALIZADA ${new Intl.DateTimeFormat(SOCIAL_CONFIG.locale, { dateStyle: 'medium', timeStyle: 'short', timeZone: SOCIAL_CONFIG.timezone }).format(new Date())}`
-        : `RANGO ${presentation.standingsRange === 'all' ? '1–18' : presentation.standingsRange === 'top' ? '1–10' : '11–18'}`,
     );
     const top = 224;
     context.fillStyle = SOCIAL_COLORS.primary;
@@ -1652,6 +1845,58 @@ export class SocialPostGenerator extends LitElement {
         'No se pudo copiar automáticamente; selecciona el texto y cópialo.';
     }
   }
+  private async _prepareXThread(post: string, reply: string) {
+    const composer = window.open('about:blank', '_blank');
+    if (!composer) {
+      this.copyStatus =
+        'El navegador bloqueó la ventana de X. Permite ventanas emergentes e inténtalo de nuevo.';
+      return;
+    }
+    composer.opener = null;
+    composer.location.href = `https://x.com/intent/post?text=${encodeURIComponent(post)}`;
+    let linkCopied = true;
+    try {
+      await navigator.clipboard.writeText(reply);
+    } catch {
+      linkCopied = false;
+    }
+    await this._download();
+    this.copyStatus = linkCopied
+      ? 'X se abrió, el PNG se descargó y la respuesta con enlace quedó copiada. Adjunta la imagen, publica y pega la respuesta.'
+      : 'X se abrió y el PNG se descargó. Copia la respuesta con enlace manualmente, publica y pégala como respuesta.';
+  }
+  private async _shareInstagram(copy: string) {
+    const result = buildRenderResult(this._input());
+    const canvas = this.canvas;
+    if (!canvas || result.errors.length || !this._supportsInstagramShare()) {
+      this.copyStatus =
+        'Este navegador no puede compartir el PNG. Descárgalo y copia el texto para publicar manualmente.';
+      return;
+    }
+    const dataUrl = canvas.toDataURL('image/png');
+    const binary = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    const file = new File([bytes], result.filename, { type: 'image/png' });
+    if (!navigator.canShare({ files: [file] })) {
+      this.copyStatus =
+        'Este dispositivo no acepta el PNG en el menú de compartir. Descárgalo y copia el texto para publicar manualmente.';
+      return;
+    }
+    try {
+      await navigator.share({
+        title: 'Liga MX HRLV',
+        text: copy,
+        files: [file],
+      });
+      this.copyStatus =
+        'Se abrió el menú para compartir. Confirma la publicación desde Instagram.';
+    } catch (error) {
+      this.copyStatus =
+        error instanceof DOMException && error.name === 'AbortError'
+          ? 'Compartir cancelado.'
+          : 'No se pudo abrir el menú de compartir. Descarga el PNG y copia el texto para publicar manualmente.';
+    }
+  }
   private async _download() {
     await this.updateComplete;
     const drawVersion = this.drawVersion;
@@ -1666,14 +1911,15 @@ export class SocialPostGenerator extends LitElement {
     const result = buildRenderResult(input);
     const canvas = this.canvas;
     if (!canvas || result.errors.length) return;
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = result.filename;
-      anchor.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
-    }, 'image/png');
+    const blob = await new Promise<Blob | null>(resolve =>
+      canvas.toBlob(resolve, 'image/png'),
+    );
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = result.filename;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }
