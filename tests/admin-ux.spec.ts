@@ -163,17 +163,23 @@ for (const scenario of undoScenarios) {
     expect(confirmationMessage).toBe(
       `¿Seguro que deseas deshacer ${scenario.undoLabel.replace('Deshacer ', '')}?`,
     );
-    const updatedEvents = await page.evaluate(
+    const updates = await page.evaluate(
       () =>
         (
           window as typeof window & {
-            phaseUpdates?: Record<string, FixtureEvent[]>;
+            phaseUpdates?: Record<string, unknown>;
           }
-        ).phaseUpdates?.['/matches/1/events'],
+        ).phaseUpdates,
     );
+    const updatedEvents = updates?.['/matches/1/events'];
     expect(updatedEvents).toEqual(events.slice(0, -1));
     if (scenario.phaseCount > 1) {
       expect(updatedEvents).toContainEqual(nonPhaseEvent);
+    } else {
+      expect(updates).toMatchObject({
+        '/matches/1/golLocal': null,
+        '/matches/1/golVisitante': null,
+      });
     }
 
     await applyPhaseUpdate(page);

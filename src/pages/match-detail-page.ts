@@ -1257,6 +1257,10 @@ export class MatchDetailPage extends LitElement {
     updates[`/matches/${this.match.idMatch}/events`] = (
       this.match.events || []
     ).filter(event => event.id !== latestPhaseEvent.id);
+    if (latestPhaseEvent.phase === 'start') {
+      updates[`/matches/${this.match.idMatch}/golLocal`] = null;
+      updates[`/matches/${this.match.idMatch}/golVisitante`] = null;
+    }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
