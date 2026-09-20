@@ -1063,27 +1063,31 @@ export class MatchDetailPage extends LitElement {
     const hasSecondHalf = phaseEvents.some(
       event => event.phase === 'secondHalf',
     );
+    const latestPhaseEvent = phaseEvents[phaseEvents.length - 1];
 
     if (hasNoPhaseEvents) {
       return this._renderStartMatchButton();
     }
 
     if (hasStartedMatch && !halftimeEvent) {
-      return this._renderHalftimeControls(
-        halftimeAddedTimeValue,
-        halftimeEvent,
-      );
+      return html`
+        ${this._renderHalftimeControls(halftimeAddedTimeValue, halftimeEvent)}
+        ${this._renderUndoPhaseButton(latestPhaseEvent)}
+      `;
     }
 
     if (halftimeEvent && !secondHalfEvent) {
-      return this._renderSecondHalfControls(halftimeAddedTimeValue);
+      return html`
+        ${this._renderSecondHalfControls(halftimeAddedTimeValue)}
+        ${this._renderUndoPhaseButton(latestPhaseEvent)}
+      `;
     }
 
     if (hasSecondHalf) {
-      return this._renderFulltimeControls(
-        fulltimeAddedTimeValue,
-        fulltimeEvent,
-      );
+      return html`
+        ${this._renderFulltimeControls(fulltimeAddedTimeValue, fulltimeEvent)}
+        ${this._renderUndoPhaseButton(latestPhaseEvent)}
+      `;
     }
 
     return null;
@@ -1183,6 +1187,22 @@ export class MatchDetailPage extends LitElement {
     `;
   }
 
+  private _renderUndoPhaseButton(phaseEvent: PhaseMatchEvent) {
+    if (!this._canUndoPhaseEvent(phaseEvent)) return null;
+    const phaseLabel = this._phaseLabel(phaseEvent.phase);
+    const label = `Deshacer ${phaseLabel}`;
+    return html`
+      <md-icon-button
+        id="undoPhaseButton"
+        @click=${() => this._undoLastPhaseEvent()}
+        title=${label}
+        aria-label=${label}
+      >
+        <md-icon>undo</md-icon>
+      </md-icon-button>
+    `;
+  }
+
   private startMatch() {
     if (!this.isAdmin) return;
     if (!this.match) return;
@@ -1217,6 +1237,30 @@ export class MatchDetailPage extends LitElement {
     const updates: FirebaseUpdates = {};
     updates[`/matches/${this.match.idMatch}/events`] =
       this._phaseEventsWithUpdate(phase, minute, addedTime);
+    this.dispatchEvent(dispatchEventMatchUpdated(updates));
+  }
+
+  private _undoLastPhaseEvent() {
+    if (!this.isAdmin) return;
+    if (!this.match) return;
+    const phaseEvents = getPhaseEvents(this.match.events || []);
+    const latestPhaseEvent = phaseEvents[phaseEvents.length - 1];
+    if (!latestPhaseEvent) return;
+    if (!this._canUndoPhaseEvent(latestPhaseEvent)) return;
+    const phaseLabel = this._phaseLabel(latestPhaseEvent.phase);
+    const confirmed = globalThis.confirm(
+      `¿Seguro que deseas deshacer ${phaseLabel}?`,
+    );
+    if (!confirmed) return;
+
+    const updates: FirebaseUpdates = {};
+    updates[`/matches/${this.match.idMatch}/events`] = (
+      this.match.events || []
+    ).filter(event => event.id !== latestPhaseEvent.id);
+    if (latestPhaseEvent.phase === 'start') {
+      updates[`/matches/${this.match.idMatch}/golLocal`] = null;
+      updates[`/matches/${this.match.idMatch}/golVisitante`] = null;
+    }
     this.dispatchEvent(dispatchEventMatchUpdated(updates));
   }
 
@@ -1260,6 +1304,24 @@ export class MatchDetailPage extends LitElement {
     return getPhaseEvents(this.match?.events || []).find(
       event => event.phase === phase,
     );
+  }
+
+  private _phaseLabel(phase: PhaseMatchEvent['phase']): string {
+    switch (phase) {
+      case 'start':
+        return 'inicio del partido';
+      case 'halftime':
+        return 'medio tiempo';
+      case 'secondHalf':
+        return 'inicio de la segunda mitad';
+      case 'fulltime':
+        return 'fin del partido';
+    }
+  }
+
+  private _canUndoPhaseEvent(phaseEvent: PhaseMatchEvent): boolean {
+    if (phaseEvent.phase !== 'start') return true;
+    return !(this.match?.events || []).some(event => event.type !== 'phase');
   }
 
   private _isFinalSecondLeg(): boolean {
