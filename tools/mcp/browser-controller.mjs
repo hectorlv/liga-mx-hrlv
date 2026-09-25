@@ -359,8 +359,12 @@ async function setControlValue(locator, requestedValue, action) {
         resolvedValue = option.getAttribute('value') || '';
       }
       element.value = resolvedValue;
-      element.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+      element.dispatchEvent(
+        new globalThis.Event('input', { bubbles: true, composed: true }),
+      );
+      element.dispatchEvent(
+        new globalThis.Event('change', { bubbles: true, composed: true }),
+      );
     },
     { value: requestedValue, chooseOption: action === 'select' },
   );

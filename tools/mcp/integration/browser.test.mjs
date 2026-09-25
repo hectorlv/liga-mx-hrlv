@@ -11,7 +11,17 @@ const FIXTURE = `<!doctype html>
   <head><meta charset="utf-8"><title>Fixture Liga MX</title></head>
   <body>
     <liga-mx-hrlv></liga-mx-hrlv>
-    <label>Minuto <input aria-label="Minuto"></label>
+    <goals-card>
+      <label>Minuto <input aria-label="Minuto"></label>
+      <md-outlined-select aria-label="Anotador" role="combobox">
+        <md-select-option value="9">9- Delantero</md-select-option>
+      </md-outlined-select>
+      <button type="button">Agregar</button>
+    </goals-card>
+    <cards-card>
+      <label>Minuto <input aria-label="Minuto"></label>
+      <button type="button">Agregar Tarjeta</button>
+    </cards-card>
     <button type="button" aria-label="Acción segura">Acción segura</button>
     <button type="button">Guardar</button>
     <a href="https://example.com">Sitio externo</a>
@@ -61,15 +71,37 @@ test('controla una página local, conserva perfil y aplica barreras', async () =
       action: 'fill',
       by: 'label',
       name: 'Minuto',
+      scope: 'goals',
       value: '45',
     });
-    assert.equal(await first.page.getByLabel('Minuto').inputValue(), '45');
+    assert.equal(
+      await first.page.locator('goals-card').getByLabel('Minuto').inputValue(),
+      '45',
+    );
+    assert.equal(
+      await first.page.locator('cards-card').getByLabel('Minuto').inputValue(),
+      '',
+    );
+    await first.edit({
+      action: 'select',
+      by: 'label',
+      name: 'Anotador',
+      scope: 'goals',
+      value: '9- Delantero',
+    });
+    assert.equal(
+      await first.page
+        .locator('md-outlined-select')
+        .evaluate(element => element.value),
+      '9',
+    );
     await assert.rejects(
       first.edit({
         action: 'click',
         by: 'role',
         role: 'button',
-        name: 'Guardar',
+        name: 'Agregar',
+        scope: 'goals',
       }),
       /liga_commit/u,
     );
