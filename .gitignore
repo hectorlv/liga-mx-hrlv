@@ -1,6 +1,8 @@
 ## editors
 /.idea
 /.vscode
+/.codex/
+/.playwright-mcp/
 
 ## system files
 .DS_Store
