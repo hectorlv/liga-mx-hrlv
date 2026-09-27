@@ -25,7 +25,33 @@ const FIXTURE = `<!doctype html>
     <button type="button" aria-label="Acción segura">Acción segura</button>
     <button type="button">Guardar</button>
     <a href="https://example.com">Sitio externo</a>
+    <md-filled-button id="lineup-save"><md-icon slot="icon">save</md-icon>Guardar Alineaciones</md-filled-button>
+    <span id="save-label" hidden>Guardar marcador</span>
+    <button aria-labelledby="save-label"><span>etiqueta-hija</span></button>
+    <div role="button" aria-labelledby="save-label"><button aria-label="Acción anidada"><span>boton-hijo-etiquetado</span></button></div>
+    <a href="https://example.com"><span role="button" aria-label="Acción aparente">enlace-hijo</span></a>
+    <a href="/?tab=Calendario"><span>enlace-local-hijo</span></a>
+    <button aria-label="Acción segura con hijo"><span>hijo-seguro</span></button>
+    <label><input type="checkbox" aria-label="Casilla segura">casilla-hija</label>
+    <div id="auth-controls"></div>
+    <div id="login-panel" hidden>
+      <label>Correo electrónico <input type="email"></label>
+      <label>Contraseña <input type="password"></label>
+      <button id="login-submit">Ingresar</button>
+    </div>
     <script>
+      customElements.define('md-filled-button', class extends HTMLElement {
+        constructor() {
+          super();
+          this.attachShadow({ mode: 'open' }).innerHTML = '<button><slot name="icon"></slot><slot></slot></button>';
+        }
+      });
+      customElements.define('md-icon', class extends HTMLElement {
+        constructor() {
+          super();
+          this.attachShadow({ mode: 'open' }).innerHTML = '<slot></slot>';
+        }
+      });
       customElements.define('liga-mx-hrlv', class extends HTMLElement {
         constructor() {
           super();
@@ -34,6 +60,40 @@ const FIXTURE = `<!doctype html>
           this.isAdmin = false;
         }
       });
+      window.writeClicks = 0;
+      window.safeClicks = 0;
+      window.authEvents = [];
+      document.querySelector('#lineup-save').addEventListener('click', () => { window.writeClicks += 1; });
+      document.querySelector('[aria-labelledby="save-label"]').addEventListener('click', () => { window.writeClicks += 1; });
+      document.querySelector('div[aria-labelledby="save-label"]').addEventListener('click', () => { window.writeClicks += 1; });
+      document.querySelector('[aria-label="Acción segura con hijo"]').addEventListener('click', () => { window.safeClicks += 1; });
+      window.renderAuth = () => {
+        const app = document.querySelector('liga-mx-hrlv');
+        const auth = document.querySelector('#auth-controls');
+        auth.innerHTML = app.user
+          ? '<span>' + (app.isAdmin ? 'Admin' : 'Sin permisos') + '</span><button>Cerrar sesión</button>'
+          : '<button>Abrir acceso admin</button>';
+        auth.querySelector('button').onclick = () => {
+          if (app.user) {
+            window.authEvents.push('logout');
+            app.user = null;
+            app.isAdmin = false;
+            window.renderAuth();
+          } else {
+            window.authEvents.push('open-login');
+            document.querySelector('#login-panel').hidden = false;
+          }
+        };
+      };
+      document.querySelector('#login-submit').onclick = () => {
+        const app = document.querySelector('liga-mx-hrlv');
+        app.user = { uid: 'fixture-admin' };
+        app.isAdmin = true;
+        window.authEvents.push('submit-login');
+        document.querySelector('#login-panel').hidden = true;
+        window.renderAuth();
+      };
+      window.renderAuth();
     </script>
   </body>
 </html>`;
@@ -114,6 +174,85 @@ test('controla una página local, conserva perfil y aplica barreras', async () =
       }),
       /no abre enlaces/u,
     );
+    // No production services exist in this fixture. Simulate an admin profile
+    // and prove child/slot targets cannot reach the write handlers or links.
+    await first.page.evaluate(() => {
+      const app = document.querySelector('liga-mx-hrlv');
+      app.user = { uid: 'fixture-admin' };
+      app.isAdmin = true;
+      window.renderAuth();
+    });
+    for (const name of ['save', 'etiqueta-hija', 'boton-hijo-etiquetado']) {
+      await assert.rejects(
+        first.edit({ action: 'click', by: 'text', name }),
+        /liga_commit/u,
+      );
+    }
+    await assert.rejects(
+      first.edit({ action: 'check', by: 'text', name: 'save' }),
+      /liga_commit/u,
+    );
+    for (const name of ['enlace-hijo', 'enlace-local-hijo']) {
+      await assert.rejects(
+        first.edit({ action: 'click', by: 'text', name }),
+        /no abre enlaces|fuera del origen local/u,
+      );
+    }
+    assert.equal(await first.page.evaluate(() => window.writeClicks), 0);
+    assert.equal(
+      new URL(first.page.url()).origin,
+      options.baseUrl.slice(0, -1),
+    );
+    await first.edit({ action: 'click', by: 'text', name: 'hijo-seguro' });
+    assert.equal(await first.page.evaluate(() => window.safeClicks), 1);
+    await first.edit({ action: 'check', by: 'label', name: 'Casilla segura' });
+    assert.equal(
+      await first.page.getByLabel('Casilla segura').isChecked(),
+      true,
+    );
+
+    const previousEmail = process.env.LIGA_MX_ADMIN_EMAIL;
+    const previousPassword = process.env.LIGA_MX_ADMIN_PASSWORD;
+    process.env.LIGA_MX_ADMIN_EMAIL = 'fixture@example.com';
+    process.env.LIGA_MX_ADMIN_PASSWORD = 'fixture-password';
+    try {
+      await first.page.evaluate(() => {
+        const app = document.querySelector('liga-mx-hrlv');
+        app.user = { uid: 'fixture-non-admin' };
+        app.isAdmin = false;
+        window.renderAuth();
+      });
+      const loggedIn = await first.loginAdmin();
+      assert.equal(loggedIn.isAdmin, true);
+      assert.deepEqual(await first.page.evaluate(() => window.authEvents), [
+        'logout',
+        'open-login',
+        'submit-login',
+      ]);
+      // An existing admin is reused, without signing out or reopening login.
+      await first.loginAdmin();
+      assert.equal(
+        await first.page.evaluate(() => window.authEvents.length),
+        3,
+      );
+      await first.logout();
+      assert.equal((await first.adminState()).authenticated, false);
+      await first.loginAdmin();
+      assert.deepEqual(await first.page.evaluate(() => window.authEvents), [
+        'logout',
+        'open-login',
+        'submit-login',
+        'logout',
+        'open-login',
+        'submit-login',
+      ]);
+    } finally {
+      if (previousEmail === undefined) delete process.env.LIGA_MX_ADMIN_EMAIL;
+      else process.env.LIGA_MX_ADMIN_EMAIL = previousEmail;
+      if (previousPassword === undefined)
+        delete process.env.LIGA_MX_ADMIN_PASSWORD;
+      else process.env.LIGA_MX_ADMIN_PASSWORD = previousPassword;
+    }
     const screenshot = await first.screenshot({ fullPage: false });
     assert.ok(Buffer.from(screenshot, 'base64').length > 100);
     await first.page.evaluate(() =>

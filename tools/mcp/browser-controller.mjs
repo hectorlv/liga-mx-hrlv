@@ -29,6 +29,36 @@ const VIEWPORTS = {
   mobile: { width: 390, height: 844 },
 };
 
+const ACTIONABLE_SELECTOR = [
+  'button',
+  'a[href]',
+  'input',
+  'select',
+  'textarea',
+  'summary',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="combobox"]',
+  '[role="textbox"]',
+  '[role="spinbutton"]',
+  'md-filled-button',
+  'md-outlined-button',
+  'md-text-button',
+  'md-elevated-button',
+  'md-tonal-button',
+  'md-icon-button',
+  'md-filled-icon-button',
+  'md-filled-tonal-icon-button',
+  'md-outlined-icon-button',
+  'md-checkbox',
+  'md-radio',
+  'md-switch',
+].join(',');
+
 function delay(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
@@ -172,6 +202,7 @@ export class LigaBrowserController {
 
   async edit({ action, by, name, role, scope, value }) {
     const page = await this.ensurePage();
+    await assertPageOrigin(page, this.baseUrl);
     assertSafeEditTarget({ action, name, role });
     const locator = this.locatorFor({ by, name, role, scope }).first();
     await locator.waitFor({ state: 'visible' });
@@ -183,11 +214,29 @@ export class LigaBrowserController {
       if (typeof value !== 'string') throw new Error('select requiere value.');
       await setControlValue(locator, value, 'select');
     } else if (action === 'check') {
-      await checkControl(locator);
+      const control = await resolveSafeClickControl(
+        page,
+        locator,
+        this.baseUrl,
+        action,
+      );
+      try {
+        await checkControl(control);
+      } finally {
+        await control.dispose();
+      }
     } else {
-      const href = await locator.getAttribute('href');
-      if (href) assertAllowedUrl(href, this.baseUrl);
-      await locator.click();
+      const control = await resolveSafeClickControl(
+        page,
+        locator,
+        this.baseUrl,
+        action,
+      );
+      try {
+        await control.click();
+      } finally {
+        await control.dispose();
+      }
       await assertPageOrigin(page, this.baseUrl);
     }
     return this.inspect();
@@ -205,6 +254,7 @@ export class LigaBrowserController {
     await assertPageOrigin(page, this.baseUrl);
     const alreadyAdmin = await this.adminState();
     if (alreadyAdmin.isAdmin) return this.inspect();
+    if (alreadyAdmin.authenticated) await this.logout();
 
     await page.getByRole('button', { name: 'Abrir acceso admin' }).click();
     await page.getByLabel('Correo electrónico').fill(email);
@@ -332,6 +382,121 @@ export class LigaBrowserController {
 
 export async function assertPageOrigin(page, baseUrl) {
   return assertAllowedUrl(page.url(), baseUrl);
+}
+
+async function resolveSafeClickControl(page, locator, baseUrl, action) {
+  const handle = await locator.evaluateHandle((element, selector) => {
+    for (
+      let current = element;
+      current;
+      current =
+        current.assignedSlot ||
+        current.parentElement ||
+        current.getRootNode().host
+    ) {
+      if (current.matches(selector)) return current;
+      if (current.tagName === 'LABEL' && current.control)
+        return current.control;
+    }
+    return null;
+  }, ACTIONABLE_SELECTOR);
+  const control = handle.asElement();
+  try {
+    if (!control)
+      throw new Error('liga_edit no encontró un control accionable seguro.');
+    const controls = page.locator(ACTIONABLE_SELECTOR);
+    const index = await controls.evaluateAll(
+      (elements, target) => elements.indexOf(target),
+      control,
+    );
+    if (index < 0) throw new Error('El control ya no está en la página.');
+    const resolved = controls.nth(index);
+    if (
+      !(await resolved.evaluate(
+        (element, target) => element === target,
+        control,
+      ))
+    ) {
+      throw new Error('El control cambió antes de validarlo.');
+    }
+    // Use Playwright's accessible role/name rather than the caller's label or
+    // the text of an icon. Keep the handle so the validated node is clicked.
+    const { role, name } = accessibleControl(await resolved.ariaSnapshot());
+    if (
+      ![
+        'button',
+        'link',
+        'checkbox',
+        'radio',
+        'switch',
+        'tab',
+        'combobox',
+        'textbox',
+        'spinbutton',
+      ].includes(role)
+    ) {
+      throw new Error('liga_edit no pudo validar el rol del control.');
+    }
+    assertSafeEditTarget({ action: 'click', name, role });
+    if (action === 'check' && !['checkbox', 'radio'].includes(role)) {
+      throw new Error('check requiere una casilla o un botón de selección.');
+    }
+    // Clicks also bubble through slots and shadow hosts. Check enclosing
+    // controls and links, including labels masked by an aria-label on a child.
+    const ancestors = await controls.evaluateAll((elements, element) => {
+      const result = [];
+      for (
+        let current = element;
+        current;
+        current =
+          current.assignedSlot ||
+          current.parentElement ||
+          current.getRootNode().host
+      ) {
+        const index = elements.indexOf(current);
+        if (index < 0) continue;
+        result.push({
+          index,
+          name: [
+            current.getAttribute('aria-label'),
+            current.getAttribute('title'),
+            current.textContent,
+          ]
+            .filter(Boolean)
+            .join(' '),
+          role: current.matches('a[href]')
+            ? 'link'
+            : current.getAttribute('role'),
+          href: current.getAttribute('href'),
+        });
+      }
+      return result;
+    }, control);
+    for (const ancestor of ancestors) {
+      if (ancestor.href !== null) assertAllowedUrl(ancestor.href, baseUrl);
+      const accessible = accessibleControl(
+        await controls.nth(ancestor.index).ariaSnapshot(),
+      );
+      assertSafeEditTarget({ action: 'click', ...accessible });
+      assertSafeEditTarget({
+        action: 'click',
+        name: ancestor.name,
+        role: ancestor.role,
+      });
+    }
+    return control;
+  } catch (error) {
+    await handle.dispose();
+    throw error;
+  }
+}
+
+function accessibleControl(snapshot) {
+  const root = /^- (\w+)(?: ("(?:[^"\\]|\\.)*"))?/u.exec(snapshot);
+  return {
+    role: root?.[1],
+    name: root?.[2] ? JSON.parse(root[2]) : '',
+  };
 }
 
 async function setControlValue(locator, requestedValue, action) {
