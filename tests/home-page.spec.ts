@@ -39,6 +39,14 @@ function phaseEvent(
   };
 }
 
+function withReadyLineups(match: Match): Match {
+  const starters = Array.from({ length: 11 }, (_, index) => ({
+    number: index + 1,
+    titular: true,
+  }));
+  return { ...match, lineupLocal: [...starters], lineupVisitor: [...starters] };
+}
+
 async function mountHomeFixture(
   page: Page,
   matches: Match[],
@@ -233,4 +241,89 @@ test('mantiene juntos los partidos simultáneos cuando no hay encuentros en vivo
     /América[\s\S]*Atlas/,
     /Cruz Azul[\s\S]*Pachuca/,
   ]);
+});
+
+test.describe('destacados con alineaciones listas', () => {
+  test.use({ timezoneId: 'America/Mexico_City' });
+
+  test('mantiene juntos los partidos de 21:05 y 21:10 al iniciar el primero', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-08-09T21:00:00-06:00') });
+    const first = withReadyLineups(createMatch(1, 'América', 'Atlas', '21:05'));
+    const second = withReadyLineups(createMatch(2, 'Cruz Azul', 'Pachuca', '21:10'));
+    await mountHomeFixture(page, [second, first]);
+
+    const highlights = page.getByLabel('Partidos destacados');
+    const links = highlights.getByRole('link');
+    await expect(links).toHaveCount(2);
+    await expect(links).toHaveText([
+      /América[\s\S]*21:05[\s\S]*Atlas/,
+      /Cruz Azul[\s\S]*21:10[\s\S]*Pachuca/,
+    ]);
+    await expect(highlights.getByText('Alineaciones listas', { exact: true })).toHaveCount(2);
+    await expect(links.nth(0)).toHaveAttribute('href', '?tab=Inicio&match=1');
+    await expect(links.nth(1)).toHaveAttribute('href', '?tab=Inicio&match=2');
+    await expect(page.locator('.hero')).not.toHaveClass(/is-compact/);
+
+    await page.clock.setSystemTime(new Date('2026-08-09T21:05:00-06:00'));
+    await page.evaluate(events => {
+      const home = document.querySelector('home-page') as HTMLElement & { matchesList: Match[] };
+      home.matchesList = home.matchesList.map(match =>
+        match.idMatch === 1 ? { ...match, events } : match,
+      );
+    }, [phaseEvent('start-1', 'start')]);
+
+    await expect(links).toHaveCount(2);
+    await expect(links.nth(0).getByText('En vivo', { exact: true })).toBeVisible();
+    await expect(links.nth(0).getByText('1T', { exact: true })).toBeVisible();
+    await expect(links.nth(0).getByText('Alineaciones listas', { exact: true })).toHaveCount(0);
+    await expect(links.nth(1).getByText('Alineaciones listas', { exact: true })).toBeVisible();
+    await expect(page.locator('.hero')).not.toHaveClass(/is-compact/);
+  });
+
+  test('incluye horarios separados y desempata por id del partido', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-08-09T15:00:00-06:00') });
+    await mountHomeFixture(page, [
+      withReadyLineups(createMatch(4, 'Tigres', 'Monterrey', '22:00')),
+      withReadyLineups(createMatch(2, 'Cruz Azul', 'Pachuca', '18:00')),
+      withReadyLineups(createMatch(1, 'América', 'Atlas', '18:00')),
+    ]);
+
+    const highlights = page.getByLabel('Partidos destacados');
+    await expect(highlights.getByRole('link')).toHaveText([
+      /América[\s\S]*Atlas/,
+      /Cruz Azul[\s\S]*Pachuca/,
+      /Tigres[\s\S]*Monterrey/,
+    ]);
+    await expect(highlights.getByText('Alineaciones listas', { exact: true })).toHaveCount(3);
+  });
+
+  test('excluye otros días, alineaciones incompletas y estados no programados', async ({ page }) => {
+    await page.clock.install({ time: new Date('2026-08-09T15:00:00-06:00') });
+    const ready = withReadyLineups(createMatch(1, 'América', 'Atlas', '21:05'));
+    const tomorrow = withReadyLineups(createMatch(2, 'Cruz Azul', 'Pachuca', '21:10'));
+    tomorrow.fecha = new Date('2026-08-10T21:10:00-06:00');
+    const yesterday = withReadyLineups(createMatch(3, 'Toluca', 'León', '21:10'));
+    yesterday.fecha = new Date('2026-08-08T21:10:00-06:00');
+    const missingLocal = withReadyLineups(createMatch(4, 'Tigres', 'Monterrey', '21:05'));
+    missingLocal.lineupLocal.pop();
+    const missingVisitor = withReadyLineups(createMatch(5, 'Pumas', 'Necaxa', '21:05'));
+    missingVisitor.lineupVisitor.pop();
+    const finished = withReadyLineups(createMatch(6, 'Santos Laguna', 'Puebla', '18:00', [
+      phaseEvent('start-6', 'start'),
+      phaseEvent('end-6', 'fulltime'),
+    ]));
+    const postponed = withReadyLineups(createMatch(7, 'Juárez', 'Mazatlán', '21:05'));
+    postponed.status = 'postponed';
+    const cancelled = withReadyLineups(createMatch(8, 'Querétaro', 'Tijuana', '21:05'));
+    cancelled.status = 'cancelled';
+    await mountHomeFixture(page, [
+      tomorrow, yesterday, missingLocal, missingVisitor, finished, postponed, cancelled, ready,
+    ]);
+
+    const highlights = page.getByLabel('Partidos destacados');
+    await expect(highlights.getByRole('link')).toHaveCount(1);
+    await expect(highlights.getByRole('link')).toHaveAttribute('href', '?tab=Inicio&match=1');
+    await expect(highlights.getByText('Alineaciones listas', { exact: true })).toBeVisible();
+    await expect(page.locator('.hero')).toHaveClass(/is-compact/);
+  });
 });
