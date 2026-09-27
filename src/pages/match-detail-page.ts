@@ -57,7 +57,9 @@ export class MatchDetailPage extends LitElement {
         /* Colores base para la página */
         --card-bg: var(--md-sys-color-surface, #ffffff);
         --header-bg: var(--md-sys-color-surface-container, #f8fafc);
-        animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        transform: none;
+        opacity: 1;
+        animation: slideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       }
 
       :host(.closing) {
@@ -70,7 +72,7 @@ export class MatchDetailPage extends LitElement {
           opacity: 0.5;
         }
         to {
-          transform: translateX(0);
+          transform: none;
           opacity: 1;
         }
       }

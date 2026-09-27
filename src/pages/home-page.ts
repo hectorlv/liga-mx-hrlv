@@ -928,9 +928,16 @@ export class HomePage extends LitElement {
   }
 
   private _getFocusMatches(): Match[] {
-    const liveMatches = this.matchesList.filter(match => isMatchLive(match));
-    if (liveMatches.length > 0) {
-      return liveMatches.sort(
+    const today = new Date();
+    const activeMatches = this.matchesList.filter(
+      match =>
+        isMatchLive(match) ||
+        (resolveMatchStatus(match) === 'scheduled' &&
+          this._isSameDay(match.fecha, today) &&
+          lineupsReadyBeforeKickoff(match)),
+    );
+    if (activeMatches.length > 0) {
+      return activeMatches.sort(
         (a, b) =>
           this._matchTime(a) - this._matchTime(b) || a.idMatch - b.idMatch,
       );

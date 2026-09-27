@@ -350,7 +350,9 @@ export class LigaMxHrlv extends LitElement {
 
       /* ANIMACIÓN SUAVE PARA EL CAMBIO DE TABS */
       main > * {
-        animation: tabFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        transform: none;
+        opacity: 1;
+        animation: tabFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
         display: block;
       }
 
@@ -361,7 +363,7 @@ export class LigaMxHrlv extends LitElement {
         }
         to {
           opacity: 1;
-          transform: translateY(0); /* Sube a su lugar original */
+          transform: none; /* Libera la transformación al terminar la entrada */
         }
       }
 

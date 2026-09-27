@@ -18,6 +18,25 @@ export default [
   // 🟦 TypeScript
   ...tseslint.configs.recommended,
 
+  // 🛠️ Herramientas Node y callbacks que Playwright ejecuta en el navegador
+  {
+    files: ["tools/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        AbortSignal: "readonly",
+        Buffer: "readonly",
+        URL: "readonly",
+        customElements: "readonly",
+        document: "readonly",
+        fetch: "readonly",
+        localStorage: "readonly",
+        process: "readonly",
+        setTimeout: "readonly",
+        window: "readonly"
+      }
+    }
+  },
+
   // 🔥 Reglas específicas para Lit
   {
     files: ["**/*.ts", "**/*.js"],
