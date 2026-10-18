@@ -29,3 +29,4 @@ custom-elements.json
 docs/
 database-debug.log
 firebase-debug.log
+functions/node_modules/
