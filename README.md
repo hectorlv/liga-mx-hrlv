@@ -109,6 +109,35 @@ Si tienes integraciones externas que importaban módulos desde rutas antiguas de
 - Actualizar cualquier README/CONTRIBUTING adicional si hay instrucciones específicas para contribución o despliegue.
 - (Opcional) Crear una etiqueta (`git tag`) y un release si deseas versionar este cambio.
 
+## Fuente pública para Liga MX Social
+
+La función `publicData` sirve consultas anónimas de solo lectura:
+
+| Información | HTML sin JavaScript | JSON |
+| --- | --- | --- |
+| Jornada | `https://ligamx.hectorrlove.com/datos/jornadas/14` | `https://ligamx.hectorrlove.com/api/jornadas/14.json` |
+| Tabla | `https://ligamx.hectorrlove.com/datos/tabla` | `https://ligamx.hectorrlove.com/api/tabla.json` |
+
+Sustituye `14` por la jornada requerida. La respuesta incluye el torneo editorial vigente, `zonaHoraria` (`America/Mexico_City`) y `consultadoEn` (instante de lectura, no de edición). Las fechas de partido usan `YYYY-MM-DD`, la hora corresponde a Ciudad de México y `inicio` es el instante ISO equivalente. Fechas y marcadores pendientes son `null`.
+
+Los estados son `scheduled`, `live`, `finished`, `postponed` y `cancelled`. Solo `finished` implica finalización; un marcador 0–0 no la demuestra. Los penales permanecen separados de los goles. La tabla usa `calculateTable`, igual que la app, y `provisional` indica si contribuyen marcadores no definitivos. No se recalculan posiciones en el skill.
+
+Hosting es la única caché, con `public, max-age=0, s-maxage=30, must-revalidate`. La función hace lecturas REST nuevas de `/matches` y `/teams`, que ya son públicas, sin caché del SDK ni escrituras. Admite `GET` y `HEAD`; responde 400 para una jornada inválida, 404 si no existe, 405 para otros métodos y 503 cuando no puede obtener los datos. Los errores usan `no-store`.
+
+```bash
+corepack pnpm run test:public-data
+corepack pnpm run typecheck
+corepack pnpm run lint
+corepack pnpm run build
+# Compilar antes de iniciar el emulador de Functions en un checkout nuevo:
+corepack pnpm run build:functions
+# Publicar únicamente la función nueva y después las rutas de Hosting:
+firebase deploy --only functions:publicData --project ligamx-b16f7
+firebase deploy --only hosting --project ligamx-b16f7
+```
+
+Rollup compila las utilidades compartidas a `functions/generated/public-data.js`; el archivo generado no se versiona. El build y el predeploy de Functions lo regeneran. Los workflows actuales de Hosting no despliegan Functions: los cambios de la función requieren el despliegue específico de arriba. Las pruebas de la fuente pública usan fixtures y no escriben en Firebase.
+
 ## Contribuir
 
 Si vas a contribuir, crea una rama a partir de `feature/update` o `main` (según el flujo que uses), realiza los cambios y abre un PR.

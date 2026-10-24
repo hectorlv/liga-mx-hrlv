@@ -5,7 +5,7 @@ import {
   type Unsubscribe,
 } from 'firebase/database';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { formatDate } from '../utils/dateUtils';
+import { normalizeMatches } from '../utils/matchData.js';
 import {
   FirebaseUpdates,
   AdminWriteRequest,
@@ -110,30 +110,7 @@ export function fetchMatches(
   const db = getDatabase();
   return onValue(ref(db, '/matches'), snapshot => {
     const raw = snapshot.val() as Record<string, Match> | Match[] | null;
-    const entries = Array.isArray(raw)
-      ? raw.map((match, index) => [String(index), match] as const)
-      : Object.entries(raw || {});
-    const formattedMatches = entries.map(([key, match]) => ({
-      ...match,
-      golLocal: typeof match.golLocal === 'number' ? match.golLocal : null,
-      golVisitante:
-        typeof match.golVisitante === 'number' ? match.golVisitante : null,
-      // Firebase keys are the canonical identity; sparse keys must not be
-      // replaced by their position after sorting.
-      idMatch: Number.isFinite(Number(key)) ? Number(key) : Number(match.idMatch),
-      fecha: formatDate(match.fecha, match.hora),
-      jornada: Number(match.jornada),
-    }));
-    formattedMatches.sort((a, b) => {
-      if (a.jornada === b.jornada) {
-        let fechaCompare = 0;
-        if (a.fecha < b.fecha) fechaCompare = -1;
-        else if (a.fecha > b.fecha) fechaCompare = 1;
-        return fechaCompare;
-      }
-      return a.jornada - b.jornada;
-    });
-    callback(formattedMatches as Match[]);
+    callback(normalizeMatches(raw));
   }, error => {
     console.error('Firebase subscription error at path: /matches', error);
     onError?.(new Error('No se pudieron leer los partidos.'));

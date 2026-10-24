@@ -19,6 +19,10 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
       }
     ],
+    "rewrites": [
+      { "source": "/api/**", "function": { "functionId": "publicData", "region": "us-central1" } },
+      { "source": "/datos/**", "function": { "functionId": "publicData", "region": "us-central1" } }
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -29,7 +33,9 @@
     "rules": "database.rules.json"
   },
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "predeploy": ["corepack pnpm --dir \"$PROJECT_DIR\" run build:functions"],
+    "ignore": ["node_modules", "test", "*.ts", "firebase-debug.log", "firebase-debug.*.log"]
   },
   "storage": {
     "rules": "storage.rules"
