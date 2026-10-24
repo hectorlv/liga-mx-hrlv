@@ -1,11 +1,17 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getDatabase } from 'firebase-admin/database';
-import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
+import { createFirebaseReader, createPublicDataHandler } from './public-api.js';
 
 const firebaseApp = initializeApp({
   databaseURL: 'https://ligamx-b16f7-default-rtdb.firebaseio.com',
 });
 const database = getDatabase(firebaseApp);
+
+export const publicData = onRequest(
+  { region: 'us-central1', invoker: 'public', maxInstances: 5, timeoutSeconds: 30 },
+  createPublicDataHandler(createFirebaseReader(firebaseApp.options.databaseURL)),
+);
 
 const ALLOWED_ROOTS = new Set([
   'matches',

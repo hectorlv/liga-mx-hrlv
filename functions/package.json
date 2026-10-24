@@ -7,7 +7,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "lint": "node --check index.js",
+    "lint": "node --check index.js && node --check public-api.js",
     "test": "node test/callable-emulator.mjs"
   },
   "dependencies": {
