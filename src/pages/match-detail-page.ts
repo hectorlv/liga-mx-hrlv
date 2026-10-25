@@ -1024,7 +1024,7 @@ export class MatchDetailPage extends LitElement {
       const minute = formatMatchMinute(
         latestAction.minute,
         latestAction.addedTime,
-      ).replace("'", '′');
+      ).replace(/'/g, '′');
       return `Último evento: ${minute}`;
     }
     return getLiveMatchPeriodLabel(this.match) === 'Descanso'
