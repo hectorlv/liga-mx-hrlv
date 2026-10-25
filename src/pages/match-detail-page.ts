@@ -31,11 +31,17 @@ import {
   calculateSequenceForEditedEvent,
   calculateSequenceForNewEvent,
   dispatchEventMatchUpdated,
+  formatMatchMinute,
   getAggregateScoreForSecondLeg,
   getPhaseEvents,
+  sortMatchEvents,
 } from '../utils/functionUtils.js';
 import { LIGUILLA, REGULAR_SEASON_LAST_JORNADA } from '../utils/constants.js';
-import { hasMatchStarted, resolveMatchStatus } from '../utils/matchStatus.js';
+import {
+  getLiveMatchPeriodLabel,
+  hasMatchStarted,
+  resolveMatchStatus,
+} from '../utils/matchStatus.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { MdFilledSelect } from '@material/web/select/filled-select.js';
 
@@ -224,6 +230,16 @@ export class MatchDetailPage extends LitElement {
         font-weight: 800;
         line-height: 1;
         white-space: nowrap;
+      }
+
+      .match-progress {
+        margin: 8px 0 0;
+        max-width: 144px;
+        color: var(--md-sys-color-on-surface-variant);
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.4;
+        text-align: center;
       }
 
       .match-resolution-note {
@@ -548,6 +564,7 @@ export class MatchDetailPage extends LitElement {
     const hasPenaltyScore = this._hasPenaltyScore();
     const tableComparison = this._getRegularSeasonTableComparison();
     const isPlayed = hasMatchStarted(this.match);
+    const progressLabel = this._getMatchProgressLabel();
     const aggregateStatusMessage = isFinalAggregateTied
       ? html`<div class="match-resolution-note">
           Global empatado: continúa con tiempos extra y, si sigue empatado,
@@ -635,6 +652,9 @@ export class MatchDetailPage extends LitElement {
                     VS
                   </div>`
             }
+            ${progressLabel
+              ? html`<p class="match-progress" role="status">${progressLabel}</p>`
+              : ''}
             ${
               aggregateScore
                 ? html`<div class="aggregate-score">
@@ -710,15 +730,6 @@ export class MatchDetailPage extends LitElement {
                       <div slot="headline">Cancelado</div>
                     </md-select-option>
                   </md-filled-select>
-                  <md-filled-text-field
-                    label="Minuto en vivo"
-                    id="liveMinuteInput"
-                    type="number"
-                    min="0"
-                    max="180"
-                    .value=${this.match.liveMinute == null ? '' : String(this.match.liveMinute)}
-                    supporting-text="Opcional; se muestra en Redes cuando el partido está en vivo"
-                  ></md-filled-text-field>
                   ${penaltyFieldsTemplate}
                 </div>
                 ${
@@ -934,9 +945,6 @@ export class MatchDetailPage extends LitElement {
     const statusSelect = this.renderRoot.querySelector(
       '#statusSelect',
     ) as MdFilledSelect;
-    const liveMinuteInput = this.renderRoot.querySelector(
-      '#liveMinuteInput',
-    ) as MdFilledTextField;
     const parsedDate = fechaInput.value;
     const parsedTime = horaInput.value;
     if (
@@ -962,8 +970,6 @@ export class MatchDetailPage extends LitElement {
       statusSelect.value === 'scheduled'
         ? null
         : (statusSelect.value as MatchPublicationStatus);
-    updates[`/matches/${this.match.idMatch}/liveMinute`] =
-      this._getLiveMinuteValue(liveMinuteInput);
     if (this._isFinalSecondLeg()) {
       const penaltyLocalInput = this.renderRoot.querySelector(
         '#penaltyLocalInput',
@@ -1004,11 +1010,26 @@ export class MatchDetailPage extends LitElement {
     return Math.floor(value);
   }
 
-  private _getLiveMinuteValue(input: MdFilledTextField): number | null {
-    if (!input || input.value === '') return null;
-    const value = Number(input.value);
-    if (!Number.isFinite(value) || value < 0 || value > 180) return null;
-    return Math.floor(value);
+  private _getMatchProgressLabel(): string | null {
+    if (!this.match) return null;
+    const status = resolveMatchStatus(this.match);
+    if (status === 'finished') return 'Finalizado';
+    if (status !== 'live') return null;
+
+    const actions = sortMatchEvents(this.match.events || []).filter(
+      event => event.type !== 'phase',
+    );
+    const latestAction = actions[actions.length - 1];
+    if (latestAction) {
+      const minute = formatMatchMinute(
+        latestAction.minute,
+        latestAction.addedTime,
+      ).replace("'", '′');
+      return `Último evento: ${minute}`;
+    }
+    return getLiveMatchPeriodLabel(this.match) === 'Descanso'
+      ? 'Descanso'
+      : 'En juego';
   }
 
   private _renderEditActions() {

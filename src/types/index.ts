@@ -16,7 +16,7 @@ export interface Match {
   penaltyVisitante?: number | null;
   /** Sobrescribe el estado derivado para partidos que no se jugarán como estaban programados. */
   status?: MatchPublicationStatus;
-  /** Minuto informado por el administrador durante un partido en vivo. */
+  /** Dato heredado del minuto manual; se conserva por compatibilidad con la API pública. */
   liveMinute?: number | null;
   lineupLocal: PlayerGame[];
   lineupVisitor: PlayerGame[];
