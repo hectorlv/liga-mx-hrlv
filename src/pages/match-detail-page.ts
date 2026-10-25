@@ -1015,10 +1015,9 @@ export class MatchDetailPage extends LitElement {
     const status = resolveMatchStatus(this.match);
     if (status === 'finished') return 'Finalizado';
     if (status !== 'live') return null;
+    if (getLiveMatchPeriodLabel(this.match) === 'Descanso') return 'Descanso';
 
-    const actions = sortMatchEvents(this.match.events || []).filter(
-      event => event.type !== 'phase',
-    );
+    const actions = sortMatchEvents(this.match.events || []);
     const latestAction = actions[actions.length - 1];
     if (latestAction) {
       const minute = formatMatchMinute(
@@ -1027,9 +1026,7 @@ export class MatchDetailPage extends LitElement {
       ).replace(/'/g, '′');
       return `Último evento: ${minute}`;
     }
-    return getLiveMatchPeriodLabel(this.match) === 'Descanso'
-      ? 'Descanso'
-      : 'En juego';
+    return 'En juego';
   }
 
   private _renderEditActions() {

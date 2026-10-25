@@ -152,7 +152,10 @@ for (const width of [1240, 390]) {
     const progress = page.locator('.score-center').getByRole('status');
     await expect(progress).toHaveText('Último evento: 90+5′');
     await expect(progress).toBeVisible();
-    await expect(page.locator('match-detail-page')).toHaveCSS('transform', 'none');
+    await expect(page.locator('match-detail-page')).toHaveCSS(
+      'transform',
+      'none',
+    );
     await expect
       .poll(async () => {
         const bounds = await progress.boundingBox();
@@ -192,6 +195,33 @@ test('recalcula la referencia al añadir, editar y borrar acciones entre periodo
   await expect(progress).toHaveText('Último evento: 45+8′');
   await updateMatch(page, { events: [start, halftime, secondHalf] });
   await expect(progress).toHaveText('En juego');
+});
+
+test('Descanso tiene prioridad sobre las acciones hasta reanudar la segunda mitad', async ({
+  page,
+}) => {
+  await mountDetail(page, match([goal, start]), true);
+  const progress = page.locator('.score-center').getByRole('status');
+  await expect(progress).toHaveText('Último evento: 45+8′');
+  await page
+    .getByRole('button', { name: 'Guardar medio tiempo', exact: true })
+    .click();
+  await expect(progress).toHaveText('Descanso');
+  await expect(page.locator('.score-center')).not.toContainText(
+    'Último evento',
+  );
+  await page
+    .getByRole('button', { name: 'Iniciar segunda mitad', exact: true })
+    .click();
+  await expect(progress).toHaveText('Último evento: 45+8′');
+  page.once('dialog', dialog => dialog.accept());
+  await page
+    .getByRole('button', {
+      name: 'Deshacer inicio de la segunda mitad',
+      exact: true,
+    })
+    .click();
+  await expect(progress).toHaveText('Descanso');
 });
 
 test('finalizar oculta el minuto y deshacer recupera la última acción', async ({
