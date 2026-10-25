@@ -1524,8 +1524,7 @@ export class SocialPostGenerator extends LitElement {
   ): string {
     if (status === 'postponed') return 'POSPUESTO';
     if (status === 'cancelled') return 'CANCELADO';
-    if (status === 'live')
-      return `EN VIVO${match.liveMinute == null ? '' : ` · ${match.liveMinute}'`}`;
+    if (status === 'live') return 'EN VIVO';
     if (isResults)
       return status === 'finished' ? 'MARCADOR FINAL' : 'PENDIENTE';
     return '';
