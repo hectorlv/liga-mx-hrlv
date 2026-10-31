@@ -8,7 +8,6 @@ import {
   GoalMatchEvent,
   Match,
   Player,
-  PlayerGame,
   TableEntry,
   TeamSide,
 } from '../types/index.js';
@@ -26,7 +25,11 @@ import {
   validatePlayerImageForPreview,
 } from '../utils/playerImageUpload.js';
 import { LOGOS } from '../utils/constants.js';
-import { hasMatchEnded } from '../utils/matchStatus.js';
+import {
+  getTeamPlayerAppearances,
+  type PlayerAppearance,
+} from '../utils/playerAppearances.js';
+import '../components/player-match-history.js';
 
 // Imports de Material para el formulario de edición
 import '@material/web/button/filled-button.js';
@@ -45,6 +48,7 @@ interface PlayerStats {
   position: string;
   gamesPlayed: number;
   minutesPlayed: number;
+  appearances: PlayerAppearance[];
   goals: number;
   assists: number;
   yellowCards: number;
@@ -433,6 +437,75 @@ export class TeamPage extends LitElement {
         }
       }
 
+      .cell-name {
+        min-width: 0;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+      }
+      .cell-name > span {
+        overflow-wrap: anywhere;
+      }
+      .history-toggle {
+        display: block;
+        width: fit-content;
+        max-width: 100%;
+        margin: 0;
+        padding: 6px 0;
+        min-height: 36px;
+        border: 0;
+        background: transparent;
+        color: var(--md-sys-color-primary);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .history-toggle:hover {
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+      }
+      .history-toggle:focus-visible {
+        outline: 2px solid var(--md-sys-color-primary);
+        outline-offset: 3px;
+        border-radius: 3px;
+      }
+      .player-history {
+        min-width: 0;
+        padding: 16px;
+        background: var(--md-sys-color-surface-container-low, var(--md-sys-color-surface-container));
+        border-radius: 8px;
+      }
+      .player-history[hidden] {
+        display: none;
+      }
+      @media (max-width: 799px) {
+        .player-header {
+          display: grid;
+          grid-template-columns: 44px 32px minmax(0, 1fr) auto;
+        }
+        .cell-photo { grid-column: 1; grid-row: 1; }
+        .cell-num { grid-column: 2; grid-row: 1; }
+        .cell-name { grid-column: 3; grid-row: 1; text-align: left; }
+        .mobile-edit-btn { grid-column: 4; grid-row: 1; }
+        .cell-pos { grid-column: 3 / -1; grid-row: 2; justify-self: start; }
+        .history-toggle { min-height: 44px; }
+      }
+      @media (min-width: 800px) {
+        .cell-name {
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: center;
+        }
+        .player-history {
+          grid-column: 1 / -1;
+          border-bottom: 1px solid var(--md-sys-color-outline-variant);
+          border-radius: 0;
+        }
+      }
+
       /* FORMULARIO DIALOG */
       .dialog-form {
         display: grid;
@@ -463,10 +536,11 @@ export class TeamPage extends LitElement {
   @property({ type: Object }) team!: TableEntry;
   @property({ type: Number }) teamPosition = 0;
   @property({ type: Array }) players!: Player[];
-  @property({ type: Array }) matchesList!: Match[];
+  @property({ type: Array }) matchesList: Match[] = [];
   @property({ type: Boolean }) isAdmin = false;
 
   @state() private playersList: PlayerStats[] = [];
+  @state() private expandedPlayerKey: string | null = null;
   @state() private imageSrcCache: Record<string, string> = {};
   @state() private editingPlayer: PlayerStats | null = null;
 
@@ -560,8 +634,11 @@ export class TeamPage extends LitElement {
             </div>
           </div>
 
-          ${this.playersList.map(player => {
+          ${this.playersList.map((player, index) => {
             const imageSrc = this._getResolvedPlayerImage(player.image);
+            const playerKey = this._playerKey(player);
+            const expanded = this.expandedPlayerKey === playerKey;
+            const historyId = `player-history-${index}`;
 
             return html`
               <div class="player-card">
@@ -582,7 +659,19 @@ export class TeamPage extends LitElement {
                   </div>
 
                   <div class="cell cell-num">${player.number}</div>
-                  <div class="cell cell-name">${player.fullName}</div>
+                  <div class="cell cell-name">
+                    <span>${player.fullName}</span>
+                    <button
+                      type="button"
+                      class="history-toggle"
+                      aria-expanded=${expanded}
+                      aria-controls=${historyId}
+                      aria-label="${expanded ? 'Ocultar' : 'Ver'} partidos de ${player.fullName}"
+                      @click=${() => {
+                        this.expandedPlayerKey = expanded ? null : playerKey;
+                      }}
+                    >${expanded ? 'Ocultar partidos' : 'Ver partidos'}</button>
+                  </div>
                   <div class="cell cell-pos">
                     ${player.position}${player.historical ? ' · Histórico' : ''}
                   </div>
@@ -657,6 +746,13 @@ export class TeamPage extends LitElement {
                       : null
                   }
                 </div>
+                <section id=${historyId} class="player-history" ?hidden=${!expanded}
+                  aria-label="Partidos de ${player.fullName}">
+                  ${expanded ? html`<player-match-history
+                    .appearances=${player.appearances}
+                    .playerName=${player.fullName}
+                  ></player-match-history>` : null}
+                </section>
               </div>
             `;
           })}
@@ -911,7 +1007,11 @@ export class TeamPage extends LitElement {
 
   // Aseguramos que la lista se recalcule si Firebase manda nuevos datos de jugadores
   override willUpdate(changedProps: Map<string, unknown>) {
-    if (changedProps.has('players') || changedProps.has('matchesList')) {
+    if (
+      changedProps.has('players') ||
+      changedProps.has('matchesList') ||
+      changedProps.has('team')
+    ) {
       this.getPlayerStats();
     }
   }
@@ -1320,18 +1420,40 @@ export class TeamPage extends LitElement {
     });
   }
 
-  // --- LÓGICA DE ESTADÍSTICAS (SE QUEDA IGUAL) ---
+  private _playerKey(player: PlayerStats): string {
+    return `${this.team.equipo}:${player.id ?? player.number}`;
+  }
+
+  // --- ESTADÍSTICAS Y PARTICIPACIONES ---
 
   private getPlayerStats() {
     if (!this.players) return;
     const statsMap = this.buildStatsMap(this.players);
+    const appearances = getTeamPlayerAppearances(
+      this.matchesList,
+      this.team.equipo,
+    );
+    for (const player of statsMap.values()) {
+      player.appearances = appearances.get(player.number) ?? [];
+      player.gamesPlayed = player.appearances.length;
+      player.minutesPlayed = player.appearances.reduce(
+        (sum, row) => sum + row.minutes,
+        0,
+      );
+    }
     for (const match of this.matchesList) {
       const isLocal = match.local === this.team.equipo;
-      this.processLineup(statsMap, match, isLocal);
       this.processGoals(statsMap, match, isLocal);
       this.processCards(statsMap, match, isLocal);
     }
     this.playersList = Array.from(statsMap.values());
+    if (
+      !this.playersList.some(
+        player => this._playerKey(player) === this.expandedPlayerKey,
+      )
+    ) {
+      this.expandedPlayerKey = null;
+    }
   }
 
   private buildStatsMap(players: Player[]): Map<number, PlayerStats> {
@@ -1344,6 +1466,7 @@ export class TeamPage extends LitElement {
         position: player.position,
         gamesPlayed: 0,
         minutesPlayed: 0,
+        appearances: [],
         goals: 0,
         assists: 0,
         yellowCards: 0,
@@ -1537,60 +1660,6 @@ export class TeamPage extends LitElement {
       age--;
     }
     return `${age} años`;
-  }
-
-  private processLineup(
-    statsMap: Map<number, PlayerStats>,
-    match: Match,
-    isLocal: boolean,
-  ) {
-    if (!hasMatchEnded(match)) return;
-
-    const lineup = isLocal ? match.lineupLocal : match.lineupVisitor;
-    const teamTag = isLocal ? 'local' : 'visitor';
-    if (!lineup) return;
-    for (const playerGame of lineup) {
-      const playerStats = statsMap.get(playerGame.number);
-      if (!playerStats) continue;
-      playerStats.gamesPlayed += 1;
-      const inMinute = this.computeInMinute(playerGame, match, teamTag);
-      const outMinute = this.computeOutMinute(playerGame, match, teamTag);
-      playerStats.minutesPlayed += outMinute - inMinute;
-    }
-  }
-
-  private computeInMinute(
-    playerGame: PlayerGame,
-    match: Match,
-    teamTag: TeamSide,
-  ): number {
-    if (!playerGame.entroDeCambio) return 0;
-    return (
-      getSubstitutionEvents(match.events)?.find(
-        s => s.playerIn === playerGame.number && s.team === teamTag,
-      )?.minute ?? 0
-    );
-  }
-
-  private computeOutMinute(
-    playerGame: PlayerGame,
-    match: Match,
-    teamTag: TeamSide,
-  ): number {
-    if (playerGame.salioDeCambio) {
-      return (
-        getSubstitutionEvents(match.events)?.find(
-          s => s.playerOut === playerGame.number && s.team === teamTag,
-        )?.minute ?? 90
-      );
-    }
-    const redCard = getCardEvents(match.events)?.find(
-      c =>
-        c.player === playerGame.number &&
-        c.team === teamTag &&
-        c.cardType === 'red',
-    );
-    return redCard?.minute ?? 90;
   }
 
   private processGoals(
