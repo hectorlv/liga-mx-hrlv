@@ -47,7 +47,7 @@ export function createPublicData(
     torneo: { id: EDITORIAL_TOURNAMENT.id, nombre: EDITORIAL_TOURNAMENT.label },
     zonaHoraria: TOURNAMENT_TIME_ZONE,
     consultadoEn: now.toISOString(),
-    aviso: 'Momento de consulta de Firebase; no es la fecha de edición. Caché compartida de hasta 30 segundos.',
+    aviso: 'Momento de consulta de Firebase; no es la fecha de edición. Respuesta sin caché de navegador ni CDN; comprueba este momento de consulta si tu herramienta conserva una copia.',
   };
   if (route.jornada !== undefined) {
     const selected = matches.filter(match => match.jornada === route.jornada)

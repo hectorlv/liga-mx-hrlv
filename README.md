@@ -122,7 +122,11 @@ Sustituye `14` por la jornada requerida. La respuesta incluye el torneo editoria
 
 Los estados son `scheduled`, `live`, `finished`, `postponed` y `cancelled`. Solo `finished` implica finalización; un marcador 0–0 no la demuestra. Los penales permanecen separados de los goles. La tabla usa `calculateTable`, igual que la app, y `provisional` indica si contribuyen marcadores no definitivos. No se recalculan posiciones en el skill.
 
-Hosting es la única caché, con `public, max-age=0, s-maxage=30, must-revalidate`. La función hace lecturas REST nuevas de `/matches` y `/teams`, que ya son públicas, sin caché del SDK ni escrituras. Admite `GET` y `HEAD`; responde 400 para una jornada inválida, 404 si no existe, 405 para otros métodos y 503 cuando no puede obtener los datos. Los errores usan `no-store`.
+Las cuatro rutas envían `Cache-Control: private, no-store, max-age=0`, tanto en respuestas correctas como en errores, para evitar almacenamiento en navegador y CDN. La función hace lecturas REST nuevas de `/matches` y `/teams`, que ya son públicas, sin caché del SDK ni escrituras. Admite `GET` y `HEAD`; responde 400 para una jornada inválida, 404 si no existe, 405 para otros métodos y 503 cuando no puede obtener los datos.
+
+Las representaciones HTML/JSON siguen disponibles para consulta manual en el dominio anterior y en `https://ligamx-b16f7.firebaseapp.com`. La skill actual utiliza las herramientas del MCP público descrito abajo y conserva los enlaces JSON como recuperación manual. El parámetro opcional `consulta` distingue URLs sin cambiar los datos; no elimina copias internas de una herramienta ni garantiza que pueda acceder al sitio.
+
+Las cabeceras del servidor y el parámetro no garantizan que la herramienta web de ChatGPT descarte sus propias copias ni que pueda acceder a la URL. `consultadoEn` permite detectar respuestas antiguas; no indica cuándo se modificaron los datos deportivos. La verificación HTTP con `curl` y la ejecución de la skill dentro de ChatGPT se comprueban por separado.
 
 ```bash
 corepack pnpm run test:public-data
@@ -131,12 +135,46 @@ corepack pnpm run lint
 corepack pnpm run build
 # Compilar antes de iniciar el emulador de Functions en un checkout nuevo:
 corepack pnpm run build:functions
-# Publicar únicamente la función nueva y después las rutas de Hosting:
+# Publicar cambios de la función:
 firebase deploy --only functions:publicData --project ligamx-b16f7
+# Solo si se añaden o modifican rutas de Hosting:
 firebase deploy --only hosting --project ligamx-b16f7
 ```
 
 Rollup compila las utilidades compartidas a `functions/generated/public-data.js`; el archivo generado no se versiona. El build y el predeploy de Functions lo regeneran. Los workflows actuales de Hosting no despliegan Functions: los cambios de la función requieren el despliegue específico de arriba. Las pruebas de la fuente pública usan fixtures y no escriben en Firebase.
+
+### MCP público de jornadas y tabla
+
+`ligaMcp` es una función HTTP de segunda generación (Node.js 22, `us-central1`) independiente del MCP local de administración. Expone únicamente `consultar_jornada({ jornada })` y `consultar_tabla({})` mediante Streamable HTTP en `/mcp`. Usa respuestas JSON, sin sesiones en memoria ni streams SSE; cada solicitud crea y cierra su servidor y transporte. El cuerpo JSON ya interpretado por Firebase se pasa al SDK directamente.
+
+Endpoint de producción: `https://us-central1-ligamx-b16f7.cloudfunctions.net/ligaMcp/mcp`.
+
+El servicio no requiere login y solo lee las ramas públicas `/matches` y `/teams`, usando el mismo cargador y las mismas reglas de cálculo que `publicData`. No ofrece acceso genérico a rutas, URLs ni operaciones de escritura. Las respuestas conservan la estructura de la API pública en `structuredContent` y en contenido textual JSON; los errores no incluyen diagnósticos internos ni sustituyen datos anteriores. No hay caché de proceso, navegador ni CDN. Se aceptan llamadas servidor-a-servidor sin `Origin` y llamadas con `Origin: https://chatgpt.com`; el endpoint no habilita llamadas desde otras páginas web.
+
+Se configura con cero instancias mínimas, dos máximas y timeout de 30 segundos; cada lectura de Firebase tiene timeout de 10 segundos. El límite de instancias acota la concurrencia del servicio, no constituye un límite de gasto. Los logs `Liga MCP request` y `Liga MCP tool` registran método/herramienta, resultado y duración, sin cuerpos de datos deportivos ni credenciales.
+
+```bash
+corepack pnpm run test:public-data
+corepack pnpm run test:mcp:public
+corepack pnpm run typecheck
+corepack pnpm run lint
+corepack pnpm --dir functions run lint
+corepack pnpm run build
+firebase deploy --only functions:ligaMcp --project ligamx-b16f7
+# Añadir /mcp a la URL de la función que devuelve el despliegue:
+node functions/test/liga-mcp-production.mjs 'https://URL-DE-LA-FUNCION/mcp'
+firebase functions:log --only ligaMcp --project ligamx-b16f7
+```
+
+El cliente de verificación comprueba inicialización, descubrimiento de las dos herramientas, datos de jornada 15 y tabla, equivalencia con la API HTTP y lecturas repetidas. No escribe en Firebase. Para conectar el servicio en ChatGPT web, registrar la URL verificada con «Agregar servidor MCP personalizado» y «Sin autenticación». La conexión registrada se llama **Liga MX Datos** y se vincula al plugin privado existente **Liga MX Social** mediante `.app.json` y `extensions.com.openai.apps`, conservando su identidad, presentación y prompts. La versión con esta conexión es `0.5.1`.
+
+Un `mcp.json` portátil con tipo `streamable-http` y `extensions.com.openai.auth.type: none` describe el transporte para clientes que admiten esa configuración, pero durante la validación ChatGPT web lo clasificó como solo escritorio. Por eso el paquete final usa la conexión registrada en lugar de conservar `mcp.json` y su compatibilidad `.mcp.json`. La publicación del paquete no demuestra que ChatGPT haya conectado las herramientas: se verifica en un chat nuevo seleccionando Liga MX Social, sin pegar endpoints.
+
+La skill usa MCP en cada solicitud, comprueba `consultadoEn` (hasta 120 segundos) y admite un único reintento si falla de forma transitoria o recibe una lectura antigua. Si falta la conexión o no se puede verificar la información, devuelve el enlace público de recuperación manual y no vuelve al bucle de navegación web.
+
+Verificación del 31 de octubre de 2026: en un chat nuevo de ChatGPT web, Liga MX Social consultó jornada 15 y tabla sin recibir URLs, obtuvo nueve partidos y 18 posiciones y repitió ambas llamadas con nuevos `consultadoEn`. La segunda consulta generó copys de Instagram y X indicando provisionalidad. Los logs de Firebase confirmaron las cuatro llamadas y las pruebas directas comprobaron paridad con la API. Evidencia local en `.firebase/liga-mcp-verification/` (ignorada por Git).
+
+Para revertir la integración del plugin, conservar una copia del paquete y release anteriores antes de actualizar, retirar la conexión MCP y restaurar las instrucciones previas mediante una nueva versión del mismo plugin privado. Usar el release vigente como protección al publicar y comprobar los archivos guardados. La función independiente puede permanecer desplegada mientras se diagnostica; no es necesario tocar reglas, datos ni las otras funciones. Para revertir código del servicio, desplegar su versión anterior con el mismo nombre. Una conexión fallida en ChatGPT se comunica separadamente del estado del despliegue y de las pruebas HTTP.
 
 ## Contribuir
 
