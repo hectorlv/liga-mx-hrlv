@@ -1,4 +1,5 @@
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
+import { comparePlayersByPositionAndNumber } from '../utils/playerOrder.js';
 import { formatMatchMinute, getGoalEvents } from '../utils/functionUtils.js';
 import {
   hasMatchEnded,
@@ -28,6 +29,7 @@ export interface SocialImageInput {
   jornada?: number;
   dateKey?: string;
   matchId?: number;
+  players?: PlayerTeam;
   presentation?: SocialPresentationOptions;
 }
 
@@ -194,9 +196,49 @@ export function selectTemplateMatches(input: SocialImageInput): Match[] {
   const dated = input.dateKey
     ? selected.filter(match => dateKey(match.fecha) === input.dateKey)
     : selected;
-  return input.template === 'match-summary' && input.matchId != null
-    ? dated.filter(match => match.idMatch === input.matchId)
-    : dated;
+  if (input.template === 'match-summary' || input.template === 'match-preview')
+    return dated.filter(match => match.idMatch === input.matchId);
+  return dated;
+}
+
+export function resolveSocialLineup(
+  match: Match,
+  side: 'local' | 'visitor',
+  players?: PlayerTeam,
+) {
+  const team = side === 'local' ? match.local : match.visitante;
+  const roster = players?.get(team.replaceAll('.', '')) || [];
+  const lineup = side === 'local' ? match.lineupLocal : match.lineupVisitor;
+  return (lineup || [])
+    .filter(player => player.titular)
+    .map(({ number }) => {
+      const player = roster.find(candidate => candidate.number === number);
+      return {
+        number,
+        name: player?.name?.trim() || `Jugador #${number}`,
+        position: player?.position,
+      };
+    })
+    .sort(comparePlayersByPositionAndNumber);
+}
+
+export function socialLineupErrors(match: Match): string[] {
+  return (['local', 'visitor'] as const).flatMap(side => {
+    const lineup = resolveSocialLineup(match, side);
+    const team = side === 'local' ? match.local : match.visitante;
+    const unique = new Set(lineup.map(player => player.number)).size;
+    if (lineup.length !== 11 || unique !== 11)
+      return [
+        `${team}: ${unique}/11 titulares con dorsal distinto${unique !== lineup.length ? ' (hay dorsales duplicados)' : ''}.`,
+      ];
+    if (
+      lineup.some(
+        player => !Number.isInteger(player.number) || player.number < 0,
+      )
+    )
+      return [`${team}: revisa los dorsales de los titulares.`];
+    return [];
+  });
 }
 
 export interface SocialMatchDayGroup {
@@ -266,6 +308,7 @@ export function validateSocialInput(input: SocialImageInput): string[] {
     if (!isResults && (!dateKey(match.fecha) || !match.hora)) {
       return [`El partido ${match.idMatch} no tiene fecha u hora.`];
     }
+    if (input.template === 'match-preview') return socialLineupErrors(match);
     const status = resolveMatchStatus(match);
     const hasScore =
       Number.isFinite(match.golLocal) && Number.isFinite(match.golVisitante);
@@ -287,6 +330,21 @@ export function validateSocialInput(input: SocialImageInput): string[] {
 }
 
 export function buildAltText(input: SocialImageInput): string {
+  if (input.template === 'match-preview') {
+    const match = selectTemplateMatches(input)[0];
+    if (!match) return 'Previa de partido: selecciona un partido.';
+    const lineups = (['local', 'visitor'] as const).map(side => {
+      const team = side === 'local' ? match.local : match.visitante;
+      const names = resolveSocialLineup(match, side, input.players)
+        .map(player => `${player.number}. ${player.name}`)
+        .join('; ');
+      return `${team}: ${names || 'titulares pendientes'}.`;
+    });
+    const title = socialLineupErrors(match).length
+      ? 'Alineaciones pendientes'
+      : 'Alineaciones confirmadas';
+    return `${title}. ${match.local} contra ${match.visitante}. Jornada ${match.jornada}, ${formatSocialDate(match.fecha)}, ${formatKickoff(match.hora)}, ${match.estadio || 'estadio pendiente'}. ${lineups.join(' ')}`;
+  }
   if (input.template === 'standings') {
     const rows = selectStandingsRange(
       input.standings,
@@ -320,6 +378,7 @@ export function templateLabel(template: TemplateId): string {
     standings: 'Tabla general',
     'round-results': 'Resultados completos de jornada',
     'match-summary': 'Resumen final de partido',
+    'match-preview': 'Previa con alineaciones · X',
   };
   return labels[template];
 }
@@ -351,7 +410,22 @@ export function buildSocialCopy(
     .join('\n');
   const withCallToAction = (body: string, hashtags: string) =>
     [body, callToAction, hashtags].filter(Boolean).join('\n\n');
+  const previewMatch =
+    input.template === 'match-preview' ? matches[0] : undefined;
+  const previewPair = previewMatch
+    ? `${socialTeamMention(previewMatch.local, 'x')} vs ${socialTeamMention(previewMatch.visitante, 'x')}`
+    : 'Partido por seleccionar';
+  const previewCopy = (lead: string) =>
+    withCallToAction(
+      `${lead}\n${previewPair}${previewMatch ? `\n${formatKickoff(previewMatch.hora)} · Jornada ${previewMatch.jornada}` : ''}`,
+      '#LigaMX',
+    );
+  const previewTitle =
+    previewMatch && !socialLineupErrors(previewMatch).length
+      ? 'Alineaciones confirmadas'
+      : 'Alineaciones pendientes';
   const informative: Record<TemplateId, string> = {
+    'match-preview': previewCopy(`⚽ ${previewTitle}.`),
     'round-preview': withCallToAction(
       `⚽ Todo listo para la${round} de Liga MX HRLV.\n\nPartidos, fechas y horarios para no perderte nada.`,
       '#LigaMX #FutbolMexicano #LigaMXHRLV',
@@ -385,6 +459,9 @@ export function buildSocialCopy(
   const copies: Record<SocialCopyTone, Record<TemplateId, string>> = {
     informative,
     rhythm: {
+      'match-preview': previewCopy(
+        `⚽ Se acerca el silbatazo. ${previewTitle}.`,
+      ),
       'round-preview': withCallToAction(
         `⚽ La${round} se acerca. Revisa los cruces, fechas y horarios antes del silbatazo inicial.`,
         '#LigaMX #FutbolMexicano #LigaMXHRLV',
@@ -411,6 +488,11 @@ export function buildSocialCopy(
       ),
     },
     data: {
+      'match-preview': previewCopy(
+        previewTitle === 'Alineaciones confirmadas'
+          ? '📋 Los 22 titulares del partido.'
+          : '📋 Registro de titulares pendiente.',
+      ),
       'round-preview': withCallToAction(
         `📅${round} en números: ${count} ${count === 1 ? 'partido programado' : 'partidos programados'}.`,
         '#LigaMX #FutbolMexicano #LigaMXHRLV',
@@ -437,6 +519,7 @@ export function buildSocialCopy(
       ),
     },
     conversation: {
+      'match-preview': previewCopy(`⚽ ${previewTitle}. ¿Qué duelo seguirás?`),
       'round-preview': withCallToAction(
         `⚽ ¿Qué partido de la${round} tienes marcado en el calendario?`,
         '#LigaMX #FutbolMexicano #LigaMXHRLV',
@@ -610,7 +693,7 @@ export function buildRenderResult(input: SocialImageInput): SocialRenderResult {
   return {
     alt: buildAltText(input),
     errors,
-    filename: `liga-mx-hrlv-${input.template}-j${input.jornada || 'actual'}-${date}.png`,
+    filename: `liga-mx-hrlv-${input.template}-j${input.jornada || 'actual'}${input.template === 'match-preview' && input.matchId != null ? `-p${input.matchId}` : ''}-${date}.png`,
   };
 }
 

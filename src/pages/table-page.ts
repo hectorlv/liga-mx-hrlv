@@ -379,7 +379,7 @@ export class TablePage extends LitElement {
   override render() {
     return html`
       <main>
-        <p class="table-status" role="note">Tabla en vivo y provisional: los resultados no finalizados no confirman clasificación ni eliminación.</p>
+        <p class="table-status" role="note">Las posiciones y estadísticas pueden cambiar en vivo. Los equipos marcados como clasificados tienen su plaza asegurada con resultados finalizados; las eliminaciones pueden ser provisionales durante partidos en curso.</p>
         <details class="table-guide">
           <summary>Cómo leer la tabla</summary>
           <dl class="table-guide-content">

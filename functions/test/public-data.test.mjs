@@ -6,6 +6,7 @@ import { createPublicData, renderPublicHtml } from '../generated/public-data.js'
 import { createFirebaseReader, createPublicDataHandler } from '../public-api.js';
 
 const now = new Date('2026-10-24T02:00:00Z');
+const NO_CACHE = 'private, no-store, max-age=0';
 const teams = ['América', 'Atlas', 'Toluca', 'Monterrey'];
 const phase = name => ({ id: name, type: 'phase', phase: name, minute: 90, team: '', period: '2T', sequence: 1 });
 const match = (overrides = {}) => ({
@@ -25,6 +26,8 @@ test('jornada completa, claves dispersas, orden CDMX y marcadores pendientes', (
   assert.equal(result.partidos[0].golVisitante, null);
   assert.equal(result.consultadoEn, now.toISOString());
   assert.equal(result.zonaHoraria, 'America/Mexico_City');
+  assert.match(result.aviso, /sin caché de navegador ni CDN/);
+  assert.doesNotMatch(result.aviso, /30 segundos/);
   const sparse = [];
   sparse[42] = match();
   assert.equal(data(sparse).partidos[0].idMatch, 42);
@@ -90,7 +93,7 @@ test('HTML sin JavaScript conserva datos, estados y banderas; escapa contenido',
   assert.match(tableHtml, /Incluye marcadores no definitivos: Sí/);
 });
 
-async function request(path, { method = 'GET', read = async key => key === 'teams' ? teams : { 7: match() } } = {}) {
+async function request(url, { method = 'GET', read = async key => key === 'teams' ? teams : { 7: match() }, clock = () => now } = {}) {
   const response = {
     headers: {}, statusCode: 200,
     set(name, value) { this.headers[name] = value; return this; },
@@ -99,23 +102,67 @@ async function request(path, { method = 'GET', read = async key => key === 'team
     send(value) { this.body = value; return this; },
     end() { this.ended = true; return this; },
   };
-  await createPublicDataHandler(read, { now: () => now, logError: () => {} })({ path, method }, response);
+  // Express expone el pathname sin query en request.path.
+  const parsed = new URL(url, 'https://example.com');
+  await createPublicDataHandler(read, { now: clock, logError: () => {} })({ path: parsed.pathname, query: Object.fromEntries(parsed.searchParams), method }, response);
   return response;
 }
 
-test('GET/HEAD: caché CDN 30 segundos, misma representación y ninguna caché de proceso', async () => {
-  let reads = 0;
-  const options = { read: async () => { reads += 1; return { 7: match() }; } };
-  const json = await request('/api/jornadas/14.json', options);
-  const html = await request('/datos/jornadas/14', options);
-  assert.equal(reads, 2);
-  assert.equal(json.headers['Cache-Control'], 'public, max-age=0, s-maxage=30, must-revalidate');
-  assert.equal(json.headers['Set-Cookie'], undefined);
-  assert.equal(html.body, renderPublicHtml(json.body));
-  const head = await request('/api/tabla.json', { method: 'HEAD' });
-  assert.equal(head.statusCode, 200);
-  assert.equal(head.body, undefined);
-  assert.equal(head.ended, true);
+test('las cuatro rutas GET/HEAD no se almacenan en navegador ni CDN y conservan HTML/JSON', async () => {
+  for (const [jsonPath, htmlPath] of [
+    ['/api/jornadas/14.json', '/datos/jornadas/14'],
+    ['/api/tabla.json', '/datos/tabla'],
+  ]) {
+    const json = await request(jsonPath);
+    const html = await request(htmlPath);
+    assert.equal(html.body, renderPublicHtml(json.body));
+    for (const response of [json, html]) {
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.headers['Cache-Control'], NO_CACHE);
+      assert.equal(response.headers['Set-Cookie'], undefined);
+    }
+    for (const path of [jsonPath, htmlPath]) {
+      const head = await request(path, { method: 'HEAD' });
+      assert.equal(head.statusCode, 200);
+      assert.equal(head.headers['Cache-Control'], NO_CACHE);
+      assert.equal(head.body, undefined);
+      assert.equal(head.ended, true);
+    }
+  }
+});
+
+test('consultas repetidas y con consulta leen cambios en Firebase y renuevan consultadoEn', async () => {
+  for (const path of ['/api/jornadas/14.json', '/api/tabla.json']) {
+    const reads = [];
+    let currentTime = now;
+    let goals = 0;
+    const options = {
+      read: async key => {
+        reads.push(key);
+        return key === 'teams' ? teams : { 7: match({ golLocal: goals, golVisitante: 0, events: [phase('fulltime')] }) };
+      },
+      clock: () => currentTime,
+    };
+    const first = await request(path, options);
+    goals = 2;
+    currentTime = new Date(now.getTime() + 1000);
+    const second = await request(path, options);
+    const distinct = await request(`${path}?consulta=${currentTime.getTime() / 1000}`, options);
+    assert.equal(first.body.consultadoEn, now.toISOString());
+    assert.equal(second.body.consultadoEn, currentTime.toISOString());
+    assert.notDeepEqual(first.body, second.body);
+    if (second.body.tipo === 'jornada') {
+      assert.equal(first.body.partidos[0].golLocal, 0);
+      assert.equal(second.body.partidos[0].golLocal, 2);
+      assert.deepEqual(reads, ['matches', 'matches', 'matches']);
+    } else {
+      assert.equal(first.body.posiciones.find(team => team.equipo === 'América').pts, 1);
+      assert.equal(second.body.posiciones.find(team => team.equipo === 'América').pts, 3);
+      assert.deepEqual(reads, ['matches', 'teams', 'matches', 'teams', 'matches', 'teams']);
+    }
+    assert.deepEqual(distinct.body, second.body);
+    assert.equal(distinct.headers['Cache-Control'], NO_CACHE);
+  }
 });
 
 test('rutas inválidas, ausentes, métodos de escritura y fallos sin caché', async () => {
@@ -123,23 +170,33 @@ test('rutas inválidas, ausentes, métodos de escritura y fallos sin caché', as
     ['/api/jornadas/0.json', 400], ['/datos/jornadas/1.5', 400],
     ['/api/jornadas/999.json', 404], ['/api/desconocido', 404],
   ]) {
-    const response = await request(path);
-    assert.equal(response.statusCode, status, path);
-    assert.equal(response.headers['Cache-Control'], 'no-store');
+    for (const method of ['GET', 'HEAD']) {
+      const response = await request(path, { method });
+      assert.equal(response.statusCode, status, path);
+      assert.equal(response.headers['Cache-Control'], NO_CACHE);
+      if (method === 'HEAD') assert.equal(response.body, undefined);
+    }
   }
   for (const method of ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']) {
     const response = await request('/api/tabla.json', { method, read: () => assert.fail('No debe leer ni escribir Firebase') });
     assert.equal(response.statusCode, 405);
+    assert.equal(response.headers['Cache-Control'], NO_CACHE);
     assert.equal(response.headers.Allow, 'GET, HEAD');
   }
   for (const read of [async () => { throw new Error('private diagnostic'); }, async () => null]) {
-    const response = await request('/api/tabla.json', { read });
-    assert.equal(response.statusCode, 503);
-    assert.equal(response.headers['Cache-Control'], 'no-store');
-    assert.doesNotMatch(JSON.stringify(response.body), /private diagnostic/);
+    for (const path of ['/api/jornadas/14.json', '/datos/jornadas/14', '/api/tabla.json', '/datos/tabla']) {
+      for (const method of ['GET', 'HEAD']) {
+        const response = await request(path, { read, method });
+        assert.equal(response.statusCode, 503);
+        assert.equal(response.headers['Cache-Control'], NO_CACHE);
+        if (method === 'HEAD') assert.equal(response.body, undefined);
+        else assert.doesNotMatch(JSON.stringify(response.body), /private diagnostic/);
+      }
+    }
   }
   const emptyTeams = await request('/datos/tabla', { read: async key => key === 'teams' ? [] : { 7: match() } });
   assert.equal(emptyTeams.statusCode, 503);
+  assert.equal(emptyTeams.headers['Cache-Control'], NO_CACHE);
   assert.match(emptyTeams.body, /Datos no disponibles/);
 });
 

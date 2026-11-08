@@ -1,0 +1,32 @@
+{
+  "interface": {
+    "brandColor": "#D71920",
+    "capabilities": [],
+    "category": "Productivity",
+    "defaultPrompt": [
+      "Escribe el copy para Instagram y X de la previa de esta jornada de Liga MX.",
+      "Escribe el copy de cierre de la jornada de Liga MX con estos resultados.",
+      "Escribe el copy para Instagram y X que acompañará esta tabla general de Liga MX."
+    ],
+    "developerName": "Héctor López",
+    "displayName": "Liga MX Social",
+    "longDescription": "Escribe únicamente los textos para acompañar tus imágenes de Liga MX: previa de jornada, cierre con resultados y tabla general. Incluye copys para Instagram y X y revisa el límite de caracteres de X.",
+    "shortDescription": "Copys para Liga MX"
+  },
+  "apps": "./.app.json",
+  "name": "liga-mx-social",
+  "version": "0.8.1",
+  "description": "Genera copys para las publicaciones de Liga MX en Instagram y X.",
+  "author": {
+    "name": "Héctor López",
+    "email": "hectorlopezve@gmail.com"
+  },
+  "keywords": [
+    "Liga MX",
+    "fútbol",
+    "Instagram",
+    "X",
+    "redes sociales"
+  ],
+  "skills": "./skills"
+}
