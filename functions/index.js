@@ -15,7 +15,7 @@ export const publicData = onRequest(
 );
 
 export const ligaMcp = onRequest(
-  { region: 'us-central1', invoker: 'public', minInstances: 0, maxInstances: 2, timeoutSeconds: 30 },
+  { region: 'us-central1', invoker: 'public', minInstances: 0, maxInstances: 2, memory: '1GiB', timeoutSeconds: 60 },
   createLigaMcpHandler(createFirebaseReader(firebaseApp.options.databaseURL)),
 );
 

@@ -3,6 +3,10 @@ import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import {
+  readSocialSession,
+  writeSocialSession,
+} from '../social/social-session.js';
 import * as teamImages from '../assets/images/index.js';
 import { Match, PlayerTeam, TableEntry } from '../types/index.js';
 import { LOGOS } from '../utils/constants.js';
@@ -28,6 +32,8 @@ import {
   latestPlayedJornada,
   resolveMatchStatus,
   resolveMatchScorers,
+  resolveSocialLineup,
+  sortAndDeduplicateMatches,
   selectStandingsRange,
   selectTemplateMatches,
   SocialImageInput,
@@ -135,6 +141,16 @@ export class SocialPostGenerator extends LitElement {
       margin-top: 22px;
       padding-top: 18px;
       border-top: 1px solid rgba(203, 213, 225, 0.14);
+    }
+    summary {
+      cursor: pointer;
+      color: #bbf7d0;
+      font-weight: 800;
+      padding: 4px 0 14px;
+    }
+    summary:focus-visible {
+      outline: 2px solid #4ade80;
+      outline-offset: 4px;
     }
     .copy-panel h3 {
       margin: 0 0 6px;
@@ -326,14 +342,23 @@ export class SocialPostGenerator extends LitElement {
   private committedDrawVersion = -1;
   private activeDraw?: Promise<void>;
 
-  override firstUpdated() {
-    this._syncSelection();
-    this._resetCopyDraft();
-    this._requestDraw();
+  private copyContext: string;
+
+  constructor() {
+    super();
+    Object.assign(this, readSocialSession());
+    if (this.template === 'match-preview') this.platform = 'x';
+    this.copyContext = this._copyContext();
   }
 
   override updated(changed: PropertyValues) {
     if (changed.has('matchesList')) this._syncSelection();
+    if (this.template === 'match-preview') this.platform = 'x';
+    const context = this._copyContext();
+    if (context !== this.copyContext) {
+      this.copyContext = context;
+      this.copyDraft = undefined;
+    }
     if (
       changed.has('matchesList') ||
       changed.has('table') ||
@@ -343,21 +368,37 @@ export class SocialPostGenerator extends LitElement {
       changed.has('matchId') ||
       changed.has('players') ||
       changed.has('presentation')
-    ) {
+    )
       this._requestDraw();
-    }
-    if (
-      changed.has('matchesList') ||
-      changed.has('table') ||
-      changed.has('template') ||
-      changed.has('platform') ||
-      changed.has('jornada') ||
-      changed.has('dateSelection') ||
-      changed.has('matchId') ||
-      changed.has('copyTone')
-    ) {
-      this._resetCopyDraft();
-    }
+    this._saveSession();
+  }
+
+  private _copyContext(): string {
+    return JSON.stringify([
+      this.template,
+      this.platform,
+      this.template === 'standings' ? undefined : this.jornada,
+      DAY_TEMPLATES.has(this.template) ? this.dateSelection : undefined,
+      ['match-summary', 'match-preview'].includes(this.template)
+        ? this.matchId
+        : undefined,
+      this.copyTone,
+    ]);
+  }
+
+  private _saveSession() {
+    // La lista vacía inicial no invalida ni reemplaza una sesión recuperada.
+    if (!this.matchesList.length) return;
+    writeSocialSession({
+      template: this.template,
+      platform: this.platform,
+      jornada: this.jornada,
+      dateSelection: this.dateSelection,
+      matchId: this.matchId,
+      presentation: this.presentation,
+      copyTone: this.copyTone,
+      copyDraft: this.copyDraft,
+    });
   }
 
   override render() {
@@ -371,6 +412,7 @@ export class SocialPostGenerator extends LitElement {
     const copy = this.copyDraft ?? generatedCopy;
     const isDay = DAY_TEMPLATES.has(this.template);
     const isMatchSummary = this.template === 'match-summary';
+    const isMatchPreview = this.template === 'match-preview';
     const dates = this._datesForJornada();
     const dateString = (value: string) => `${value}T12:00:00`;
     const showDateSelector = isDay
@@ -394,8 +436,8 @@ export class SocialPostGenerator extends LitElement {
           <p class="eyebrow">Administración · Redes</p>
           <h2>Mesa editorial</h2>
           <p class="description">
-            Crea una pieza 4:5, su copy y su descripción alternativa con datos
-            en tiempo real.
+            Elige y descarga una imagen 4:5 con los datos actuales para
+            acompañar tus publicaciones de ChatGPT.
           </p>
           <label for="template">Plantilla</label>
           <select id="template" @change=${this._onTemplateChange}>
@@ -435,6 +477,9 @@ export class SocialPostGenerator extends LitElement {
             >
               Resumen final por partido
             </option>
+            <option value="match-preview" ?selected=${isMatchPreview}>
+              Previa con alineaciones · X
+            </option>
           </select>
           ${
             this.template === 'standings'
@@ -446,31 +491,17 @@ export class SocialPostGenerator extends LitElement {
                   </select>
                   ${showDateSelector}
                   ${
-                    isMatchSummary
-                      ? html`<label for="match">Partido finalizado</label>
+                    isMatchSummary || isMatchPreview
+                      ? html`<label for="match"
+                            >${isMatchPreview ? 'Partido' : 'Partido finalizado'}</label
+                          >
                           <select id="match" @change=${this._onMatchChange}>
-                            ${this._summaryMatches().map(match => html`<option value=${match.idMatch} ?selected=${match.idMatch === this.matchId}>${match.local} ${match.golLocal}–${match.golVisitante} ${match.visitante}</option>`)}
+                            ${this._selectableMatches().map(match => html`<option value=${match.idMatch} ?selected=${match.idMatch === this.matchId}>${match.local} ${isMatchPreview ? 'vs' : `${match.golLocal}–${match.golVisitante}`} ${match.visitante}</option>`)}
                           </select>`
                       : ''
                   }
                 `
           }
-          <label for="platform">Copy para</label>
-          <select id="platform" @change=${this._onPlatformChange}>
-            <option
-              value="instagram"
-              ?selected=${this.platform === 'instagram'}
-            >
-              Instagram · 1080 × 1350
-            </option>
-            <option value="x" ?selected=${this.platform === 'x'}>
-              X · 1080 × 1350
-            </option>
-          </select>
-          <p class="hint">
-            La imagen siempre se exporta en PNG 4:5; sólo cambia la llamada a la
-            acción del copy.
-          </p>
           <div class="presentation-options">
             <h3>Presentación</h3>
             ${
@@ -537,8 +568,47 @@ export class SocialPostGenerator extends LitElement {
           >
             <md-icon slot="icon">download</md-icon> Descargar PNG
           </md-filled-button>
-          ${result.errors.length ? html`<p class="validation">${result.errors[0]}</p>` : ''}
+          ${result.errors.map(error => html`<p class="validation">${error}</p>`)}
           <div class="copy-panel">
+            <label for="alt-text">Descripción alternativa</label>
+            <textarea
+              id="alt-text"
+              aria-label="Descripción alternativa"
+              readonly
+              .value=${result.alt}
+            ></textarea>
+            <md-outlined-button
+              @click=${() => this._copy(result.alt, 'Descripción alternativa copiada.')}
+              ><md-icon slot="icon">accessibility_new</md-icon>Copiar
+              alt</md-outlined-button
+            >
+          </div>
+          <details class="copy-panel">
+            <summary>Copies de respaldo</summary>
+            <p>
+              Usa estos textos si necesitas una alternativa a tus copies de
+              ChatGPT.
+            </p>
+            <label for="platform">Copy para</label>
+            <select
+              id="platform"
+              ?disabled=${isMatchPreview}
+              @change=${this._onPlatformChange}
+            >
+              <option
+                value="instagram"
+                ?selected=${this.platform === 'instagram'}
+              >
+                Instagram · 1080 × 1350
+              </option>
+              <option value="x" ?selected=${this.platform === 'x'}>
+                X · 1080 × 1350
+              </option>
+            </select>
+            <p class="hint">
+              ${isMatchPreview ? 'Esta plantilla es exclusiva de X.' : 'La red seleccionada cambia únicamente los textos de respaldo.'}
+            </p>
+
             <div class="copy-toolbar">
               <div>
                 <label for="copy-tone">Enfoque del copy</label>
@@ -674,18 +744,6 @@ export class SocialPostGenerator extends LitElement {
                     }
                   `
             }
-            <label for="alt-text">Descripción alternativa</label>
-            <textarea
-              id="alt-text"
-              aria-label="Descripción alternativa"
-              readonly
-              .value=${result.alt}
-            ></textarea>
-            <md-outlined-button
-              @click=${() => this._copy(result.alt, 'Descripción alternativa copiada.')}
-              ><md-icon slot="icon">accessibility_new</md-icon>Copiar
-              alt</md-outlined-button
-            >
             <label for="tracking-link">Enlace de seguimiento</label>
             <input
               id="tracking-link"
@@ -697,8 +755,8 @@ export class SocialPostGenerator extends LitElement {
               ><md-icon slot="icon">link</md-icon>Copiar
               enlace</md-outlined-button
             >
-            <p class="copy-status" aria-live="polite">${this.copyStatus}</p>
-          </div>
+          </details>
+          <p class="copy-status" aria-live="polite">${this.copyStatus}</p>
         </div>
         <div class="preview">
           <canvas aria-label="Vista previa de la publicación social"></canvas>
@@ -712,7 +770,10 @@ export class SocialPostGenerator extends LitElement {
       template: this.template,
       matches: this.matchesList,
       standings: this.table,
-      matchId: this.template === 'match-summary' ? this.matchId : undefined,
+      matchId: ['match-summary', 'match-preview'].includes(this.template)
+        ? this.matchId
+        : undefined,
+      players: this.players,
       jornada:
         this.template === 'standings'
           ? latestPlayedJornada(this.matchesList)
@@ -741,6 +802,7 @@ export class SocialPostGenerator extends LitElement {
       .sort((a, b) => a.localeCompare(b));
   }
   private _syncSelection() {
+    if (!this.matchesList.length) return;
     const jornadas = this._jornadas();
     if (!this.jornada || !jornadas.includes(this.jornada))
       this.jornada = defaultSocialJornada(this.matchesList);
@@ -761,13 +823,25 @@ export class SocialPostGenerator extends LitElement {
         Number.isFinite(match.golVisitante),
     );
   }
+  private _selectableMatches(): Match[] {
+    return this.template === 'match-preview'
+      ? sortAndDeduplicateMatches(this.matchesList).filter(
+          match => match.jornada === this.jornada,
+        )
+      : this._summaryMatches();
+  }
   private _syncMatchSelection() {
-    const matches = this._summaryMatches();
-    if (!this.matchId || !matches.some(match => match.idMatch === this.matchId))
+    if (!['match-summary', 'match-preview'].includes(this.template)) return;
+    const matches = this._selectableMatches();
+    if (
+      this.matchId == null ||
+      !matches.some(match => match.idMatch === this.matchId)
+    )
       this.matchId = matches[0]?.idMatch;
   }
   private _onTemplateChange(event: Event) {
     this.template = (event.target as HTMLSelectElement).value as TemplateId;
+    if (this.template === 'match-preview') this.platform = 'x';
     this._syncMatchSelection();
   }
   private _onJornadaChange(event: Event) {
@@ -782,7 +856,10 @@ export class SocialPostGenerator extends LitElement {
     this.dateSelection = (event.target as HTMLSelectElement).value;
   }
   private _onPlatformChange(event: Event) {
-    this.platform = (event.target as HTMLSelectElement).value as SocialPlatform;
+    this.platform =
+      this.template === 'match-preview'
+        ? 'x'
+        : ((event.target as HTMLSelectElement).value as SocialPlatform);
   }
   private _onCopyToneChange(event: Event) {
     this.copyTone = (event.target as HTMLSelectElement).value as SocialCopyTone;
@@ -953,6 +1030,10 @@ export class SocialPostGenerator extends LitElement {
     input: SocialImageInput,
   ) {
     const matches = selectTemplateMatches(input);
+    if (input.template === 'match-preview') {
+      await this._drawMatchPreview(context, input, matches[0]);
+      return;
+    }
     if (input.template === 'match-summary') {
       await this._drawMatchSummary(context, input, matches[0]);
       return;
@@ -985,6 +1066,113 @@ export class SocialPostGenerator extends LitElement {
       isResults
         ? 'Marcadores y fichas completas'
         : 'Calendario, horarios y resultados',
+    );
+  }
+
+  private async _drawMatchPreview(
+    context: CanvasRenderingContext2D,
+    input: SocialImageInput,
+    match: Match | undefined,
+  ) {
+    if (!match) return;
+    await this._drawHeader(
+      context,
+      'ALINEACIONES',
+      `CONFIRMADAS · JORNADA ${match.jornada} · PREVIA`,
+    );
+    await Promise.all([
+      this._drawTeamBadge(context, match.local, 231, 212, 110),
+      this._drawTeamBadge(context, match.visitante, 739, 212, 110),
+    ]);
+    context.fillStyle = SOCIAL_COLORS.text;
+    this._drawFittedText(
+      context,
+      match.local,
+      286,
+      368,
+      420,
+      30,
+      'center',
+      800,
+    );
+    this._drawFittedText(
+      context,
+      match.visitante,
+      794,
+      368,
+      420,
+      30,
+      'center',
+      800,
+    );
+    context.fillStyle = SOCIAL_COLORS.primary;
+    context.font = '900 32px system-ui, sans-serif';
+    context.textAlign = 'center';
+    context.fillText('VS', 540, 286);
+    context.fillStyle = SOCIAL_COLORS.text;
+    context.font = '700 24px system-ui, sans-serif';
+    context.fillText(
+      `${formatSocialDate(match.fecha)} · ${formatKickoff(match.hora)}`,
+      540,
+      431,
+      940,
+    );
+    context.fillStyle = SOCIAL_COLORS.muted;
+    context.font = '600 22px system-ui, sans-serif';
+    context.fillText(
+      match.estadio?.trim() || 'Estadio pendiente',
+      540,
+      468,
+      940,
+    );
+    context.textAlign = 'left';
+
+    for (const [index, side] of (['local', 'visitor'] as const).entries()) {
+      const x = index === 0 ? 58 : 566;
+      context.fillStyle = 'rgba(30, 41, 59, .94)';
+      this._roundedRect(context, x, 510, 456, 670, 18);
+      context.fill();
+      context.fillStyle = SOCIAL_COLORS.primary;
+      context.font = '800 19px system-ui, sans-serif';
+      context.fillText(
+        `ONCE TITULAR · ${side === 'local' ? 'LOCAL' : 'VISITANTE'}`,
+        x + 24,
+        550,
+      );
+      resolveSocialLineup(match, side, input.players).forEach((player, row) => {
+        const y = 578 + row * 53;
+        if (row % 2 === 0) {
+          context.fillStyle = 'rgba(51, 65, 85, .5)';
+          this._roundedRect(context, x + 14, y, 428, 49, 8);
+          context.fill();
+        }
+        context.fillStyle = SOCIAL_COLORS.primary;
+        context.font = '800 23px system-ui, sans-serif';
+        context.textAlign = 'right';
+        context.fillText(String(player.number), x + 64, y + 31);
+        context.textAlign = 'left';
+        context.fillStyle = SOCIAL_COLORS.text;
+        // Una sola línea acotada evita invadir la siguiente fila, incluso con
+        // apellidos largos o palabras sin espacios.
+        let name = player.name;
+        let size = 24;
+        do {
+          context.font = `700 ${size}px system-ui, sans-serif`;
+          if (context.measureText(name).width <= 338) break;
+          size -= 1;
+        } while (size >= 20);
+        if (context.measureText(name).width > 338) {
+          while (name.length && context.measureText(`${name}…`).width > 338)
+            name = name.slice(0, -1);
+          name = `${name.trimEnd()}…`;
+        }
+        context.fillText(name, x + 80, y + 31);
+      });
+    }
+    this._drawFooter(
+      input.presentation,
+      context,
+      'Alineaciones registradas · Previa del partido',
     );
   }
 
@@ -1894,6 +2082,7 @@ export class SocialPostGenerator extends LitElement {
     }
   }
   private async _download() {
+    this._saveSession();
     await this.updateComplete;
     const drawVersion = this.drawVersion;
     await this.activeDraw;
@@ -1910,7 +2099,12 @@ export class SocialPostGenerator extends LitElement {
     const blob = await new Promise<Blob | null>(resolve =>
       canvas.toBlob(resolve, 'image/png'),
     );
-    if (!blob) return;
+    if (
+      !blob ||
+      drawVersion !== this.drawVersion ||
+      this.committedDrawVersion !== drawVersion
+    )
+      return;
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;

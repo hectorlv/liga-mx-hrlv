@@ -106,6 +106,7 @@ export interface CardMatchEvent extends BaseMatchEvent {
   foulType?: FoulType;
 }
 export interface PhaseMatchEvent extends BaseMatchEvent {
+  type: 'phase';
   minute: number;
   phase: 'start' | 'halftime' | 'secondHalf' | 'fulltime';
 }

@@ -207,14 +207,16 @@ test('a 320 px Más se alinea y Volver arriba vive en la cabecera', async ({ pag
   await page.waitForFunction(() => window.scrollY === 0);
 });
 
-test('Tabla explica abreviaturas y conserva el aviso provisional', async ({ page }) => {
+test('Tabla distingue posiciones en vivo de clasificados confirmados y explica abreviaturas', async ({ page }) => {
   await mountPage(
     page,
     'table-page',
     `component.table = [{ equipo: 'Atlas', jj: 1, jg: 1, je: 0, jp: 0, gf: 2, gc: 0, dg: 2, pts: 3, clasificado: true }]; component.teams = ['Atlas']; component.players = new Map(); component.matchesList = [];`,
   );
 
-  await expect(page.getByText('Tabla en vivo y provisional')).toBeVisible();
+  await expect(page.getByRole('note')).toContainText('Las posiciones y estadísticas pueden cambiar en vivo.');
+  await expect(page.getByRole('note')).toContainText('clasificados tienen su plaza asegurada con resultados finalizados');
+  await expect(page.getByRole('link', { name: 'Abrir detalle de Atlas' })).toHaveClass(/qualified/);
   const guide = page.getByText('Cómo leer la tabla');
   await guide.click();
   await expect(page.getByText('Partidos jugados')).toBeVisible();

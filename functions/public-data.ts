@@ -1,15 +1,10 @@
 import type { Match } from '../src/types/index.js';
 import { normalizeMatches } from '../src/utils/matchData.js';
-import { calculateTable } from '../src/utils/tableCalculator.js';
-import { resolveMatchStatus } from '../src/utils/matchStatus.js';
-import { formatDateYYYYMMDD, TOURNAMENT_TIME_ZONE } from '../src/utils/dateUtils.js';
-import { EDITORIAL_TOURNAMENT, REGULAR_SEASON_LAST_JORNADA } from '../src/utils/tournamentRules.js';
+import { REGULAR_SEASON_LAST_JORNADA } from '../src/utils/tournamentRules.js';
 
-export class PublicDataError extends Error {
-  constructor(public status: number, public code: string, message: string) {
-    super(message);
-  }
-}
+import { PublicDataError, publicMetadata, publicMatch, validDate } from './public-data-common.js';
+import { publicTable } from './table-data.js';
+export { PublicDataError } from './public-data-common.js';
 
 export type PublicRoute = { format: 'json' | 'html'; jornada?: number };
 
@@ -27,15 +22,6 @@ export function parsePublicRoute(path: string): PublicRoute {
   return { format, jornada: Number(value) };
 }
 
-function validDate(match: Match): Date | null {
-  return match.fecha instanceof Date && Number.isFinite(match.fecha.getTime())
-    ? match.fecha : null;
-}
-
-function score(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
 export function createPublicData(
   route: PublicRoute,
   rawMatches: Record<string, Match> | Match[] | null,
@@ -43,12 +29,7 @@ export function createPublicData(
   now = new Date(),
 ) {
   const matches = normalizeMatches(rawMatches);
-  const metadata = {
-    torneo: { id: EDITORIAL_TOURNAMENT.id, nombre: EDITORIAL_TOURNAMENT.label },
-    zonaHoraria: TOURNAMENT_TIME_ZONE,
-    consultadoEn: now.toISOString(),
-    aviso: 'Momento de consulta de Firebase; no es la fecha de edición. Respuesta sin caché de navegador ni CDN; comprueba este momento de consulta si tu herramienta conserva una copia.',
-  };
+  const metadata = publicMetadata(now);
   if (route.jornada !== undefined) {
     const selected = matches.filter(match => match.jornada === route.jornada)
       .sort((a, b) => (validDate(a)?.getTime() ?? Infinity) - (validDate(b)?.getTime() ?? Infinity) || a.idMatch - b.idMatch);
@@ -58,43 +39,15 @@ export function createPublicData(
       tipo: 'jornada' as const,
       jornada: route.jornada,
       fase: route.jornada <= REGULAR_SEASON_LAST_JORNADA ? 'regular' : 'liguilla',
-      partidos: selected.map(match => {
-        const date = validDate(match);
-        return {
-          idMatch: match.idMatch,
-          local: match.local,
-          visitante: match.visitante,
-          estadio: match.estadio || null,
-          fecha: date ? formatDateYYYYMMDD(date) : null,
-          hora: date ? match.hora : null,
-          inicio: date?.toISOString() ?? null,
-          golLocal: score(match.golLocal),
-          golVisitante: score(match.golVisitante),
-          penaltyLocal: score(match.penaltyLocal),
-          penaltyVisitante: score(match.penaltyVisitante),
-          estado: resolveMatchStatus(match),
-          minutoEnVivo: resolveMatchStatus(match) === 'live' ? score(match.liveMinute) : null,
-        };
-      }),
+      partidos: selected.map(publicMatch),
     };
   }
-  const teams = Object.values(rawTeams || {});
-  if (!teams.length || teams.some(team => typeof team !== 'string' || !team.trim())) {
-    throw new PublicDataError(503, 'data_unavailable', 'No se pudieron obtener los equipos para calcular la tabla.');
-  }
-  const provisional = matches.some(match =>
-    match.jornada <= REGULAR_SEASON_LAST_JORNADA && match.status !== 'cancelled' &&
-    match.golLocal != null && match.golVisitante != null && resolveMatchStatus(match) !== 'finished',
-  );
-  return {
-    ...metadata,
-    tipo: 'tabla' as const,
-    provisional,
-    criterio: 'Mismo cálculo que la app: fase regular; desempates por puntos, diferencia de goles y goles a favor.',
-    avisoTabla: 'Tabla en vivo y provisional: los resultados no finalizados no confirman clasificación ni eliminación.',
-    posiciones: calculateTable(teams, matches).map((entry, index) => ({ posicion: index + 1, ...entry })),
-  };
+  return { ...metadata, ...publicTable(rawTeams, matches) };
 }
+
+export { createExtendedData } from './extended-data.js';
+export { createTournamentData } from './tournament-data.js';
+export { prepareScenarioData, pointBalances, goalThresholds } from './scenario-data.js';
 
 function escapeHtml(value: unknown): string {
   return String(value ?? '').replace(/[&<>"']/g, character => ({

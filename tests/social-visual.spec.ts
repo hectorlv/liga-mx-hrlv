@@ -1,4 +1,5 @@
 import { expect, test } from 'playwright/test';
+import type { Match, Player } from '../src/types/index.js';
 
 const teams = [
   'América',
@@ -22,7 +23,7 @@ const teams = [
 ];
 
 function createFixtures() {
-  const matches = teams.slice(0, 9).map((local, index) => ({
+  const matches = teams.slice(0, 9).map<Match>((local, index) => ({
     idMatch: index,
     estadio: 'Estadio HRLV',
     fecha: `2026/08/${String(7 + Math.floor(index / 3)).padStart(2, '0')}`,
@@ -62,12 +63,13 @@ function createFixtures() {
     playin: index >= 8 && index < 10,
     eliminado: index >= 10,
   }));
-  return { matches, table };
+  return { matches, table, players: [] as [string, Player[]][] };
 }
 
 async function mountSocialFixture(
   page: import('playwright/test').Page,
   fixtures: ReturnType<typeof createFixtures>,
+  openBackup = true,
 ) {
   await page.route('**/*', route => {
     const hostname = new URL(route.request().url()).hostname;
@@ -84,16 +86,20 @@ async function mountSocialFixture(
   await page.waitForFunction(
     () => customElements.get('social-page') !== undefined,
   );
-  await page.evaluate(({ matches, table }) => {
+  await page.evaluate(({ matches, table, players }) => {
     document.querySelector('liga-mx-hrlv')?.remove();
     const fixture = document.createElement('social-page') as HTMLElement & {
       matchesList: unknown[];
       table: unknown[];
+      players: Map<string, Player[]>;
     };
     fixture.matchesList = matches;
     fixture.table = table;
+    fixture.players = new Map(players);
     document.body.replaceChildren(fixture);
   }, fixtures);
+  if (openBackup)
+    await page.getByText('Copies de respaldo', { exact: true }).click();
 }
 
 for (const template of [
@@ -122,21 +128,25 @@ for (const template of [
     await expect(canvas).toHaveJSProperty('width', 1080);
     await expect(canvas).toHaveJSProperty('height', 1350);
     if (template === 'standings') {
-      await expect(generator.locator('textarea').first()).toHaveValue(
-        /Jornada 1/,
-      );
+      await expect(
+        generator.getByLabel('Texto listo para publicar'),
+      ).toHaveValue(/Jornada 1/);
       await expect(generator.locator('#tracking-link')).toHaveValue(
         /utm_campaign=jornada_1/,
       );
     }
     if (template === 'day-results' || template === 'round-results') {
-      await expect(generator.locator('textarea').first()).toHaveValue(
-        /@clubamerica 0–1 @atlasfc/,
-      );
+      await expect(
+        generator.getByLabel('Texto listo para publicar'),
+      ).toHaveValue(/@clubamerica 0–1 @atlasfc/);
     }
-    await canvas.evaluate(element =>
-      element.setAttribute('style', 'width: 1080px; height: 1350px;'),
-    );
+    await canvas.evaluate(element => {
+      element.setAttribute('style', 'width: 1080px; height: 1350px;');
+      const top = element.getBoundingClientRect().top;
+      // Alinear el origen evita diferencias por el scroll al crecer los controles.
+      element.style.position = 'relative';
+      element.style.top = `${Math.floor(top) + 0.25 - top}px`;
+    });
     await page.waitForFunction(() => {
       const generator = document
         .querySelector('social-page')
@@ -211,7 +221,10 @@ test('bloquea la descarga hasta confirmar el render actual', async ({
       new Event('change', { bubbles: true, composed: true }),
     );
   });
-  const download = generator.locator('md-filled-button');
+  const download = generator.getByRole('button', {
+    name: 'Descargar PNG',
+    exact: true,
+  });
   await expect(download).toHaveAttribute('disabled', '');
   await expect(download).not.toHaveAttribute('disabled', '');
 });
@@ -246,9 +259,13 @@ test('separa el estado pospuesto del horario y pluraliza por día', async ({
   const generator = page.locator('social-post-generator');
   const canvas = generator.locator('canvas');
   await expect(generator).toBeVisible();
-  await canvas.evaluate(element =>
-    element.setAttribute('style', 'width: 1080px; height: 1350px;'),
-  );
+  await canvas.evaluate(element => {
+    element.setAttribute('style', 'width: 1080px; height: 1350px;');
+    const top = element.getBoundingClientRect().top;
+    // Alinear el origen evita diferencias por el scroll al crecer los controles.
+    element.style.position = 'relative';
+    element.style.top = `${Math.floor(top) + 0.25 - top}px`;
+  });
   await expect(canvas).toHaveScreenshot('round-preview-postponed.png');
 });
 
@@ -456,10 +473,9 @@ test('permite descargar el resumen final de un partido', async ({ page }) => {
     );
   });
   await expect(generator.locator('#match')).toBeVisible();
-  await expect(generator.locator('md-filled-button')).not.toHaveAttribute(
-    'disabled',
-    '',
-  );
+  await expect(
+    generator.getByRole('button', { name: 'Descargar PNG', exact: true }),
+  ).not.toHaveAttribute('disabled', '');
   const firstPreview = await generator
     .locator('canvas')
     .evaluate(canvas => (canvas as HTMLCanvasElement).toDataURL());
@@ -471,4 +487,365 @@ test('permite descargar el resumen final de un partido', async ({ page }) => {
         .evaluate(canvas => (canvas as HTMLCanvasElement).toDataURL()),
     )
     .not.toBe(firstPreview);
+});
+
+const sessionKey = 'liga-mx-hrlv:social:v1';
+
+function createLineupFixtures() {
+  const fixtures = createFixtures();
+  const positions = [
+    'Defensa',
+    'Defensa',
+    'Portero',
+    'Medio',
+    'Medio',
+    'Medio',
+    'Delantero',
+    'Delantero',
+    'Delantero',
+    'Otra',
+  ];
+  const numbers = [10, 2, 1, 4, 5, 6, 7, 8, 9, 11, 12];
+  const names = [
+    'Defensa Diez',
+    'Defensa Dos',
+    'Guardameta',
+    'Medio Cuatro',
+    'Medio Cinco',
+    'Medio Seis',
+    'Delantero Siete',
+    'Delantero Ocho',
+    'Delantero Con Apellidos Extraordinariamente Largos Para La Imagen',
+    'Sin Posición',
+  ];
+  const match = fixtures.matches[0];
+  match.lineupLocal = numbers.map(number => ({ number, titular: true }));
+  match.lineupVisitor = numbers.map(number => ({ number, titular: true }));
+  fixtures.players = [match.local, match.visitante].map(team => [
+    team,
+    positions.map((position, index) => ({
+      number: numbers[index],
+      name: names[index],
+      fullName: names[index],
+      position,
+      birthDate: '',
+      nationality: '',
+      imgSrc: '',
+    })),
+  ]);
+  return fixtures;
+}
+
+test('Redes prioriza imágenes y deja los copies cerrados como respaldo', async ({
+  page,
+}) => {
+  await mountSocialFixture(page, createFixtures(), false);
+  const generator = page.locator('social-post-generator');
+  await expect(
+    generator.getByRole('button', { name: 'Descargar PNG', exact: true }),
+  ).toBeVisible();
+  await expect(
+    generator.getByLabel('Descripción alternativa', { exact: true }),
+  ).toBeVisible();
+  await expect(generator.getByLabel('Texto listo para publicar')).toBeHidden();
+  await generator.getByText('Copies de respaldo', { exact: true }).click();
+  await expect(generator.getByLabel('Texto listo para publicar')).toBeVisible();
+});
+
+test('Redes recupera selección y borrador vacío tras descargar, recargar y cargar datos tarde', async ({
+  page,
+}) => {
+  const fixtures = createFixtures();
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  await generator.locator('#template').selectOption('day-results');
+  await generator.locator('#date').selectOption({ index: 1 });
+  const selectedDate = await generator.locator('#date').inputValue();
+  await generator.locator('#platform').selectOption('x');
+  await generator.locator('#copy-tone').selectOption('data');
+  await generator.getByLabel('Dominio', { exact: true }).uncheck();
+  await generator.getByLabel('Cuadrícula', { exact: true }).uncheck();
+  await generator.getByLabel('Primer post para X').fill('');
+  const downloadEvent = page.waitForEvent('download');
+  await generator
+    .getByRole('button', { name: 'Descargar PNG', exact: true })
+    .click();
+  const download = await downloadEvent;
+  expect(download.suggestedFilename()).toContain('day-results');
+  const saved = await page.evaluate(
+    key => sessionStorage.getItem(key),
+    sessionKey,
+  );
+
+  // El siguiente montaje recarga la página, pero los partidos llegan después.
+  await mountSocialFixture(
+    page,
+    { ...fixtures, matches: [], table: [] },
+    false,
+  );
+  await expect(generator.locator('#template')).toHaveValue('day-results');
+  expect(
+    await page.evaluate(key => sessionStorage.getItem(key), sessionKey),
+  ).toBe(saved);
+  await page.locator('social-page').evaluate((element, fixtures) => {
+    Object.assign(element, {
+      matchesList: fixtures.matches,
+      table: fixtures.table,
+    });
+  }, fixtures);
+  await expect(generator.locator('#date')).toHaveValue(selectedDate);
+  await generator.getByText('Copies de respaldo', { exact: true }).click();
+  await expect(generator.locator('#platform')).toHaveValue('x');
+  await expect(generator.locator('#copy-tone')).toHaveValue('data');
+  await expect(
+    generator.getByLabel('Dominio', { exact: true }),
+  ).not.toBeChecked();
+  await expect(
+    generator.getByLabel('Cuadrícula', { exact: true }),
+  ).not.toBeChecked();
+  await expect(generator.getByLabel('Primer post para X')).toHaveValue('');
+
+  // Salir y regresar crea otro componente dentro de la misma pestaña.
+  await page.locator('social-page').evaluate((element, fixtures) => {
+    element.remove();
+    const replacement = document.createElement('social-page');
+    Object.assign(replacement, {
+      matchesList: fixtures.matches,
+      table: fixtures.table,
+    });
+    document.body.replaceChildren(replacement);
+  }, fixtures);
+  await expect(generator.locator('#date')).toHaveValue(selectedDate);
+  await generator.getByText('Copies de respaldo', { exact: true }).click();
+  await expect(generator.getByLabel('Primer post para X')).toHaveValue('');
+});
+
+test('Redes ajusta selecciones caducadas y conserva presentación y tono', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    key =>
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({
+          template: 'match-preview',
+          platform: 'x',
+          jornada: 999,
+          matchId: 999,
+          dateSelection: '2020-01-01',
+          copyTone: 'conversation',
+          copyDraft: 'Borrador de otro partido',
+          presentation: {
+            showDomain: false,
+            showHandle: true,
+            showGrid: false,
+            standingsRange: 'bottom',
+          },
+        }),
+      ),
+    sessionKey,
+  );
+  await mountSocialFixture(page, createLineupFixtures());
+  const generator = page.locator('social-post-generator');
+  await expect(generator.locator('#jornada')).toHaveValue('1');
+  await expect(generator.locator('#match')).toHaveValue('0');
+  await expect(generator.locator('#copy-tone')).toHaveValue('conversation');
+  await expect(
+    generator.getByLabel('Dominio', { exact: true }),
+  ).not.toBeChecked();
+  await expect(generator.getByLabel('Primer post para X')).not.toHaveValue(
+    'Borrador de otro partido',
+  );
+});
+
+for (const storage of ['invalid-json', 'invalid-fields', 'unavailable']) {
+  test(`Redes tolera almacenamiento ${storage}`, async ({ page }) => {
+    await page.addInitScript(
+      ({ key, storage }) => {
+        if (storage === 'unavailable') {
+          Object.defineProperty(Storage.prototype, 'getItem', {
+            value: () => {
+              throw new Error('Storage blocked');
+            },
+          });
+          Object.defineProperty(Storage.prototype, 'setItem', {
+            value: () => {
+              throw new Error('Storage blocked');
+            },
+          });
+        } else
+          sessionStorage.setItem(
+            key,
+            storage === 'invalid-json'
+              ? '{'
+              : JSON.stringify({
+                  template: 'unknown',
+                  platform: 5,
+                  jornada: -1,
+                  presentation: {},
+                  copyTone: 'unknown',
+                }),
+          );
+      },
+      { key: sessionKey, storage },
+    );
+    await mountSocialFixture(page, createFixtures(), false);
+    const generator = page.locator('social-post-generator');
+    await expect(generator.locator('#template')).toHaveValue('round-preview');
+    await expect(
+      generator.getByRole('button', { name: 'Descargar PNG', exact: true }),
+    ).toBeEnabled();
+  });
+}
+
+test('Redes no traslada selecciones a una pestaña nueva independiente', async ({
+  page,
+  context,
+}) => {
+  await mountSocialFixture(page, createFixtures(), false);
+  await page
+    .locator('social-post-generator #template')
+    .selectOption('standings');
+  const otherPage = await context.newPage();
+  await mountSocialFixture(otherPage, createFixtures(), false);
+  await expect(
+    otherPage.locator('social-post-generator #template'),
+  ).toHaveValue('round-preview');
+  await otherPage.close();
+});
+
+test('previa con alineaciones ordena por posición y dorsal, exporta PNG y conserva selección', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  const fixtures = createLineupFixtures();
+  await mountSocialFixture(page, fixtures, false);
+  const generator = page.locator('social-post-generator');
+  await generator.locator('#template').selectOption('match-preview');
+  const alt = generator.getByLabel('Descripción alternativa', { exact: true });
+  await expect(alt).toHaveValue(
+    /Alineaciones confirmadas.*1\. Guardameta; 2\. Defensa Dos; 10\. Defensa Diez; 4\. Medio Cuatro.*11\. Sin Posición; 12\. Jugador #12/,
+  );
+  await expect(alt).not.toHaveValue(/0 a 1|0–1/);
+  await generator.getByText('Copies de respaldo', { exact: true }).click();
+  await expect(generator.locator('#platform')).toHaveValue('x');
+  await expect(generator.locator('#platform')).toBeDisabled();
+  const copies: string[] = [];
+  for (const tone of ['informative', 'rhythm', 'data', 'conversation']) {
+    await generator.locator('#copy-tone').selectOption(tone);
+    copies.push(await generator.getByLabel('Primer post para X').inputValue());
+  }
+  expect(new Set(copies).size).toBe(4);
+  for (const copy of copies) {
+    expect(copy.length).toBeLessThanOrEqual(280);
+    expect(copy).not.toMatch(/0–1|https?:/);
+  }
+  const downloadButton = generator.getByRole('button', {
+    name: 'Descargar PNG',
+    exact: true,
+  });
+  await expect(downloadButton).toBeEnabled();
+  const canvas = generator.locator('canvas');
+  await expect(canvas).toHaveJSProperty('width', 1080);
+  await expect(canvas).toHaveJSProperty('height', 1350);
+  if (browserName === 'chromium') {
+    await generator.getByText('Copies de respaldo', { exact: true }).click();
+    await page.screenshot({
+      path: testInfo.outputPath('preview-ui.png'),
+      fullPage: true,
+    });
+    const png = await canvas.evaluate(
+      element =>
+        (element as HTMLCanvasElement).toDataURL('image/png').split(',')[1],
+    );
+    expect(Buffer.from(png, 'base64')).toMatchSnapshot('match-preview.png');
+  }
+  const downloadEvent = page.waitForEvent('download');
+  await downloadButton.click();
+  const download = await downloadEvent;
+  expect(download.suggestedFilename()).toMatch(/match-preview-j1-p0-.*\.png$/);
+  if (browserName === 'chromium')
+    await download.saveAs(testInfo.outputPath('match-preview.png'));
+  await mountSocialFixture(page, fixtures, false);
+  await expect(generator.locator('#template')).toHaveValue('match-preview');
+  await expect(generator.locator('#match')).toHaveValue('0');
+});
+
+test('previa con alineaciones bloquea titulares incompletos, duplicados y exportaciones desactualizadas', async ({
+  page,
+}) => {
+  const fixtures = createLineupFixtures();
+  await mountSocialFixture(page, fixtures, false);
+  const generator = page.locator('social-post-generator');
+  await generator.locator('#template').selectOption('match-preview');
+  const download = generator.getByRole('button', {
+    name: 'Descargar PNG',
+    exact: true,
+  });
+  await expect(download).toBeEnabled();
+  await generator.locator('#match').selectOption('1');
+  await expect(download).toBeDisabled();
+  await expect(generator.locator('.validation')).toHaveText([
+    'Atlas: 0/11 titulares con dorsal distinto.',
+    'Cruz Azul: 0/11 titulares con dorsal distinto.',
+  ]);
+  await expect(
+    generator.getByLabel('Descripción alternativa', { exact: true }),
+  ).toHaveValue(/^Alineaciones pendientes/);
+  await generator.locator('#match').selectOption('0');
+  await expect(download).toBeEnabled();
+  fixtures.matches[0].lineupLocal[0].number = 2;
+  fixtures.matches[0].lineupVisitor.pop();
+  await page.locator('social-page').evaluate((element, fixtures) => {
+    Object.assign(element, { matchesList: fixtures.matches });
+  }, fixtures);
+  await expect(download).toBeDisabled();
+  await expect(generator.locator('.validation')).toHaveText([
+    'América: 10/11 titulares con dorsal distinto (hay dorsales duplicados).',
+    'Atlas: 10/11 titulares con dorsal distinto.',
+  ]);
+});
+
+test('Redes conserva el rango de tabla y un borrador manual tras recargar', async ({
+  page,
+}) => {
+  const fixtures = createFixtures();
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  await generator.locator('#template').selectOption('standings');
+  await generator.locator('#standings-range').selectOption('bottom');
+  await generator.locator('#copy-tone').selectOption('rhythm');
+  await generator
+    .getByLabel('Texto listo para publicar')
+    .fill('Mi borrador editorial');
+  await generator.getByLabel('Usuario', { exact: true }).uncheck();
+  await mountSocialFixture(page, fixtures);
+  await expect(generator.locator('#standings-range')).toHaveValue('bottom');
+  await expect(generator.locator('#copy-tone')).toHaveValue('rhythm');
+  await expect(generator.getByLabel('Texto listo para publicar')).toHaveValue(
+    'Mi borrador editorial',
+  );
+  await expect(
+    generator.getByLabel('Usuario', { exact: true }),
+  ).not.toBeChecked();
+});
+
+test('previa con alineaciones mantiene controles y vista previa dentro del ancho móvil', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mountSocialFixture(page, createLineupFixtures(), false);
+  const generator = page.locator('social-post-generator');
+  await generator.locator('#template').selectOption('match-preview');
+  await expect(
+    generator.getByRole('button', { name: 'Descargar PNG', exact: true }),
+  ).toBeEnabled();
+  for (const width of [390, 768]) {
+    await page.setViewportSize({ width, height: 1024 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(width);
+    const canvas = await generator.locator('canvas').boundingBox();
+    expect(canvas?.width).toBeLessThanOrEqual(width);
+  }
 });

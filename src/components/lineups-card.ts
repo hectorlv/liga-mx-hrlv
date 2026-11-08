@@ -14,7 +14,7 @@ import '@material/web/button/outlined-button.js';
 import '@material/web/icon/icon.js';
 import { MdDialog } from '@material/web/dialog/dialog.js';
 
-const POSITION_ORDER = ['Portero', 'Defensa', 'Medio', 'Delantero'];
+import { comparePlayersByPositionAndNumber } from '../utils/playerOrder.js';
 
 @customElement('lineups-card')
 export class LineupsCard extends LitElement {
@@ -436,17 +436,7 @@ export class LineupsCard extends LitElement {
   }
 
   private _sortPlayersByPositionAndNumber(players: Player[]) {
-    return [...players].sort((a, b) => {
-      const positionDifference =
-        this._positionIndex(a.position) - this._positionIndex(b.position);
-      if (positionDifference !== 0) return positionDifference;
-      return a.number - b.number;
-    });
-  }
-
-  private _positionIndex(position: string) {
-    const index = POSITION_ORDER.indexOf(position);
-    return index === -1 ? POSITION_ORDER.length : index;
+    return [...players].sort(comparePlayersByPositionAndNumber);
   }
 
   override updated(changedProps: Map<string, unknown>) {

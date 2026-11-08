@@ -6,6 +6,7 @@ export type TemplateId =
   | 'day-results'
   | 'standings'
   | 'round-results'
+  | 'match-preview'
   | 'match-summary';
 
 export type StandingsRange = 'all' | 'top' | 'bottom';

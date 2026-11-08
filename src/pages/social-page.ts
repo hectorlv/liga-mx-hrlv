@@ -98,8 +98,9 @@ export class SocialPage extends LitElement {
           <p class="eyebrow">Administración · Liga MX HRLV</p>
           <h1>Centro de publicaciones</h1>
           <p class="intro">
-            Genera la imagen, copia el texto y publica. Cada enlace ya
-            identifica la red, jornada y tipo de contenido en Analytics.
+            Genera y descarga la imagen para acompañar los copies que creas en
+            ChatGPT y publicas directamente en tus redes. Los textos
+            predefinidos siguen disponibles como respaldo.
           </p>
         </header>
 
