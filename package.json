@@ -41,7 +41,7 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
-    "@web/dev-server": "^1.0.0",
+    "@web/dev-server": "^1.0.1",
     "@web/rollup-plugin-html": "^4.0.0",
     "@web/rollup-plugin-import-meta-assets": "^3.0.0",
     "axe-core": "^4.14.0",
@@ -58,7 +58,7 @@
     "serialize-javascript": "^7.1.4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.72.1",
-    "z3-solver": "5.3.3",
+    "z3-solver": "5.4.1",
     "zod": "^4.6.7"
   },
   "eslintConfig": {
