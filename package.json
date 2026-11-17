@@ -42,7 +42,7 @@
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
     "@web/dev-server": "^1.0.1",
-    "@web/rollup-plugin-html": "^4.0.0",
+    "@web/rollup-plugin-html": "^4.0.1",
     "@web/rollup-plugin-import-meta-assets": "^3.0.0",
     "axe-core": "^4.14.0",
     "babel-plugin-template-html-minifier": "^4.1.0",
