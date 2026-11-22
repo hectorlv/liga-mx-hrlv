@@ -1,5 +1,5 @@
 import '@material/web/icon/icon.js';
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import styles from '../styles/liga-mx-hrlv-styles.js';
 import './match-detail-page.js';
@@ -14,6 +14,12 @@ import {
 } from '../utils/functionUtils.js';
 import { getTeamImage } from '../utils/imageUtils.js';
 import { hasMatchEnded, isMatchLive } from '../utils/matchStatus.js';
+import {
+  calculatePlayoffAssignments,
+  hasFinishedPlayoffLeg,
+  hasPlayoffParticipants,
+  type PlayoffParticipants,
+} from '../utils/playoffCalculator.js';
 
 interface BracketSeries {
   key: string;
@@ -64,6 +70,12 @@ const BRACKET_ROUNDS: BracketRound[] = [
     series: [{ key: 'final', name: 'Final', config: LIGUILLA.final }],
   },
 ];
+
+const DERIVED_MATCH_IDS = new Set(
+  BRACKET_ROUNDS.slice(1).flatMap(round =>
+    round.series.flatMap(({ config }) => [config.ida.id, config.vuelta.id]),
+  ),
+);
 
 @customElement('bracket-page')
 export class BracketPage extends LitElement {
@@ -460,25 +472,48 @@ export class BracketPage extends LitElement {
   @property({ type: Object }) players: PlayerTeam = new Map();
   @property({ type: Boolean }) isAdmin = false;
 
-  @state() showDetails = false;
-  @state() selectedMatch: Match | null = null;
+  @state() private selectedMatchId: number | null = null;
 
-  override updated(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has('matchesList') && this.selectedMatch) {
-      const updatedMatch = this.matchesList.find(
-        match => match.idMatch === this.selectedMatch?.idMatch,
+  private assignments = new Map<number, PlayoffParticipants>();
+  private availableMatches: Match[] = [];
+
+  override willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('matchesList') || changedProperties.has('table')) {
+      const previousSelection = this.availableMatches.find(
+        match => match.idMatch === this.selectedMatchId,
       );
-      if (updatedMatch) this.selectedMatch = updatedMatch;
+      this.assignments = calculatePlayoffAssignments(
+        this.table,
+        this.matchesList,
+      );
+      this.availableMatches = this.matchesList.filter(
+        match =>
+          !DERIVED_MATCH_IDS.has(match.idMatch) ||
+          hasPlayoffParticipants(match, this.assignments.get(match.idMatch)),
+      );
+      const selected = this.availableMatches.find(
+        match => match.idMatch === this.selectedMatchId,
+      );
+      if (
+        !selected ||
+        (DERIVED_MATCH_IDS.has(selected.idMatch) &&
+          !hasPlayoffParticipants(selected, previousSelection))
+      ) {
+        this.selectedMatchId = null;
+      }
     }
   }
 
   override render() {
-    if (this.showDetails && this.selectedMatch) {
+    const selectedMatch = this.availableMatches.find(
+      match => match.idMatch === this.selectedMatchId,
+    );
+    if (selectedMatch) {
       return html`
         <main>
           <match-detail-page
-            .match=${this.selectedMatch}
-            .matchesList=${this.matchesList}
+            .match=${selectedMatch}
+            .matchesList=${this.availableMatches}
             .table=${this.table}
             .teams=${this.teams}
             .players=${this.players}
@@ -490,6 +525,7 @@ export class BracketPage extends LitElement {
       `;
     }
 
+    const champion = this._getSeriesResult(LIGUILLA.final)?.winner ?? null;
     return html`
       <main class="bracket-shell">
         <div class="bracket-header">
@@ -497,14 +533,14 @@ export class BracketPage extends LitElement {
             <md-icon>account_tree</md-icon>
             <h2>Llaves de Liguilla</h2>
           </div>
-          ${this._renderBracketStatus()}
+          ${this._renderBracketStatus(champion)}
         </div>
 
         <section class="bracket-grid" aria-label="Llaves de liguilla">
           ${BRACKET_ROUNDS.map(round => this._renderRound(round))}
         </section>
 
-        ${this._renderChampionLegend()}
+        ${this._renderChampionLegend(champion)}
       </main>
     `;
   }
@@ -520,15 +556,36 @@ export class BracketPage extends LitElement {
     `;
   }
 
-  private _renderSeries(series: BracketSeries) {
+  private _getSeriesResult(series: PlayoffSeriesConfig) {
     const result = getPlayoffSeriesResult(
-      series.config,
-      this.matchesList,
+      series,
+      this.availableMatches,
       this.table,
     );
+    if (!result || !DERIVED_MATCH_IDS.has(series.vuelta.id)) return result;
+
+    const { ida, vuelta } = getPlayoffSeriesMatches(
+      series,
+      this.availableMatches,
+    );
+    if (
+      ida && vuelta && hasFinishedPlayoffLeg(ida) && hasFinishedPlayoffLeg(vuelta)
+    ) {
+      return result;
+    }
+    return {
+      ...result,
+      winner: null,
+      penaltyScore: null,
+      requiresExtraTimeOrPenalties: false,
+    };
+  }
+
+  private _renderSeries(series: BracketSeries) {
+    const result = this._getSeriesResult(series.config);
     const { ida, vuelta } = getPlayoffSeriesMatches(
       series.config,
-      this.matchesList,
+      this.availableMatches,
     );
     const pendingSeriesStatus = result?.requiresExtraTimeOrPenalties
       ? 'TE / Penales'
@@ -544,27 +601,29 @@ export class BracketPage extends LitElement {
           </span>
         </div>
         <div class="legs">
-          ${this._renderLeg('Ida', ida)} ${this._renderLeg('Vuelta', vuelta)}
+          ${this._renderLeg('Ida', series.config.ida.id, ida)}
+          ${this._renderLeg('Vuelta', series.config.vuelta.id, vuelta)}
         </div>
-        ${this._renderAggregate(series.config, result)}
+        ${this._renderAggregate(vuelta, result)}
       </article>
     `;
   }
 
-  private _renderLeg(label: string, match: Match | null) {
-    const hasMatch = Boolean(match);
+  private _renderLeg(label: string, id: number, match: Match | null) {
+    const participants =
+      match ?? (DERIVED_MATCH_IDS.has(id) ? this.assignments.get(id) : undefined);
+    const local = participants?.local || '';
+    const visitor = participants?.visitante || '';
     const isLive = match ? isMatchLive(match) : false;
 
     return html`
       <button
         class="leg-button"
-        ?disabled=${!hasMatch}
-        @click=${() => match && this._showMatchDetails(match)}
+        ?disabled=${!match}
+        @click=${() => match && this._showMatchDetails(match.idMatch)}
         aria-label=${
-          hasMatch
-            ? `${label}: ${match?.local || 'Por definir'} contra ${
-                match?.visitante || 'Por definir'
-              }`
+          participants
+            ? `${label}: ${local || 'Por definir'} contra ${visitor || 'Por definir'}`
             : `${label}: Por definir`
         }
       >
@@ -572,11 +631,11 @@ export class BracketPage extends LitElement {
           <div class="leg-label">
             ${label}${isLive ? html`<span class="live-dot"></span>` : ''}
           </div>
-          ${this._renderTeam(match?.local || '', false)}
+          ${this._renderTeam(local, false)}
           <div class="score-block">
             <div class="score">${this._formatScore(match)}</div>
           </div>
-          ${this._renderTeam(match?.visitante || '', true)}
+          ${this._renderTeam(visitor, true)}
           <div class="leg-meta">${this._formatMeta(match)}</div>
         </div>
       </button>
@@ -602,10 +661,10 @@ export class BracketPage extends LitElement {
   }
 
   private _renderAggregate(
-    series: PlayoffSeriesConfig,
+    vuelta: Match | null,
     result: ReturnType<typeof getPlayoffSeriesResult>,
   ) {
-    if (!result) {
+    if (!result || !vuelta) {
       return html`
         <div class="aggregate">
           <span>Global</span>
@@ -614,11 +673,8 @@ export class BracketPage extends LitElement {
       `;
     }
 
-    const { vuelta } = getPlayoffSeriesMatches(series, this.matchesList);
-    const local = vuelta?.local || '';
-    const visitor = vuelta?.visitante || '';
-    const localScore = result.aggregate[local];
-    const visitorScore = result.aggregate[visitor];
+    const localScore = result.aggregate[vuelta.local];
+    const visitorScore = result.aggregate[vuelta.visitante];
 
     const penaltyText = result.penaltyScore
       ? html`<span
@@ -632,9 +688,10 @@ export class BracketPage extends LitElement {
           ${result.winner}
         </span>`
       : '';
-    const pendingExtraTimeText = result.requiresExtraTimeOrPenalties
-      ? html`<span class="winner pending">Pendiente por TE / penales</span>`
-      : '';
+    const pendingExtraTimeText =
+      result.requiresExtraTimeOrPenalties && !result.winner
+        ? html`<span class="winner pending">Pendiente por TE / penales</span>`
+        : '';
 
     return html`
       <div class="aggregate">
@@ -644,19 +701,13 @@ export class BracketPage extends LitElement {
     `;
   }
 
-  private _renderChampionLegend() {
-    const result = getPlayoffSeriesResult(
-      LIGUILLA.final,
-      this.matchesList,
-      this.table,
-    );
-
-    if (!result?.winner) return '';
+  private _renderChampionLegend(champion: string | null) {
+    if (!champion) return '';
 
     return html`
       <div class="champion-legend" role="note">
         <md-icon>emoji_events</md-icon>
-        Campeón: ${result.winner}
+        Campeón: ${champion}
       </div>
     `;
   }
@@ -681,8 +732,8 @@ export class BracketPage extends LitElement {
     return [date, time, stadium].filter(Boolean).join(' - ') || 'Por definir';
   }
 
-  private _renderBracketStatus() {
-    const status = this._getBracketStatus();
+  private _renderBracketStatus(champion: string | null) {
+    const status = this._getBracketStatus(champion);
     return html`<div
       class="bracket-status ${status.tone}"
       role="status"
@@ -693,14 +744,9 @@ export class BracketPage extends LitElement {
     </div>`;
   }
 
-  private _getBracketStatus(): BracketStatus {
-    const result = getPlayoffSeriesResult(
-      LIGUILLA.final,
-      this.matchesList,
-      this.table,
-    );
-    if (result?.winner) {
-      return { label: `Campeón: ${result.winner}`, tone: 'champion' };
+  private _getBracketStatus(champion: string | null): BracketStatus {
+    if (champion) {
+      return { label: `Campeón: ${champion}`, tone: 'champion' };
     }
     if (!this._hasRegularSeasonMatches()) {
       return { label: 'Por definir', tone: 'pending' };
@@ -733,14 +779,13 @@ export class BracketPage extends LitElement {
     return matches.length > 0 && matches.every(hasMatchEnded);
   }
 
-  private _showMatchDetails(match: Match) {
-    this.selectedMatch = match;
-    this.showDetails = true;
+  private _showMatchDetails(id: number) {
+    this.selectedMatchId = id;
     window.scrollTo(0, 0);
   }
 
   private _backToBracket() {
-    this.showDetails = false;
+    this.selectedMatchId = null;
     window.scrollTo(0, 0);
   }
 }
