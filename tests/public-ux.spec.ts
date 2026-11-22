@@ -1,4 +1,5 @@
 import { expect, test, type Page } from 'playwright/test';
+import { LIGUILLA } from '../src/utils/constants.js';
 
 async function blockRemoteServices(page: Page) {
   await page.route('**/*', route => {
@@ -235,7 +236,7 @@ test('Estadísticas describe datos faltantes y enlaza al calendario', async ({ p
   await expect(page.getByRole('link', { name: 'Ver calendario' }).first()).toHaveAttribute('href', '?tab=Calendario');
 });
 
-test('Liguilla comunica cruces provisionales, confirmados y campeón', async ({ page }) => {
+test('Liguilla comunica cruces provisionales y confirmados', async ({ page }) => {
   await mountPage(
     page,
     'bracket-page',
@@ -275,18 +276,103 @@ test('Liguilla comunica cruces provisionales, confirmados y campeón', async ({ 
   });
 
   await expect(page.getByText('CRUCES CONFIRMADOS')).toBeVisible();
+});
 
-  await page.evaluate(() => {
-    const component = document.querySelector('bracket-page') as HTMLElement & Record<string, unknown>;
-    const base = {
-      estadio: 'Estadio HRLV', fecha: new Date('2026-10-01T20:00:00-06:00'), hora: '20:00', jornada: 22,
-      lineupLocal: [], lineupVisitor: [], events: [],
-    };
-    component.matchesList = [
-      { ...base, idMatch: 168, local: 'Atlas', visitante: 'América', golLocal: 1, golVisitante: 0 },
-      { ...base, idMatch: 169, local: 'América', visitante: 'Atlas', golLocal: 0, golVisitante: 2 },
-    ];
+test('Liguilla actualiza las rondas al cerrar o reabrir partidos', async ({ page }) => {
+  await mountPage(page, 'bracket-page', '');
+
+  const teams = ['América', 'Atlas', 'Toluca', 'Pachuca', 'León', 'Tigres', 'Monterrey', 'Cruz Azul'];
+  const table = teams.map(equipo => ({ equipo }));
+  const phase = (name: 'start' | 'fulltime') => ({
+    id: name, type: 'phase', phase: name, team: '',
+    minute: name === 'start' ? 0 : 90,
+    period: name === 'start' ? '1T' : '2T',
+    sequence: name === 'start' ? 1 : 2,
   });
+  const match = (idMatch: number, jornada: number, local: number, visitante: number) => ({
+    idMatch, jornada, local: teams[local], visitante: teams[visitante],
+    estadio: 'Estadio HRLV', fecha: new Date('2026-12-01T20:00:00-06:00'), hora: '20:00',
+    lineupLocal: [], lineupVisitor: [], events: [phase('start'), phase('fulltime')],
+    golLocal: 0, golVisitante: 0, penaltyLocal: null as number | null,
+    penaltyVisitante: null as number | null,
+  });
+  const quarters = [LIGUILLA.quarter1, LIGUILLA.quarter2, LIGUILLA.quarter3, LIGUILLA.quarter4]
+    .flatMap(({ ida, vuelta, local, visitante }) => [
+      match(ida.id, 20, visitante, local), match(vuelta.id, 20, local, visitante),
+    ]);
+  const liveQuarters = quarters.map(leg => leg.idMatch === LIGUILLA.quarter4.vuelta.id
+    ? { ...leg, events: [phase('start')] }
+    : leg);
+  const semis = [
+    match(LIGUILLA.semi1.ida.id, 21, 3, 0), match(LIGUILLA.semi1.vuelta.id, 21, 0, 3),
+    match(LIGUILLA.semi2.ida.id, 21, 2, 1), match(LIGUILLA.semi2.vuelta.id, 21, 1, 2),
+  ];
+  const storedSemis = [
+    { ...match(LIGUILLA.semi1.ida.id, 21, 4, 5), golLocal: 9 },
+    match(LIGUILLA.semi1.vuelta.id, 21, 5, 4),
+    semis[2],
+    { ...semis[3], events: [phase('start')] },
+  ];
+  const final = [match(LIGUILLA.final.ida.id, 22, 1, 0), match(LIGUILLA.final.vuelta.id, 22, 0, 1)];
+  const staleFinal = [
+    { ...match(LIGUILLA.final.ida.id, 22, 4, 5), golLocal: 9 },
+    match(LIGUILLA.final.vuelta.id, 22, 5, 4),
+  ];
 
-  await expect(page.getByText('Campeón: Atlas', { exact: true }).first()).toBeVisible();
+  const publish = (matchesList: ReturnType<typeof match>[]) => page.evaluate(({ table, matchesList }) => {
+    const component = document.querySelector('bracket-page') as HTMLElement & Record<string, unknown>;
+    Object.assign(component, { matchesList, table });
+  }, { table, matchesList });
+
+  const semifinal = page.locator('.round.semis');
+  const finalRound = page.locator('.round.final');
+  const champion = page.getByRole('note').filter({ hasText: 'Campeón' });
+
+  await publish([...liveQuarters, ...storedSemis, ...staleFinal]);
+  await expect(page.getByRole('button', { name: 'Vuelta: Pachuca contra León' })).toBeEnabled();
+  await expect(semifinal.getByRole('button', { name: 'Ida: Por definir' })).toHaveCount(2);
+  await expect(finalRound.getByRole('button', { name: 'Vuelta: Por definir' })).toBeDisabled();
+  await expect(champion).toHaveCount(0);
+
+  await publish([...quarters, ...storedSemis, ...staleFinal]);
+  const calculatedLeg = semifinal.getByRole('button', { name: 'Ida: Pachuca contra América' });
+  await expect(calculatedLeg).toBeDisabled();
+  await expect(calculatedLeg).not.toContainText(/9 - 0|Estadio HRLV/);
+  const savedLeg = semifinal.getByRole('button', { name: 'Ida: Toluca contra Atlas' });
+  await expect(savedLeg).toBeEnabled();
+  await expect(savedLeg).toContainText('Estadio HRLV');
+  await expect(finalRound.getByRole('button', { name: 'Vuelta: Por definir' })).toBeDisabled();
+
+  await publish([...quarters, ...semis, ...staleFinal]);
+  await expect(finalRound.getByRole('button', { name: 'Ida: Atlas contra América' })).toBeDisabled();
+  await expect(champion).toHaveCount(0);
+
+  const penalties = { penaltyLocal: 3, penaltyVisitante: 4 };
+  await publish([...quarters, ...semis, final[0], { ...final[1], ...penalties, events: [phase('start')] }]);
+  await expect(finalRound.getByText('Global 0 - 0')).toBeVisible();
+  await expect(champion).toHaveCount(0);
+
+  await publish([...quarters, ...semis, ...final]);
+  await expect(finalRound.getByText('Pendiente por TE / penales')).toBeVisible();
+  await expect(champion).toHaveCount(0);
+
+  await publish([...quarters, ...semis, final[0], { ...final[1], ...penalties }]);
+  await expect(champion).toHaveText(/Campeón: Atlas/);
+  await expect(finalRound.getByText('Penales 3 - 4')).toBeVisible();
+
+  await savedLeg.click();
+  await expect(page.locator('match-detail-page')).toHaveCount(1);
+  await publish([...liveQuarters, ...semis, final[0], { ...final[1], ...penalties }]);
+  await expect(page.locator('match-detail-page')).toHaveCount(0);
+  await expect(semifinal.getByRole('button', { name: 'Ida: Por definir' })).toHaveCount(2);
+  await expect(finalRound.getByRole('button', { name: 'Vuelta: Por definir' })).toBeDisabled();
+  await expect(champion).toHaveCount(0);
+
+  const correctedQuarters = quarters.map(leg => leg.idMatch === LIGUILLA.quarter1.vuelta.id
+    ? { ...leg, golVisitante: 1 }
+    : leg);
+  await publish([...correctedQuarters, ...semis, final[0], { ...final[1], ...penalties }]);
+  await expect(semifinal.getByRole('button', { name: 'Ida: Cruz Azul contra Atlas' })).toBeDisabled();
+  await expect(finalRound.getByRole('button', { name: 'Vuelta: Por definir' })).toBeDisabled();
+  await expect(champion).toHaveCount(0);
 });
