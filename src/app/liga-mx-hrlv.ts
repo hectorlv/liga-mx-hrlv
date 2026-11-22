@@ -749,20 +749,27 @@ export class LigaMxHrlv extends LitElement {
     `;
   }
 
+  override willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('matchesList') || changedProperties.has('teams')) {
+      this.table =
+        this.matchesList.length && this.teams.length
+          ? calculateTable(this.teams, this.matchesList)
+          : [];
+    }
+  }
+
   override updated(changedProperties: PropertyValues) {
     if (
-      changedProperties.has('matchesList') ||
-      changedProperties.has('teams') ||
-      changedProperties.has('isAdmin')
+      this.isAdmin &&
+      this.table.length > 0 &&
+      (changedProperties.has('matchesList') ||
+        changedProperties.has('teams') ||
+        changedProperties.has('isAdmin'))
     ) {
-      if (this.matchesList.length > 0 && this.teams.length > 0) {
-        this.table = calculateTable(this.teams, this.matchesList);
-        if (!this.isAdmin) return;
-        const updates = POSTSEASON_FORMAT.playInSpots > 0
-          ? calculatePlayIn(this.table, this.matchesList)
-          : calculateQuarterFinal(this.table, this.matchesList);
-        if (Object.keys(updates).length) void this._savePlayoffUpdates(updates);
-      }
+      const updates = POSTSEASON_FORMAT.playInSpots > 0
+        ? calculatePlayIn(this.table, this.matchesList)
+        : calculateQuarterFinal(this.table, this.matchesList);
+      if (Object.keys(updates).length) void this._savePlayoffUpdates(updates);
     }
     this._syncDocumentTitle();
   }

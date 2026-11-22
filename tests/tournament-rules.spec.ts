@@ -6,7 +6,10 @@ import {
   REGULAR_SEASON_LAST_JORNADA,
 } from '../src/utils/tournamentRules.js';
 import { calculateTable } from '../src/utils/tableCalculator.js';
-import { calculateQuarterFinal } from '../src/utils/playoffCalculator.js';
+import {
+  calculatePlayoffAssignments,
+  calculateQuarterFinal,
+} from '../src/utils/playoffCalculator.js';
 import { LIGUILLA } from '../src/utils/constants.js';
 import type { Match } from '../src/types/index.js';
 
@@ -60,8 +63,9 @@ test('reordena ganadores por siembra antes de semifinales y final', () => {
     golLocal = 0,
     golVisitante = 0,
   ): Match => finishedMatch({ idMatch, local, visitante, golLocal, golVisitante, jornada: 20 });
+  const unplayedScore = null as unknown as number;
   const pendingPlayoffMatch = (idMatch: number): Match => ({
-    ...playoffMatch(idMatch, '', ''),
+    ...playoffMatch(idMatch, '', '', unplayedScore, unplayedScore),
     events: [],
   });
   const matches = [
@@ -96,4 +100,23 @@ test('reordena ganadores por siembra antes de semifinales y final', () => {
   const finalUpdates = calculateQuarterFinal(table, matches);
   expect(finalUpdates[`/matches/${LIGUILLA.final.ida.id}/local`]).toBe(teams[6]);
   expect(finalUpdates[`/matches/${LIGUILLA.final.ida.id}/visitante`]).toBe(teams[2]);
+
+  const staleSemi = matches.map(match => {
+    if (match.idMatch === LIGUILLA.semi2.ida.id) {
+      return { ...match, local: teams[2], visitante: teams[4] };
+    }
+    if (match.idMatch === LIGUILLA.semi2.vuelta.id) {
+      return pendingPlayoffMatch(match.idMatch);
+    }
+    return match;
+  });
+  expect(calculatePlayoffAssignments(table, staleSemi).has(LIGUILLA.final.ida.id)).toBe(false);
+  expect(calculateQuarterFinal(table, staleSemi)).toEqual({});
+
+  const cancelledQuarter = matches.map(match => match.idMatch === LIGUILLA.quarter4.vuelta.id
+    ? { ...match, status: 'cancelled' as const }
+    : match);
+  const assignments = calculatePlayoffAssignments(table, cancelledQuarter);
+  expect(assignments.has(LIGUILLA.semi1.ida.id)).toBe(false);
+  expect(assignments.has(LIGUILLA.final.ida.id)).toBe(false);
 });

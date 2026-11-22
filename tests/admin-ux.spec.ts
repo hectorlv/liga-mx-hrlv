@@ -1,4 +1,111 @@
 import { expect, test, type Page } from 'playwright/test';
+import type { Auth } from 'firebase/auth';
+import type { AdminRevisions } from '../src/services/firebaseService';
+import type {
+  AdminWriteRequest,
+  PlayerTeam,
+  U23NationalTeamCallups,
+} from '../src/types';
+
+const callupSaveCases = [
+  {
+    name: 'registra la primera convocatoria',
+    previousCount: 0,
+    nextCount: 2,
+    revision: 0,
+  },
+  {
+    name: 'elimina una convocatoria existente',
+    previousCount: 2,
+    nextCount: 0,
+    revision: 4,
+  },
+];
+
+for (const scenario of callupSaveCases) {
+  test(`${scenario.name} con la revisión del equipo`, async ({ page }) => {
+    const callableUrl =
+      'https://us-central1-ligamx-b16f7.cloudfunctions.net/applyAdminUpdates';
+    await page.routeWebSocket('**/*', socket => socket.close());
+    await page.route('**/*', route =>
+      new URL(route.request().url()).hostname === '127.0.0.1'
+        ? route.continue()
+        : route.abort(),
+    );
+    await page.route(callableUrl, route =>
+      route.fulfill({
+        json: { result: { ok: true } },
+        headers: { 'access-control-allow-origin': '*' },
+      }),
+    );
+
+    await page.goto('/?tab=Estadísticas');
+    await page.waitForFunction(() => customElements.get('liga-mx-hrlv'));
+    await page.locator('liga-mx-hrlv').evaluate(async (element, scenario) => {
+      const app = element as HTMLElement & {
+        auth: Auth;
+        isAdmin: boolean;
+        teams: string[];
+        players: PlayerTeam;
+        adminRevisions: AdminRevisions;
+        u23NationalTeamCallups: U23NationalTeamCallups;
+      };
+      await app.auth.authStateReady();
+      app.teams = ['Atlas'];
+      app.players = new Map([
+        [
+          'Atlas',
+          [
+            {
+              id: 'atlas-29',
+              name: 'Jugador MFM',
+              fullName: 'Jugador MFM',
+              number: 29,
+              position: 'Defensa',
+              nationality: 'Mexicano',
+              birthDate: '01/01/2008',
+              imgSrc: '',
+            },
+          ],
+        ],
+      ]);
+      if (scenario.revision) {
+        app.adminRevisions = {
+          u23NationalTeamCallups: { Atlas: scenario.revision },
+        };
+        app.u23NationalTeamCallups = new Map([
+          ['Atlas', { 29: scenario.previousCount }],
+        ]);
+      }
+      app.isAdmin = true;
+    }, scenario);
+
+    await page.getByRole('button', { name: 'Equipos' }).click();
+    await page.getByRole('button', { name: 'Convocatorias' }).click();
+    const dialog = page.locator('#dialogU23Callup');
+    const missedMatches = dialog.getByRole('spinbutton');
+    await expect(missedMatches).toHaveValue(String(scenario.previousCount));
+    await missedMatches.fill(String(scenario.nextCount));
+    const responsePromise = page.waitForResponse(
+      response =>
+        response.url() === callableUrl &&
+        response.request().method() === 'POST',
+    );
+    await dialog.getByRole('button', { name: 'Guardar' }).click();
+
+    const response = await responsePromise;
+    const request: { data: AdminWriteRequest } = response
+      .request()
+      .postDataJSON();
+    expect(request.data).toEqual({
+      updates: {
+        '/u23NationalTeamCallups/Atlas/29': scenario.nextCount || null,
+      },
+      expectedRevisions: { 'u23NationalTeamCallups/Atlas': scenario.revision },
+    });
+    await expect(dialog).toBeHidden();
+  });
+}
 
 type FixtureEvent = Record<string, unknown>;
 

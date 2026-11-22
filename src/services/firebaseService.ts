@@ -25,9 +25,7 @@ export type AdminRevisions = {
 function resourceForPath(path: string): string {
   const [root, key] = path.split('/').filter(Boolean);
   if (!root) throw new Error('La actualización no tiene una ruta válida.');
-  return key && (root === 'matches' || root === 'players')
-    ? `${root}/${key}`
-    : root;
+  return key ? `${root}/${key}` : root;
 }
 
 function revisionForResource(
