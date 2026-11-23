@@ -64,6 +64,27 @@ export interface FittedText {
 
 export { resolveMatchStatus } from '../utils/matchStatus.js';
 
+const PLAYOFF_ROUNDS: Partial<
+  Record<number, { label: string; article: 'los' | 'las' | 'la' }>
+> = {
+  20: { label: 'Cuartos de final', article: 'los' },
+  21: { label: 'Semifinales', article: 'las' },
+  22: { label: 'Final', article: 'la' },
+};
+
+export function formatSocialRound(jornada?: number): string {
+  if (jornada === undefined) return 'Jornada';
+  return PLAYOFF_ROUNDS[jornada]?.label ?? `Jornada ${jornada}`;
+}
+
+function socialRoundPhrase(jornada?: number): string {
+  if (jornada === undefined) return 'la jornada';
+  const phase = PLAYOFF_ROUNDS[jornada];
+  return phase
+    ? `${phase.article} ${phase.label.toLowerCase()}`
+    : `la ${formatSocialRound(jornada)}`;
+}
+
 /** Última jornada con actividad real; conserva el contexto editorial de la tabla. */
 export function latestPlayedJornada(matches: Match[]): number | undefined {
   const jornadas = matches
@@ -343,7 +364,7 @@ export function buildAltText(input: SocialImageInput): string {
     const title = socialLineupErrors(match).length
       ? 'Alineaciones pendientes'
       : 'Alineaciones confirmadas';
-    return `${title}. ${match.local} contra ${match.visitante}. Jornada ${match.jornada}, ${formatSocialDate(match.fecha)}, ${formatKickoff(match.hora)}, ${match.estadio || 'estadio pendiente'}. ${lineups.join(' ')}`;
+    return `${title}. ${match.local} contra ${match.visitante}. ${formatSocialRound(match.jornada)}, ${formatSocialDate(match.fecha)}, ${formatKickoff(match.hora)}, ${match.estadio || 'estadio pendiente'}. ${lineups.join(' ')}`;
   }
   if (input.template === 'standings') {
     const rows = selectStandingsRange(
@@ -367,7 +388,8 @@ export function buildAltText(input: SocialImageInput): string {
       return `${match.local} contra ${match.visitante}${score}, ${statusLabel(status)}`;
     })
     .join('. ');
-  return `${templateLabel(input.template)} de Liga MX HRLV. ${matches}`;
+  const phase = input.jornada && PLAYOFF_ROUNDS[input.jornada];
+  return `${templateLabel(input.template)} de Liga MX HRLV${phase ? ` · ${phase.label}` : ''}. ${matches}`;
 }
 
 export function templateLabel(template: TemplateId): string {
@@ -396,7 +418,13 @@ export function buildSocialCopy(
     : isInstagram
       ? 'Consulta los detalles en el enlace de la bio.'
       : `Consulta los detalles en: ${url}`;
-  const round = input.jornada ? ` Jornada ${input.jornada}` : '';
+  const phase = input.jornada && PLAYOFF_ROUNDS[input.jornada];
+  const round = input.jornada
+    ? `${phase ? ' · ' : ' '}${formatSocialRound(input.jornada)}`
+    : '';
+  const roundPhrase = socialRoundPhrase(input.jornada);
+  const roundSubject = `${roundPhrase[0].toUpperCase()}${roundPhrase.slice(1)}`;
+  const plural = phase && phase.article !== 'la';
   const matches = selectTemplateMatches(input);
   const summary = matches
     .slice(0, input.template === 'round-results' ? 9 : 5)
@@ -417,7 +445,7 @@ export function buildSocialCopy(
     : 'Partido por seleccionar';
   const previewCopy = (lead: string) =>
     withCallToAction(
-      `${lead}\n${previewPair}${previewMatch ? `\n${formatKickoff(previewMatch.hora)} · Jornada ${previewMatch.jornada}` : ''}`,
+      `${lead}\n${previewPair}${previewMatch ? `\n${formatKickoff(previewMatch.hora)} · ${formatSocialRound(previewMatch.jornada)}` : ''}`,
       '#LigaMX',
     );
   const previewTitle =
@@ -427,7 +455,7 @@ export function buildSocialCopy(
   const informative: Record<TemplateId, string> = {
     'match-preview': previewCopy(`⚽ ${previewTitle}.`),
     'round-preview': withCallToAction(
-      `⚽ Todo listo para la${round} de Liga MX HRLV.\n\nPartidos, fechas y horarios para no perderte nada.`,
+      `⚽ Todo listo para ${roundPhrase} de Liga MX HRLV.\n\nPartidos, fechas y horarios para no perderte nada.`,
       '#LigaMX #FutbolMexicano #LigaMXHRLV',
     ),
     'day-preview': withCallToAction(
@@ -439,11 +467,11 @@ export function buildSocialCopy(
       '#LigaMX #Resultados',
     ),
     standings: withCallToAction(
-      `📈 Así marcha la tabla general${round ? ` después de la${round}` : ''}.`,
+      `📈 Así marcha la tabla general${round ? ` después de ${roundPhrase}` : ''}.`,
       '#LigaMX #TablaGeneral',
     ),
     'round-results': withCallToAction(
-      `🏁 Resultados completos de la${round}.\n\n${summary}`,
+      `🏁 Resultados completos de ${roundPhrase}.\n\n${summary}`,
       '#LigaMX #Resultados',
     ),
     'match-summary': withCallToAction(
@@ -463,7 +491,7 @@ export function buildSocialCopy(
         `⚽ Se acerca el silbatazo. ${previewTitle}.`,
       ),
       'round-preview': withCallToAction(
-        `⚽ La${round} se acerca. Revisa los cruces, fechas y horarios antes del silbatazo inicial.`,
+        `⚽ ${roundSubject} se ${plural ? 'acercan' : 'acerca'}. Revisa los cruces, fechas y horarios antes del silbatazo inicial.`,
         '#LigaMX #FutbolMexicano #LigaMXHRLV',
       ),
       'day-preview': withCallToAction(
@@ -471,15 +499,15 @@ export function buildSocialCopy(
         '#LigaMX #FutbolMexicano',
       ),
       'day-results': withCallToAction(
-        `🏁 Así cerró la actividad de${round}.\n\n${summary}`,
+        `🏁 Así cerró la actividad${round ? ` de ${roundPhrase}` : ''}.\n\n${summary}`,
         '#LigaMX #Resultados',
       ),
       standings: withCallToAction(
-        `📈 Este es el corte actual de la tabla${round ? ` tras la${round}` : ''}.`,
+        `📈 Este es el corte actual de la tabla${round ? ` tras ${roundPhrase}` : ''}.`,
         '#LigaMX #TablaGeneral',
       ),
       'round-results': withCallToAction(
-        `🏁 La${round} cerró con estos marcadores.\n\n${summary}`,
+        `🏁 ${roundSubject} ${plural ? 'cerraron' : 'cerró'} con estos marcadores.\n\n${summary}`,
         '#LigaMX #Resultados',
       ),
       'match-summary': withCallToAction(
@@ -494,7 +522,7 @@ export function buildSocialCopy(
           : '📋 Registro de titulares pendiente.',
       ),
       'round-preview': withCallToAction(
-        `📅${round} en números: ${count} ${count === 1 ? 'partido programado' : 'partidos programados'}.`,
+        `📅 ${formatSocialRound(input.jornada)} en números: ${count} ${count === 1 ? 'partido programado' : 'partidos programados'}.`,
         '#LigaMX #FutbolMexicano #LigaMXHRLV',
       ),
       'day-preview': withCallToAction(
@@ -506,11 +534,11 @@ export function buildSocialCopy(
         '#LigaMX #Resultados',
       ),
       standings: withCallToAction(
-        `📈 Corte de tabla${round ? ` después de la${round}` : ''}${leader ? `: ${socialTeamMention(leader.equipo, platform)} suma ${leader.pts} puntos` : ''}.`,
+        `📈 Corte de tabla${round ? ` después de ${roundPhrase}` : ''}${leader ? `: ${socialTeamMention(leader.equipo, platform)} suma ${leader.pts} puntos` : ''}.`,
         '#LigaMX #TablaGeneral',
       ),
       'round-results': withCallToAction(
-        `📊 ${count} ${count === 1 ? 'marcador final' : 'marcadores finales'} de la${round}.\n\n${summary}`,
+        `📊 ${count} ${count === 1 ? 'marcador final' : 'marcadores finales'} de ${roundPhrase}.\n\n${summary}`,
         '#LigaMX #Resultados',
       ),
       'match-summary': withCallToAction(
@@ -521,7 +549,7 @@ export function buildSocialCopy(
     conversation: {
       'match-preview': previewCopy(`⚽ ${previewTitle}. ¿Qué duelo seguirás?`),
       'round-preview': withCallToAction(
-        `⚽ ¿Qué partido de la${round} tienes marcado en el calendario?`,
+        `⚽ ¿Qué partido de ${roundPhrase} tienes marcado en el calendario?`,
         '#LigaMX #FutbolMexicano #LigaMXHRLV',
       ),
       'day-preview': withCallToAction(
@@ -533,11 +561,11 @@ export function buildSocialCopy(
         '#LigaMX #Resultados',
       ),
       standings: withCallToAction(
-        `📈 ¿Cómo lees este corte de la tabla${round ? ` después de la${round}` : ''}?`,
+        `📈 ¿Cómo lees este corte de la tabla${round ? ` después de ${roundPhrase}` : ''}?`,
         '#LigaMX #TablaGeneral',
       ),
       'round-results': withCallToAction(
-        `🏁 ¿Qué marcador de la${round} te llamó más la atención?\n\n${summary}`,
+        `🏁 ¿Qué marcador de ${roundPhrase} te llamó más la atención?\n\n${summary}`,
         '#LigaMX #Resultados',
       ),
       'match-summary': withCallToAction(
@@ -601,11 +629,16 @@ export function buildXRoundResultsThread(
       );
       return secondDifference - firstDifference || first.index - second.index;
     });
+  const phase = input.jornada && PLAYOFF_ROUNDS[input.jornada];
+  const shortRound = `J${input.jornada || ''}`;
+  const roundLabel = phase ? `· ${phase.label}` : shortRound;
+  const roundPhrase = socialRoundPhrase(input.jornada);
+  const plural = phase && phase.article !== 'la';
   const headers: Record<SocialCopyTone, string> = {
-    informative: `🏁 Resultados J${input.jornada || ''}`,
-    rhythm: `🏁 Así cerró la J${input.jornada || ''}`,
-    data: `📊 Marcadores J${input.jornada || ''}`,
-    conversation: `🏁 Lo que dejó J${input.jornada || ''}`,
+    informative: `🏁 Resultados ${roundLabel}`,
+    rhythm: `🏁 Así ${plural ? 'cerraron' : 'cerró'} ${phase ? roundPhrase : `la ${shortRound}`}`,
+    data: `📊 Marcadores ${roundLabel}`,
+    conversation: `🏁 Lo que ${plural ? 'dejaron' : 'dejó'} ${phase ? roundPhrase : shortRound}`,
   };
   const header = headers[tone].trim();
   const suffix = '#LigaMX #Resultados';
@@ -617,7 +650,7 @@ export function buildXRoundResultsThread(
   }
   return {
     post: `${header}\n\n${lines.join('\n')}\n\n${suffix}`,
-    reply: `Consulta marcadores, fichas y detalles de la Jornada ${input.jornada || ''}:\n${buildTrackingUrl(input, 'x')}`,
+    reply: `Consulta marcadores, fichas y detalles de ${roundPhrase}:\n${buildTrackingUrl(input, 'x')}`,
   };
 }
 
@@ -633,7 +666,7 @@ export function buildXThreadCopy(
     return buildXRoundResultsThread(input, tone);
   return {
     post: buildSocialCopy(input, 'x', { includeLink: false, tone }),
-    reply: `Consulta los detalles de${input.jornada ? ` la Jornada ${input.jornada}` : ' Liga MX HRLV'}:\n${buildTrackingUrl(input, 'x')}`,
+    reply: `Consulta los detalles de ${input.jornada ? socialRoundPhrase(input.jornada) : 'Liga MX HRLV'}:\n${buildTrackingUrl(input, 'x')}`,
   };
 }
 

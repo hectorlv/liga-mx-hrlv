@@ -27,6 +27,7 @@ import {
   dailyMatchesVariant,
   formatMatchCount,
   formatSocialDate,
+  formatSocialRound,
   formatKickoff,
   groupMatchesByDay,
   latestPlayedJornada,
@@ -487,7 +488,7 @@ export class SocialPostGenerator extends LitElement {
               : html`
                   <label for="jornada">Jornada</label>
                   <select id="jornada" @change=${this._onJornadaChange}>
-                    ${this._jornadas().map(value => html`<option value=${value} ?selected=${value === this.jornada}>Jornada ${value}</option>`)}
+                    ${this._jornadas().map(value => html`<option value=${value} ?selected=${value === this.jornada}>${formatSocialRound(value)}</option>`)}
                   </select>
                   ${showDateSelector}
                   ${
@@ -1043,7 +1044,7 @@ export class SocialPostGenerator extends LitElement {
       input.template !== 'round-preview' && input.template !== 'day-preview';
     const subtitle = input.dateKey
       ? formatSocialDate(`${input.dateKey}T12:00:00`)
-      : `JORNADA ${input.jornada} · ${matches.length} PARTIDOS`;
+      : `${formatSocialRound(input.jornada)} · ${formatMatchCount(matches.length)}`;
     let headerTitle: string;
     if (isResults) {
       headerTitle =
@@ -1078,7 +1079,7 @@ export class SocialPostGenerator extends LitElement {
     await this._drawHeader(
       context,
       'ALINEACIONES',
-      `CONFIRMADAS · JORNADA ${match.jornada} · PREVIA`,
+      `CONFIRMADAS · ${formatSocialRound(match.jornada)} · PREVIA`,
     );
     await Promise.all([
       this._drawTeamBadge(context, match.local, 231, 212, 110),
@@ -1185,7 +1186,7 @@ export class SocialPostGenerator extends LitElement {
     await this._drawHeader(
       context,
       'MARCADOR FINAL',
-      `JORNADA ${match.jornada}`,
+      formatSocialRound(match.jornada),
     );
     const scoreY = 365;
     const badgeSize = 116;
