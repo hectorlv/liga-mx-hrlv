@@ -246,6 +246,46 @@ test('selecciona la próxima jornada en vez de la numéricamente mayor', async (
   await expect(generator.locator('#jornada')).toHaveValue('1');
 });
 
+test('Redes identifica las rondas de Liguilla en el selector, la imagen y los copies', async ({ page }) => {
+  await page.addInitScript(() => {
+    const fillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      if (args[2] === 158) document.documentElement.dataset.canvasSubtitle = args[0];
+      return fillText.apply(this, args);
+    };
+  });
+  const fixtures = createFixtures();
+  const rounds = [
+    { id: 20, label: 'Cuartos de final', phrase: 'los cuartos de final' },
+    { id: 21, label: 'Semifinales', phrase: 'las semifinales' },
+    { id: 22, label: 'Final', phrase: 'la final' },
+  ];
+  fixtures.matches.push(...rounds.map(({ id }) => ({
+    ...fixtures.matches[0], idMatch: id, jornada: id,
+  })));
+  await mountSocialFixture(page, fixtures);
+  const generator = page.locator('social-post-generator');
+  const selector = generator.getByLabel('Jornada', { exact: true });
+  await expect(selector.locator('option')).toHaveText([
+    'Jornada 1', 'Cuartos de final', 'Semifinales', 'Final',
+  ]);
+
+  for (const { id, label, phrase } of rounds) {
+    await selector.selectOption(String(id));
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-canvas-subtitle', `${label.toUpperCase()} · 1 PARTIDO`,
+    );
+    await expect(generator.getByLabel('Descripción alternativa')).toHaveValue(new RegExp(label));
+    await expect(generator.getByLabel('Texto listo para publicar')).toHaveValue(new RegExp(`para ${phrase}`));
+  }
+
+  await generator.getByLabel('Plantilla').selectOption('round-results');
+  await generator.getByLabel('Copy para', { exact: true }).selectOption('x');
+  await selector.selectOption('21');
+  await expect(generator.locator('#x-post')).toHaveValue(/Resultados · Semifinales/);
+  await expect(generator.locator('#x-reply')).toHaveValue(/las semifinales:[\s\S]*filterJornada=21/);
+});
+
 test('separa el estado pospuesto del horario y pluraliza por día', async ({
   page,
 }) => {
